@@ -1,0 +1,45 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# next.js
+.next/
+.next-*/
+out/
+next-env.d.ts
+
+# production
+dist/
+build/
+
+# database
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+prisma/*.db
+
+# uploads（商品图片属于运行时数据，不入库）
+data/uploads/
+
+# env
+.env
+.env.local
+.env.*.local
+
+# logs
+*.log
+npm-debug.log*
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# typescript
+*.tsbuildinfo
+
+# 运行时备份快照（含用户数据，不入库）
+data/backups/

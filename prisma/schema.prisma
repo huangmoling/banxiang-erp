@@ -1,0 +1,413 @@
+// 宿藤家居 ERP · 数据模型
+// 阶段：P5.1 报废处置单 + 红冲
+// 说明：P0 环境 + P1 商品 + P2 单据/明细/批次/单件实例/库存流水 + P3 出库 + P4 退货 + P5 盘点
+//       + P5.1 报废与处置单、已生效单据红冲。
+//      P5.1 只加四项：documents.voidedById（谁冲的）、document_items.disposition（处置方式）、
+//      item_instances.disposalItemId（处置草稿锁件）、stock_movements.reversal（红冲流水标记）。
+
+generator client {
+  provider = "prisma-client-js"
+  // 只生成一个平台（native）。
+  // 构建用的 node:22-bookworm 自带 openssl，native 探测结果就是运行镜像需要的
+  // debian-openssl-3.0.x；写死多个 target 会触发联网下载引擎，
+  // 而部分内网/NAS 的 DNS 解析不了 binaries.prisma.sh，构建会直接失败。
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// 系统用户（客服 / 店长 / 仓管 / 管理员）
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  displayName  String
+  passwordHash String
+  /// 密码最后一次变更的时间。访问令牌签发时间早于它 ⇒ 令牌作废。
+  /// 光撤销 refresh token 不够：对方手里那张还没过期的访问令牌，照样能进来。
+  passwordChangedAt DateTime?
+  /// admin | manager | keeper | viewer
+  role         String    @default("keeper")
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+
+  createdDocuments  Document[] @relation("DocumentCreatedBy")
+  approvedDocuments Document[] @relation("DocumentApprovedBy")
+  voidedDocuments   Document[] @relation("DocumentVoidedBy")
+
+  @@map("users")
+}
+
+/// 刷新令牌（只存哈希，原文只在签发时返回给客户端）
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  userAgent String?
+  ip        String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+/// 商品（SPU）：一个产品名，下挂 N 个颜色行
+model Product {
+  id            String    @id @default(cuid())
+  name          String
+  /// 全拼，保存时由 name 生成（只读、建索引）
+  namePinyin    String    @default("")
+  /// 首字母，保存时由 name 生成（只读、建索引）
+  nameInitials  String    @default("")
+  category      String?
+  /// 数量单位：件 | 把 | 张 | 套
+  unit          String    @default("件")
+  imageUrl      String?
+  description   String?
+  /// complete | pending（待完善：缺图或信息不全）
+  profileStatus String    @default("pending")
+  /// 近 90 天使用次数，用于搜索排序（P2 起由单据累加）
+  usageCount    Int       @default(0)
+  lastUsedAt    DateTime?
+  isActive      Boolean   @default(true)
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  skus Sku[]
+
+  @@index([nameInitials])
+  @@index([namePinyin])
+  @@index([usageCount])
+  @@map("products")
+}
+
+/// SKU：一色一个 SKU。定制色的那一行 = 定制款 = 按件追踪。
+model Sku {
+  id          String   @id @default(cuid())
+  productId   String
+  /// 颜色名：手写自由文本，可空（无颜色商品）
+  colorName   String?
+  /// normal | custom（同时表示「常规色/定制色」与「常规款/定制款」）
+  variantType String   @default("normal")
+  /// 系统内部唯一编码，自动生成，不可改
+  skuCode     String   @unique
+  barcode     String?
+  safetyStock Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  documentItems DocumentItem[]
+  batches       Batch[]
+  movements     StockMovement[]
+  itemInstances ItemInstance[]
+
+  @@index([productId])
+  @@map("skus")
+}
+
+/// 仓位。次品区（defective）不计入可售库存。
+model Location {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  /// normal | defective | scrap
+  type       String   @default("normal")
+  isSellable Boolean  @default(true)
+  /// 系统内置仓位（不可删除）
+  isSystem   Boolean  @default(false)
+  sortNo     Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  documents     Document[]
+  movements     StockMovement[]
+  itemInstances ItemInstance[]
+
+  @@map("locations")
+}
+
+/// 操作审计日志：谁、什么时候、对什么做了什么
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entityType String
+  entityId   String?
+  summary    String
+  /// 附加信息（JSON 字符串）
+  meta       String?
+  requestId  String?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+/// 系统设置（键值对，值为 JSON 字符串）
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+// ==========================================================================
+// P2：单据与库存流水
+// 铁律：库存数字不允许被直接编辑，只能由 StockMovement 推导。
+//       单据「审核」才生成流水；红冲在后续阶段补（作废不改原始记录）。
+// ==========================================================================
+
+/// 单据主表。type：inbound 采购入库 | outbound 销售出库 | return 退货入库 | stocktake 盘点。
+model Document {
+  id               String   @id @default(cuid())
+  /// inbound | outbound | return | stocktake | scrap（后续阶段扩展）
+  type             String
+  /// 单号：RK-20261020-001（入库）、CK-…（出库）、TH-…（退货）、PD-…（盘点）
+  docNo            String   @unique
+  /// draft 草稿 | approved 已生效 | voided 已作废
+  status           String   @default("draft")
+  /// 业务日期：默认今天，可补录昨天的货。流水时间以此为准，不是提交时间
+  bizDate          DateTime
+  /// 出入库目标仓位（入库/出库用；退货按明细的 destination 分流，这里为空）
+  locationId       String?
+  /// 退货单挂靠的原出库单。**退货必须先有出库**，这是硬约束，不允许凭空退货
+  originDocumentId String?
+
+  /// 盘点截止时点（只有盘点单有值）。
+  /// 账面数 = 该时点之前**录入**的流水合计；此时点之后录入的算「截止后变动」，
+  /// 所以盘点期间照常发货、照常入库，不用停业。
+  snapshotAt   DateTime?
+  /// 外部单号：淘宝订单号。出库时填，退货要按它反查原单
+  externalNo   String?
+  /// 收件人 / 客户简称。纯文本，系统不建客户档案，也不存任何价格
+  receiverName String?
+  /// 物流单号（顺丰/德邦等），追破损与拒收用
+  trackingNo   String?
+
+  remark    String?
+  /// 行数（冗余，列表页排序与统计用：只由服务层维护）
+  itemCount Int     @default(0)
+  /// 总件数（冗余，同上）
+  totalQty  Int     @default(0)
+
+  createdById  String?
+  approvedById String?
+  approvedAt   DateTime?
+  voidedAt     DateTime?
+  voidReason   String?
+  /// 红冲操作人（作废原因写在 voidReason，操作人单独记，方便追责）
+  voidedById   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  location        Location?  @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  createdBy       User?      @relation("DocumentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  approvedBy      User?      @relation("DocumentApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  voidedBy        User?      @relation("DocumentVoidedBy", fields: [voidedById], references: [id], onDelete: SetNull)
+  originDocument  Document?  @relation("ReturnOrigin", fields: [originDocumentId], references: [id], onDelete: SetNull)
+  returnDocuments Document[] @relation("ReturnOrigin")
+
+  items     DocumentItem[]
+  movements StockMovement[]
+
+  @@index([type, status])
+  @@index([bizDate])
+  @@index([externalNo])
+  @@index([originDocumentId])
+  @@map("documents")
+}
+
+/// 单据明细。一行 = 一个 SKU + 一个数量 + 可选生产日期。
+/// 同款多色 = 多行；同款同色不同生产日期也分成多行（各自归批）。
+/// 退货行额外挂 originItemId（退的是原出库哪一行）+ destination（退回哪个区）。
+model DocumentItem {
+  id             String    @id @default(cuid())
+  documentId     String
+  skuId          String
+  /// 行号，从 1 开始，按录入顺序
+  lineNo         Int
+  qty            Int
+  /// 生产日期：一部分到货自带，只用于追溯，不控发货顺序
+  productionDate DateTime?
+  /// 归批结果（SKU + 生产日期 → 批次号 P20261001）；无生产日期则为空
+  batchNo        String?
+  remark         String?
+  /// 已退数量（退货单审核时累加到**原出库行**上，用于校验「已退 ≤ 已发」）
+  returnedQty    Int       @default(0)
+
+  /// 退货行：退的是原出库单的哪一行。校验、回批次、找单件都以这一行为锚点
+  originItemId String?
+  /// 退货去向：good 良品回架 | defective 次品区 | scrap 报废（只有退货行有值）
+  destination  String?
+  /// 处置方式：scrap 转报废 | offline_sale 线下出售 | self_dispose 自行处理
+  /// （只有报废/处置单的行有值。和 destination 分开，是因为「退货退到哪」与
+  ///  「仓里的货怎么处理掉」是两件事，混用一个字段将来必然打架）
+  disposition  String?
+
+  /// 盘点账面数：截止时点那一刻系统认为这个 SKU 在这个仓位有多少（只有盘点行有值）。
+  /// 存下来而不是每次现算，是为了让「当时看到的账面」永久可查，事后谁也不能改口径。
+  bookQty      Int?
+
+  createdAt DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  sku      Sku      @relation(fields: [skuId], references: [id])
+
+  /// 退货行 → 原出库行（自关联；原行没了退货行仍保留，只是丢了锚点）
+  originItem  DocumentItem?  @relation("ReturnOriginItem", fields: [originItemId], references: [id], onDelete: SetNull)
+  returnItems DocumentItem[] @relation("ReturnOriginItem")
+
+  movements         StockMovement[]
+  /// 入库时由这一行生成的单件（定制款）
+  itemInstances     ItemInstance[]
+  /// 出库时从这一行被选走的单件（定制款）
+  outboundInstances ItemInstance[]  @relation("OutboundItem")
+  /// 退货时从这一行收回的单件（定制款）
+  returnInstances   ItemInstance[]  @relation("ReturnItem")
+  /// 盘点时从这一行判为盘亏的单件（定制款）
+  stocktakeInstances ItemInstance[] @relation("StocktakeItem")
+  /// 处置时从这一行选中报废/线下出售/自行处理的单件（定制款）
+  disposalInstances  ItemInstance[] @relation("DisposalItem")
+
+  @@index([documentId])
+  @@index([skuId])
+  @@index([originItemId])
+  @@map("document_items")
+}
+
+/// 批次：常规款按「数量 + 批次」管理。批次号由 SKU + 生产日期决定。
+model Batch {
+  id             String    @id @default(cuid())
+  skuId          String
+  /// 批次号，如 P20261001；同一 SKU 同一生产日期只有一个批次
+  batchNo        String
+  productionDate DateTime?
+  /// 当前剩余数量（入库累加、出库递减）；权威值仍以流水为准
+  quantity       Int       @default(0)
+  createdAt      DateTime  @default(now())
+
+  sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
+
+  movements     StockMovement[]
+  itemInstances ItemInstance[]
+
+  @@unique([skuId, batchNo])
+  @@index([skuId, productionDate])
+  @@map("batches")
+}
+
+/// 单件实例：定制款一物一码。不做物理标签、不扫码，编号只在系统里用于反查。
+/// status: in_stock 在库 | outbound 已出库 | returned 退回待检
+///         | defective 次品区 | scrapped 报废 | sold_offline 线下售出 | disposed 已处置
+///         | missing 盘亏（盘点时这件找不到了）
+model ItemInstance {
+  id                 String    @id @default(cuid())
+  /// 唯一编号，如 DZ-20261020-001
+  code               String    @unique
+  skuId              String
+  status             String    @default("in_stock")
+  locationId         String?
+  batchId            String?
+  productionDate     DateTime?
+  /// 来源单据（入库单）与去向单据，仅存 id，不建外键（单据删除走软删除）
+  inboundDocumentId  String?
+  outboundDocumentId String?
+  returnDocumentId   String?
+  note               String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  sku            Sku           @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  location       Location?     @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  batch          Batch?        @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  /// 入库来源明细
+  DocumentItem   DocumentItem? @relation(fields: [documentItemId], references: [id])
+  documentItemId String?
+  /// 出库去向明细：这件货被哪一行出库单选走（一件只能属于一行，草稿阶段就能锁定）
+  outboundItem   DocumentItem? @relation("OutboundItem", fields: [outboundItemId], references: [id], onDelete: SetNull)
+  outboundItemId String?
+  /// 退货去向明细：这件货退到了哪一行退货单（定制件退货要按件勾选）
+  returnItem     DocumentItem? @relation("ReturnItem", fields: [returnItemId], references: [id], onDelete: SetNull)
+  returnItemId   String?
+  /// 盘亏明细：这一件被哪一行盘点单判为「找不到」。
+  /// 草稿阶段就挂上，等于把件锁住，别的单再也不能拿它去发货；删草稿靠 SetNull 自动放开。
+  stocktakeItem   DocumentItem? @relation("StocktakeItem", fields: [stocktakeItemId], references: [id], onDelete: SetNull)
+  stocktakeItemId String?
+  /// 处置明细：这一件被报废/线下出售/自行处理单的哪一行选中。
+  /// 与盘点同理，草稿阶段挂上即锁件，删草稿靠 SetNull 自动放开。
+  disposalItem    DocumentItem? @relation("DisposalItem", fields: [disposalItemId], references: [id], onDelete: SetNull)
+  disposalItemId  String?
+
+  /// 这一件货产生过的所有流水：入库、出库、退货、处置、红冲，按时间排就是它的履历
+  movements StockMovement[]
+
+  @@index([skuId, status])
+  @@index([status])
+  @@index([inboundDocumentId])
+  @@index([outboundDocumentId])
+  @@index([returnItemId])
+  @@index([stocktakeItemId])
+  @@index([disposalItemId])
+  @@map("item_instances")
+}
+
+/// 库存流水：全系统唯一的库存真相来源。
+/// qtyDelta 正数入库、负数出库；定制款一条流水对应一件（itemInstanceId 有值）。
+model StockMovement {
+  id         String @id @default(cuid())
+  skuId      String
+  locationId String
+  /// 变动数量（带符号）
+  qtyDelta   Int
+  /// inbound | outbound | return_in | scrap | stocktake_adjust | void_reverse
+  bizType    String
+
+  documentId     String?
+  documentItemId String?
+  batchId        String?
+  itemInstanceId String?
+
+  /// 发生时间：等于单据业务日期（盘点冻结时点也用它做截断），不是写入时间
+  occurredAt  DateTime
+  /// 红冲生成的反向流水标记。
+  /// 红冲时读「原单的反向流水」必须排除它们自己，否则冲第二次会把上次的反向也一起冲掉。
+  reversal    Boolean  @default(false)
+  createdById String?
+  note        String?
+  createdAt   DateTime @default(now())
+
+  sku          Sku           @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  location     Location      @relation(fields: [locationId], references: [id])
+  document     Document?     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentItem DocumentItem? @relation(fields: [documentItemId], references: [id], onDelete: Cascade)
+  batch        Batch?        @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  /// 定制款流水要能直接看到件号（DZ-20261020-001），否则查一件货的来龙去脉得手工对 id
+  itemInstance ItemInstance? @relation(fields: [itemInstanceId], references: [id], onDelete: SetNull)
+
+  @@index([skuId, locationId])
+  @@index([occurredAt])
+  @@index([documentId])
+  @@index([bizType, occurredAt])
+  @@index([itemInstanceId])
+  @@map("stock_movements")
+}

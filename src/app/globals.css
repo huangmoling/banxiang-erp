@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  background: #f6f7f9;
+  color: #1f2430;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 数字等宽对齐，报表和卡片里的数量不会跳来跳去 */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+@layer components {
+  .card {
+    @apply rounded-card border border-line bg-card;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-[13.5px] font-medium transition-colors
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn bg-brand text-white hover:bg-brand-ink;
+  }
+
+  .btn-ghost {
+    @apply btn border border-line bg-white text-ink-2 hover:border-[#d6dae1] hover:text-ink;
+  }
+
+  .btn-danger {
+    @apply btn border border-[#f0cdc8] bg-white text-danger hover:bg-danger-soft;
+  }
+
+  .btn-sm {
+    @apply px-2.5 py-1.5 text-[12.5px];
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-line bg-white px-3 py-2 text-[14px] text-ink outline-none
+      transition-colors placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand-soft;
+  }
+
+  .label {
+    @apply mb-1.5 block text-[13px] font-medium text-ink-2;
+  }
+
+  .tag {
+    @apply inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11.5px] font-medium leading-5;
+  }
+
+  .th {
+    @apply border-b border-line px-4 py-2.5 text-left text-[12.5px] font-medium text-muted;
+  }
+
+  .td {
+    @apply border-b border-line-2 px-4 py-3 text-[13.5px] text-ink align-middle;
+  }
+}
+
+/* 滚动条：细一点，别抢视觉 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d9dde3;
+  border-radius: 999px;
+  border: 3px solid #f6f7f9;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}

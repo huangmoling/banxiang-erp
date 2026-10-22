@@ -1,0 +1,39 @@
+services:
+  erp:
+    build: .
+    # 显式给镜像起名，和 Docker Hub 上的一致：
+    #   - 源码构建时 `docker compose build` 打上这个 tag
+    #   - 只想跑现成镜像时，删掉上面 build: 这行，`docker compose up -d` 会去 Hub 拉
+    image: aag111/suteng-erp:latest
+    container_name: suteng-erp
+    restart: unless-stopped
+    ports:
+      # HOST_PORT 可在 .env 里改，NAS 上若 3000 被占用就设成别的（如 3080）
+      - "${HOST_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      # 容器默认 UTC 会让「本月」统计在月初月末差 8 小时，必须固定时区
+      TZ: Asia/Shanghai
+      # 容器内绝对路径；数据落在挂载出来的 ./data
+      DATABASE_URL: "file:/app/data/suteng.db"
+      JWT_SECRET: "${JWT_SECRET:?请先设置 JWT_SECRET，可用 node -e \"console.log(require('crypto').randomBytes(48).toString('base64url'))\" 生成}"
+      ACCESS_TOKEN_TTL: "28800"
+      REFRESH_TOKEN_TTL: "6048000"
+      UPLOAD_DIR: "/app/data/uploads"
+      UPLOAD_MAX_MB: "5"
+      APP_NAME: "宿藤家居 ERP"
+      # 首次启动（库里一个用户都没有）时创建的管理员。已有用户时这几行不生效，
+      # 不会把已经改过的密码覆盖回去。生产部署请在 .env 里改掉默认口令。
+      BOOTSTRAP_ADMIN_USERNAME: "${BOOTSTRAP_ADMIN_USERNAME:-admin}"
+      BOOTSTRAP_ADMIN_PASSWORD: "${BOOTSTRAP_ADMIN_PASSWORD:-suteng@2026}"
+      BOOTSTRAP_ADMIN_NAME: "${BOOTSTRAP_ADMIN_NAME:-管理员}"
+      LOG_LEVEL: "info"
+    volumes:
+      # SQLite 与图片必须放在本地磁盘，不能是 SMB / NFS 共享盘
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
