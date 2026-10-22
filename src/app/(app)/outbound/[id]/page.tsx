@@ -8,12 +8,14 @@ import {
   FileText,
   Info,
   Package,
+  Send,
   Truck,
   User,
   Warehouse,
 } from "lucide-react";
 import { outboundService } from "@/modules/outbound/outbound.service";
 import { isAppError } from "@/lib/errors";
+import { getSession } from "@/lib/session";
 import { formatDateTime } from "@/lib/date";
 import {
   DOC_STATUS_LABEL,
@@ -42,6 +44,8 @@ export default async function OutboundDetailPage({
     throw err;
   }
 
+  const user = await getSession();
+
   const unit = doc.items[0]?.unit ?? "件";
   const customQty = doc.items
     .filter((i) => i.variantType === "custom")
@@ -67,24 +71,36 @@ export default async function OutboundDetailPage({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="tnum text-[19px] font-semibold tracking-tight text-ink">{doc.docNo}</h1>
-              <span className={`tag ${DOC_STATUS_TONE[doc.status]}`}>{DOC_STATUS_LABEL[doc.status]}</span>
+              {doc.pendingShip ? (
+                <span className="tag bg-[#fdf1f1] text-danger">待发货</span>
+              ) : (
+                <span className={`tag ${DOC_STATUS_TONE[doc.status]}`}>
+                  {DOC_STATUS_LABEL[doc.status]}
+                </span>
+              )}
             </div>
             <p className="mt-0.5 text-[12.5px] text-muted">
               业务日期 {doc.bizDate} · {doc.itemCount} 行 · 合计 {doc.totalQty} {unit}
+              {doc.pendingShip && doc.submittedByName
+                ? ` · ${doc.submittedByName} 提交`
+                : ""}
             </p>
           </div>
         </div>
 
-        <OutboundDocActions
-          id={doc.id}
-          docNo={doc.docNo}
-          status={doc.status}
-          totalQty={doc.totalQty}
-          unit={unit}
-        />
+        <OutboundDocActions doc={doc} role={user?.role ?? "viewer"} />
       </div>
 
-      {doc.status === "draft" ? (
+      {doc.pendingShip ? (
+        <div className="flex items-start gap-2.5 rounded-card border border-[#f3cfc9] bg-danger-soft px-3.5 py-3 text-[12.5px] leading-5 text-danger">
+          <CircleAlert size={15} className="mt-0.5 shrink-0" />
+          <div>
+            内勤交来的<b>待发货工单</b>
+            {doc.submittedAt ? `（${formatDateTime(doc.submittedAt)} 提交）` : ""}，
+            <b>库存还没扣</b>。照收货信息备货打包，发出去之后点右上角「确认，已出货」。
+          </div>
+        </div>
+      ) : doc.status === "draft" ? (
         <div className="flex items-start gap-2.5 rounded-card border border-[#f0e2c8] bg-warn-soft px-3.5 py-3 text-[12.5px] leading-5 text-[#8a5a15]">
           <CircleAlert size={15} className="mt-0.5 shrink-0" />
           <div>
@@ -187,8 +203,24 @@ export default async function OutboundDetailPage({
               <Row icon={Warehouse} label="发货仓位" value={doc.locationName ?? "—"} />
               <Row icon={Package} label="淘宝单号" value={doc.externalNo ?? "—"} mono />
               <Row icon={Truck} label="物流单号" value={doc.trackingNo ?? "—"} mono />
-              <Row icon={User} label="收件人" value={doc.receiverName ?? "—"} />
+              {/* 收货信息可能好几行，单独摆一块，不然换行会被吞掉 */}
+              <div className="flex gap-2">
+                <User size={13} className="mt-[3px] shrink-0 text-muted" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[11.5px] text-muted">收货信息</div>
+                  <div className="mt-0.5 whitespace-pre-line break-words leading-[1.7] text-ink">
+                    {doc.receiverName || "—"}
+                  </div>
+                </div>
+              </div>
               <Row icon={User} label="制单人" value={doc.createdByName ?? "—"} />
+              {doc.submittedAt ? (
+                <Row
+                  icon={Send}
+                  label="内勤提交"
+                  value={`${doc.submittedByName ?? "—"} · ${formatDateTime(doc.submittedAt)}`}
+                />
+              ) : null}
               <Row
                 icon={Check}
                 label="审核"

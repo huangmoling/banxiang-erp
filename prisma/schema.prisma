@@ -40,6 +40,8 @@ model User {
   createdDocuments  Document[] @relation("DocumentCreatedBy")
   approvedDocuments Document[] @relation("DocumentApprovedBy")
   voidedDocuments   Document[] @relation("DocumentVoidedBy")
+  /// 他提交过哪些发货工单（内勤）—— 仓库问「这单谁整理的」时按这个查
+  submittedDocuments Document[] @relation("DocumentSubmittedBy")
 
   @@map("users")
 }
@@ -198,10 +200,18 @@ model Document {
   snapshotAt   DateTime?
   /// 外部单号：淘宝订单号。出库时填，退货要按它反查原单
   externalNo   String?
-  /// 收件人 / 客户简称。纯文本，系统不建客户档案，也不存任何价格
+  /// 收货信息：姓名 / 电话 / 地址整段粘贴在一处（内勤从后台复制），
+  /// 系统不拆分、不校验格式。字段名沿用 receiverName 是为了不挪旧数据
   receiverName String?
   /// 物流单号（顺丰/德邦等），追破损与拒收用
   trackingNo   String?
+
+  /// 内勤「提交」这张发货工单的时间。
+  /// 有值 = 待发货工单（仓管还没确认）；空 = 普通草稿（自己开了一半）。
+  /// 两种都是 draft，靠这一个字段区分——不再加一个 status 取值，
+  /// 免得所有按 status 统计的地方（报表、仪表台、红冲）都要跟着改。
+  submittedAt   DateTime?
+  submittedById String?
 
   remark    String?
   /// 行数（冗余，列表页排序与统计用：只由服务层维护）
@@ -224,6 +234,7 @@ model Document {
   createdBy       User?      @relation("DocumentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   approvedBy      User?      @relation("DocumentApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
   voidedBy        User?      @relation("DocumentVoidedBy", fields: [voidedById], references: [id], onDelete: SetNull)
+  submittedBy     User?      @relation("DocumentSubmittedBy", fields: [submittedById], references: [id], onDelete: SetNull)
   originDocument  Document?  @relation("ReturnOrigin", fields: [originDocumentId], references: [id], onDelete: SetNull)
   returnDocuments Document[] @relation("ReturnOrigin")
 

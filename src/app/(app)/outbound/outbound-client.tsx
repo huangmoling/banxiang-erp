@@ -8,24 +8,26 @@ import { useToast } from "@/components/ui/toast";
 import {
   DOC_STATUS_LABEL,
   DOC_STATUS_TONE,
-  type DocStatus,
+  type OutboundDocView,
   type OutboundListResult,
 } from "@/modules/outbound/outbound.types";
 
 const PAGE_SIZE = 20;
+
+type ListStatus = "all" | "draft" | "approved" | "pending";
 
 export function OutboundClient({
   initial,
   initialStatus = "all",
 }: {
   initial: OutboundListResult;
-  initialStatus?: "all" | "draft" | "approved";
+  initialStatus?: ListStatus;
 }) {
   const toast = useToast();
 
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
-  const [status, setStatus] = useState<"all" | "draft" | "approved">(initialStatus);
+  const [status, setStatus] = useState<ListStatus>(initialStatus);
   const [page, setPage] = useState(1);
   const [data, setData] = useState<OutboundListResult>(initial);
   const [loading, setLoading] = useState(false);
@@ -100,6 +102,7 @@ export function OutboundClient({
           {(
             [
               ["all", "全部", null],
+              ["pending", "待发货", data.counts.pending],
               ["approved", "已生效", data.counts.approved],
               ["draft", "草稿", data.counts.draft],
             ] as const
@@ -113,18 +116,43 @@ export function OutboundClient({
               }}
               className={`rounded-md px-2.5 py-1.5 text-[12.5px] transition-colors ${
                 status === value
-                  ? "bg-brand-soft font-medium text-brand"
+                  ? value === "pending"
+                    ? "bg-danger-soft font-medium text-danger"
+                    : "bg-brand-soft font-medium text-brand"
                   : "text-ink-2 hover:bg-[#f4f6f8]"
               }`}
             >
               {label}
               {count !== null && count > 0 ? (
-                <span className="tnum ml-1 text-[11px] text-muted">{count}</span>
+                <span
+                  className={`tnum ml-1 text-[11px] ${
+                    value === "pending" && status !== "pending" ? "text-danger" : "text-muted"
+                  }`}
+                >
+                  {count}
+                </span>
               ) : null}
             </button>
           ))}
         </div>
       </div>
+
+      {/* 待发货压着没发，是最该被看见的一件事，所以压在最上面 */}
+      {data.counts.pending > 0 && status !== "pending" ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-card border border-[#f3cfc9] bg-danger-soft px-3.5 py-2.5 text-[12.5px] text-danger">
+          <b className="tnum text-[15px]">{data.counts.pending}</b> 张发货工单还等着发出去，库存还没扣。
+          <button
+            type="button"
+            onClick={() => {
+              setStatus("pending");
+              setPage(1);
+            }}
+            className="font-medium underline underline-offset-2 hover:opacity-80"
+          >
+            去确认发货
+          </button>
+        </div>
+      ) : null}
 
       {data.counts.draft > 0 && status !== "draft" ? (
         <div className="flex flex-wrap items-center gap-2 rounded-card border border-[#f0e2c8] bg-warn-soft px-3.5 py-2.5 text-[12.5px] text-[#8a5a15]">
@@ -188,9 +216,18 @@ export function OutboundClient({
                     </td>
                     <td className="td tnum text-[12.5px] text-ink-2">{doc.externalNo ?? "—"}</td>
                     <td className="td">
-                      <StatusTag status={doc.status} />
+                      <StatusTag doc={doc} />
                     </td>
-                    <td className="td text-[12.5px] text-muted">{doc.createdByName ?? "—"}</td>
+                    <td className="td text-[12.5px] text-muted">
+                      {doc.pendingShip ? (
+                        <>
+                          {doc.submittedByName ?? "—"}
+                          <span className="ml-0.5 text-[11px] text-muted">交</span>
+                        </>
+                      ) : (
+                        (doc.createdByName ?? "—")
+                      )}
+                    </td>
                     <td className="td">
                       <Link
                         href={`/outbound/${doc.id}`}
@@ -237,7 +274,19 @@ export function OutboundClient({
   );
 }
 
-function StatusTag({ status }: { status: DocStatus }) {
+function StatusTag({ doc }: { doc: OutboundDocView }) {
+  // 待发货单独一个标签：它虽然也是 draft，但对仓管来说它是「该干的活」，不是「别人没填完的单」
+  if (doc.pendingShip) {
+    const late = (doc.waitedDays ?? 0) > 0;
+    return (
+      <span className={`tag ${late ? "bg-[#fdf1f1] text-danger" : "bg-brand-soft text-brand"}`}>
+        待发货
+        {late ? <span className="opacity-80">·等 {doc.waitedDays} 天</span> : null}
+      </span>
+    );
+  }
+
+  const status = doc.status;
   return (
     <span className={`tag ${DOC_STATUS_TONE[status]}`}>
       {DOC_STATUS_LABEL[status]}

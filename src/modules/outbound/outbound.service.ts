@@ -1,17 +1,22 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
-import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { formatDateOnly, parseDateOnly, startOfToday, todayDateOnly } from "@/lib/date";
 import { stockRepository } from "@/modules/inventory/stock.repository";
 import { outboundRepository, type OutboundDocRecord } from "./outbound.repository";
-import type { CreateOutboundInput, ListOutboundQuery } from "./outbound.schema";
+import type {
+  CreateOutboundInput,
+  ListOutboundQuery,
+  UpdateOutboundInfoInput,
+} from "./outbound.schema";
 import type {
   AvailabilityResult,
   OutboundDocView,
   OutboundItemView,
   OutboundListResult,
   OutboundMeta,
+  PendingShipSummary,
 } from "./outbound.types";
 
 const UNIT_FALLBACK = "件";
@@ -37,6 +42,31 @@ function lineLabel(item: {
 }): string {
   const color = item.sku.colorName?.trim();
   return `第 ${item.lineNo} 行「${item.sku.product.name}${color ? ` · ${color}` : ""}」`;
+}
+
+/**
+ * 提交工单前的「缺货体检」：只出提醒，绝不拦。
+ * 家具到货延迟是常态，货还在路上就把单子先攒起来才对；
+ * 真正的硬拦截在仓管点确认那一刻（approveInTx 里那段库存校验），不用重复写。
+ */
+async function shortageWarningsOf(doc: OutboundDocRecord): Promise<string[]> {
+  const need = new Map<string, number>();
+  for (const item of doc.items) {
+    need.set(item.skuId, (need.get(item.skuId) ?? 0) + item.qty);
+  }
+  if (need.size === 0) return [];
+
+  const stockMap = await stockRepository.stockBySkuIds([...need.keys()]);
+  const warnings: string[] = [];
+  for (const [skuId, qty] of need) {
+    const have = stockMap.get(skuId) ?? 0;
+    if (qty > have) {
+      const line = doc.items.find((i) => i.skuId === skuId)!;
+      const unit = line.sku.product.unit || UNIT_FALLBACK;
+      warnings.push(`${lineLabel(line)} 现在只有 ${have} ${unit}，本单要 ${qty} ${unit}`);
+    }
+  }
+  return warnings;
 }
 
 function toItemView(item: OutboundDocRecord["items"][number], codes: string[]): OutboundItemView {
@@ -66,8 +96,18 @@ function buildPreview(doc: OutboundDocRecord): string {
   return parts.join("、") + more;
 }
 
+/** 提交到今天隔了几个自然日（0 = 今天提交）。按日历日算，不按 24 小时算 */
+function waitedDaysOf(submittedAt: Date | null): number | null {
+  if (!submittedAt) return null;
+  const a = Date.UTC(submittedAt.getFullYear(), submittedAt.getMonth(), submittedAt.getDate());
+  const t = startOfToday();
+  const b = Date.UTC(t.getFullYear(), t.getMonth(), t.getDate());
+  return Math.max(0, Math.round((b - a) / 86400000));
+}
+
 function toView(doc: OutboundDocRecord, codesByItem?: Map<string, string[]>): OutboundDocView {
   const status = doc.status === "approved" ? "approved" : doc.status === "voided" ? "voided" : "draft";
+  const submittedAt = doc.submittedAt ?? null;
 
   return {
     id: doc.id,
@@ -89,6 +129,11 @@ function toView(doc: OutboundDocRecord, codesByItem?: Map<string, string[]>): Ou
     voidReason: doc.voidReason,
     voidedByName: doc.voidedBy?.displayName ?? null,
     createdAt: doc.createdAt.toISOString(),
+    submittedAt: submittedAt ? submittedAt.toISOString() : null,
+    submittedByName: doc.submittedBy?.displayName ?? null,
+    // 待发货 = 内勤交了、仓管还没点确认。审核后就不再算待办
+    pendingShip: status === "draft" && submittedAt !== null,
+    waitedDays: waitedDaysOf(submittedAt),
     preview: buildPreview(doc),
     items: doc.items.map((item) => toItemView(item, codesByItem?.get(item.id) ?? [])),
   };
@@ -182,10 +227,19 @@ export const outboundService = {
   /**
    * 建单。approveNow=true 时在同一事务里审核生效。
    * 草稿阶段就把定制件锁到行上——这件货被这张单占了，别的单选不到，避免两张单抢同一件。
+   *
+   * 内勤（clerk）在这里被强制降级成「只存草稿」：
+   * 「提交」与「确认发货」必须是两个人，这是整条工单流程唯一的复核点。
+   * 只在前端藏按钮不算数——请求是可以手写的，所以拦在这一层。
    */
-  async create(input: CreateOutboundInput, actor: { userId: string }): Promise<OutboundDocView> {
+  async create(
+    input: CreateOutboundInput,
+    actor: { userId: string; role: string },
+  ): Promise<OutboundDocView> {
     const bizDate = input.bizDate ? parseDateOnly(input.bizDate) : startOfToday();
     if (!bizDate) throw new ValidationError("业务日期格式有误");
+
+    const isClerk = actor.role === "clerk";
 
     const locations = await outboundRepository.listSellableLocations();
     if (locations.length === 0) throw new ValidationError("还没有可用仓位，请先初始化主仓");
@@ -320,8 +374,23 @@ export const outboundService = {
         }
       }
 
-      if (input.approveNow) {
+      // 内勤不管前端传什么过来，一律按「只存草稿」处理
+      const approveNow = input.approveNow && !isClerk;
+      const submitNow = input.submitAfterSave || isClerk;
+
+      if (approveNow) {
         await approveInTx(tx, id, actor.userId);
+      } else if (submitNow) {
+        // 内勤建完就直接进待发货，不留在自己手里当草稿——
+        // 「存了忘了交」的孤儿单在仓库那边等于不存在，比什么都糟
+        await outboundRepository.markSubmitted(id, actor.userId, tx);
+        await writeAudit(
+          actor.userId,
+          "outbound.submit",
+          id,
+          `提交发货工单「${docNo}」，${totalQty} ${UNIT_FALLBACK}待仓管确认`,
+          tx,
+        );
       }
 
       return id;
@@ -330,8 +399,97 @@ export const outboundService = {
     return outboundService.detail(created);
   },
 
+  /**
+   * 内勤提交发货工单：草稿 → 待发货。
+   * 这一步不动库存、不动批次、不碰定制件——只是把单子交出去，让仓库那边看得见。
+   * 顺手做一次缺货体检：只提醒、不拦。货还在路上就先攒着单子，是常态。
+   */
+  async submit(
+    id: string,
+    actor: { userId: string; role: string },
+  ): Promise<{ doc: OutboundDocView; warnings: string[] }> {
+    const doc = await outboundRepository.findById(id);
+    if (!doc) throw new NotFoundError("找不到这张出库单");
+    if (doc.status === "approved") throw new ConflictError("这张单已经发过货了，不用再提交");
+    if (doc.status === "voided") throw new ConflictError("这张单已作废，不能提交");
+
+    // 已经交过就当他成功：手指抖两下、网络重试一次都很常见，弹个红字反而让人以为没交上
+    if (doc.submittedAt) {
+      return { doc: await outboundService.detail(id), warnings: [] };
+    }
+
+    if (actor.role === "clerk" && doc.createdById && doc.createdById !== actor.userId) {
+      throw new ForbiddenError("这单是别人整理的，内勤只能提交自己开的单");
+    }
+
+    const warnings = await shortageWarningsOf(doc);
+
+    await prisma.$transaction(async (tx) => {
+      await outboundRepository.markSubmitted(id, actor.userId, tx);
+      await writeAudit(
+        actor.userId,
+        "outbound.submit",
+        id,
+        `提交发货工单「${doc.docNo}」，共 ${doc.totalQty} ${UNIT_FALLBACK}，等仓管确认`,
+        tx,
+      );
+    });
+
+    return { doc: await outboundService.detail(id), warnings };
+  },
+
+  /** 仪表台横幅与侧栏角标：今天还有多少张工单没发 */
+  async pendingSummary(): Promise<PendingShipSummary> {
+    const row = await outboundRepository.pendingSummary(startOfToday());
+    return {
+      total: row.total,
+      today: row.today,
+      overdue: row.overdue,
+      oldestAt: row.oldestAt ? row.oldestAt.toISOString() : null,
+    };
+  },
+
+  /**
+   * 改收货信息 / 物流单号 / 订单号 / 备注。
+   * 商品明细不在这里改——那些一动就影响库存，只能删单重开。
+   * 已生效的单据也不许改：要更正就走红冲，账不能悄悄被抹平。
+   */
+  async updateInfo(
+    id: string,
+    input: UpdateOutboundInfoInput,
+    actor: { userId: string; role: string },
+  ): Promise<OutboundDocView> {
+    const doc = await outboundRepository.findById(id);
+    if (!doc) throw new NotFoundError("找不到这张出库单");
+    if (doc.status === "approved") {
+      throw new ConflictError("这张单已经发货了，收货信息不能再改。要更正请让管理员红冲后重开");
+    }
+    if (doc.status === "voided") throw new ConflictError("这张单已作废，不能再改");
+    if (actor.role === "clerk" && doc.createdById && doc.createdById !== actor.userId) {
+      throw new ForbiddenError("这单是别人整理的，内勤只能改自己开的单");
+    }
+
+    // 没传的字段保持原值，别把人家填好的地址一键清空
+    const next = {
+      receiverName: input.receiverName === undefined ? doc.receiverName : input.receiverName?.trim() || null,
+      trackingNo: input.trackingNo === undefined ? doc.trackingNo : input.trackingNo?.trim() || null,
+      externalNo: input.externalNo === undefined ? doc.externalNo : input.externalNo?.trim() || null,
+      remark: input.remark === undefined ? doc.remark : input.remark?.trim() || null,
+    };
+
+    await outboundRepository.updateInfo(id, next, prisma);
+    await writeAudit(actor.userId, "outbound.updateInfo", id, `修改出库单「${doc.docNo}」的收货信息`);
+
+    return outboundService.detail(id);
+  },
+
   /** 审核草稿：把单据变成负数流水，这一步之后库存才会减 */
-  async approve(id: string, actor: { userId: string }): Promise<OutboundDocView> {
+  async approve(id: string, actor: { userId: string; role: string }): Promise<OutboundDocView> {
+    // 接口层已经限了角色，这里再拦一道：内勤永远不能自己确认发货，
+    // 否则「内勤提交、仓管确认」这个复核点就白设了
+    if (actor.role === "clerk") {
+      throw new ForbiddenError("内勤不能点确认发货，这一步要仓管来做");
+    }
     await prisma.$transaction(async (tx) => {
       await approveInTx(tx, id, actor.userId);
     });
@@ -340,11 +498,15 @@ export const outboundService = {
   },
 
   /** 删除草稿。删掉后行上锁定的定制件自动解锁（外键 SetNull） */
-  async remove(id: string, actor: { userId: string }): Promise<void> {
+  async remove(id: string, actor: { userId: string; role: string }): Promise<void> {
     const doc = await outboundRepository.findById(id);
     if (!doc) throw new NotFoundError("找不到这张出库单");
     if (doc.status === "approved") {
       throw new ConflictError("已生效的出库单不能删除。要更正请等红冲功能上线，或联系管理员");
+    }
+    // 内勤撤销自己整理的单（填错了重来），别人的单不许动
+    if (actor.role === "clerk" && doc.createdById && doc.createdById !== actor.userId) {
+      throw new ForbiddenError("这单是别人整理的，内勤只能撤销自己开的单");
     }
 
     await prisma.$transaction(async (tx) => {
@@ -433,8 +595,22 @@ async function approveInTx(tx: Prisma.TransactionClient, id: string, userId: str
     throw new ValidationError(`库存不够，先别发：${shortages.join("；")}`);
   }
 
-  // 业务日期就是流水发生时间：补录昨天的发货，账也记在昨天
-  const occurredAt = doc.bizDate;
+  // 业务日期就是流水发生时间：补录昨天的发货，账也记在昨天。
+  // 但「内勤昨天交单、仓管今天才发出去」不算补录——货是今天走的，账得记今天，
+  // 否则昨天的报表凭空多一笔、今天的少一笔，月底对账要抓半天。
+  // 只对「有提交时间的工单」动手；仓管自己开单补录昨天，那个能力原样保留。
+  let occurredAt = doc.bizDate;
+  if (doc.submittedAt && occurredAt.getTime() < startOfToday().getTime()) {
+    occurredAt = startOfToday();
+    await outboundRepository.updateBizDate(doc.id, occurredAt, tx);
+    await writeAudit(
+      userId,
+      "outbound.bizDateShift",
+      doc.id,
+      `工单隔天才发出，记账日由 ${formatDateOnly(doc.bizDate)} 改为 ${formatDateOnly(occurredAt)}`,
+      tx,
+    );
+  }
   const productIds = new Set<string>();
 
   for (const item of doc.items) {

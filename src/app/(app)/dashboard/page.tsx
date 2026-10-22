@@ -3,6 +3,7 @@ import {
   ArrowDownToLine,
   ArrowRight,
   ArrowUpFromLine,
+  BellRing,
   Boxes,
   CircleAlert,
   Package,
@@ -11,7 +12,9 @@ import {
   Undo2,
 } from "lucide-react";
 import { getSession } from "@/lib/session";
+import { formatDateTime } from "@/lib/date";
 import { dashboardService } from "@/modules/dashboard/dashboard.service";
+import { outboundService } from "@/modules/outbound/outbound.service";
 
 export const dynamic = "force-dynamic";
 
@@ -74,7 +77,11 @@ function MiniStat({
 }
 
 export default async function DashboardPage() {
-  const [user, data] = await Promise.all([getSession(), dashboardService.overview()]);
+  const [user, data, pending] = await Promise.all([
+    getSession(),
+    dashboardService.overview(),
+    outboundService.pendingSummary(),
+  ]);
 
   const today = new Intl.DateTimeFormat("zh-CN", {
     month: "long",
@@ -104,6 +111,34 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* 待发货工单：整个首页最该被看见的一件事，所以压在最上面、红底、带箭头 */}
+      {pending.total > 0 ? (
+        <Link href="/outbound?status=pending" className="group block">
+          <div className="flex items-center gap-3 rounded-card border border-[#f3cfc9] border-l-[3px] border-l-[#c0392b] bg-[#fdf1f1] px-3.5 py-3">
+            <BellRing size={18} strokeWidth={1.8} className="shrink-0 text-danger" />
+            <div className="tnum shrink-0 text-[26px] font-bold leading-none text-danger">
+              {pending.total}
+              <span className="ml-0.5 text-[12px] font-medium">张</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[13px] font-semibold text-[#8f2c1f]">
+                {pending.overdue > 0
+                  ? `还有 ${pending.total} 张发货工单没发出去`
+                  : `今天还有 ${pending.total} 张工单没发出去`}
+              </div>
+              <div className="mt-0.5 text-[11.5px] text-[#a8544a]">
+                今天提交 {pending.today} 张
+                {pending.overdue > 0 ? ` · 隔天没发 ${pending.overdue} 张` : ""}
+                {pending.oldestAt ? ` · 最早一张 ${formatDateTime(pending.oldestAt)}` : ""}
+              </div>
+            </div>
+            <span className="shrink-0 text-[12px] font-semibold text-danger group-hover:opacity-70">
+              去处理 →
+            </span>
+          </div>
+        </Link>
+      ) : null}
 
       {/* 四个核心数字 */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
@@ -68,6 +68,30 @@ export function AppShell({
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  /** 待发货张数：侧栏「出库」旁边那个红点。拿不到就不显示，不能因为它把页面搞挂 */
+  const [pending, setPending] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    async function load() {
+      try {
+        const row = await api<{ total: number }>("/api/outbound/pending-count");
+        if (alive) setPending(row.total);
+      } catch {
+        /* 静默失败：角标只是提示，不该弹错误 */
+      }
+    }
+    void load();
+    // 确认发货之后角标要立刻减一，别让人等 60 秒
+    const onChanged = () => void load();
+    window.addEventListener("suteng:pending-changed", onChanged);
+    const timer = setInterval(load, 60_000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+      window.removeEventListener("suteng:pending-changed", onChanged);
+    };
+  }, [pathname]);
 
   const visibleNav = NAV.filter((item) => !item.adminOnly || user.role === "admin");
 
@@ -113,6 +137,14 @@ export function AppShell({
           >
             <Icon size={16} strokeWidth={1.7} />
             <span>{item.label}</span>
+            {item.href === "/outbound" && pending > 0 ? (
+              <span
+                className="ml-auto min-w-[17px] rounded-full bg-danger px-1.5 text-center text-[10.5px] font-semibold leading-[17px] text-white"
+                title={`${pending} 张发货工单待确认`}
+              >
+                {pending}
+              </span>
+            ) : null}
           </Link>
         );
       })}

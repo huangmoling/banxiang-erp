@@ -33,7 +33,7 @@ export type OutboundDocView = {
   locationName: string | null;
   /** 淘宝订单号 */
   externalNo: string | null;
-  /** 收件人 / 客户简称 */
+  /** 收货信息：姓名 / 电话 / 地址整段，靠换行分段，系统不拆 */
   receiverName: string | null;
   /** 物流单号 */
   trackingNo: string | null;
@@ -48,6 +48,13 @@ export type OutboundDocView = {
   voidReason: string | null;
   voidedByName: string | null;
   createdAt: string;
+  /** 内勤提交发货工单的时间；空 = 普通草稿 */
+  submittedAt: string | null;
+  submittedByName: string | null;
+  /** 是不是「待发货」：已提交且还没审核 */
+  pendingShip: boolean;
+  /** 提交到今天隔了几天（0 = 今天提交）。没提交的为 null */
+  waitedDays: number | null;
   preview: string;
   items: OutboundItemView[];
 };
@@ -57,7 +64,19 @@ export type OutboundListResult = {
   total: number;
   page: number;
   pageSize: number;
-  counts: { draft: number; approved: number };
+  counts: { draft: number; approved: number; pending: number };
+};
+
+/** 仪表台待办：今天要发多少、有几张压在手里 */
+export type PendingShipSummary = {
+  /** 待发货总张数 */
+  total: number;
+  /** 其中今天提交的 */
+  today: number;
+  /** 其中隔天及更早提交的（要标红） */
+  overdue: number;
+  /** 最早那张的提交时间，给人一个「压了多久」的直观感受 */
+  oldestAt: string | null;
 };
 
 export type OutboundMeta = {

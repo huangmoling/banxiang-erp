@@ -12,6 +12,7 @@ import {
   Loader2,
   PackageMinus,
   Search,
+  Send,
   Trash2,
   Truck,
   Warehouse,
@@ -61,10 +62,11 @@ type SkuOption = Pick<
 let lineSeq = 0;
 const newKey = () => `o${++lineSeq}`;
 
-export function OutboundForm({ meta }: { meta: OutboundMeta }) {
+export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string }) {
   const router = useRouter();
   const toast = useToast();
   const today = meta.today || todayDateOnly();
+  const isClerk = role === "clerk";
 
   const [bizDate, setBizDate] = useState(today);
   const [locationId, setLocationId] = useState(meta.locations[0]?.id ?? "");
@@ -75,9 +77,9 @@ export function OutboundForm({ meta }: { meta: OutboundMeta }) {
 
   const [lines, setLines] = useState<Line[]>([]);
   const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState<"draft" | "approve" | null>(null);
+  const [submitting, setSubmitting] = useState<"draft" | "submit" | "approve" | null>(null);
   /** 二次确认：点保存不直接提交，先把「要扣掉的货」摆出来让人对一眼 */
-  const [confirm, setConfirm] = useState<null | { approveNow: boolean }>(null);
+  const [confirm, setConfirm] = useState<null | { mode: "draft" | "submit" | "approve" }>(null);
 
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -258,8 +260,13 @@ export function OutboundForm({ meta }: { meta: OutboundMeta }) {
     }
   }
 
-  function validate(): string {
+  function validate(mode: "draft" | "submit" | "approve"): string {
     if (lines.length === 0) return "先搜一个款、加一行货，再保存";
+
+    // 发货工单是给仓库照着发的，没有收货信息仓管发不出去
+    if (mode === "submit" && !receiverName.trim()) {
+      return "发货工单要填收货信息（姓名、电话、地址），不然后面发不出去";
+    }
 
     for (const line of lines) {
       const label = `${line.productName} · ${colorText(line.colorName)}`;
@@ -287,24 +294,25 @@ export function OutboundForm({ meta }: { meta: OutboundMeta }) {
    * 出库扣的是真实在库，多发一件当月就少一件，所以金额之外最该复核的是
    * 「发的哪一款、几件、发到哪个订单」——这些在弹窗里逐行列出来。
    */
-  function requestSubmit(approveNow: boolean) {
+  function requestSubmit(mode: "draft" | "submit" | "approve") {
     if (submitting) return;
 
-    const message = validate();
+    const message = validate(mode);
     if (message) {
       setError(message);
       return;
     }
 
     setError("");
-    setConfirm({ approveNow });
+    setConfirm({ mode });
   }
 
   async function doSubmit() {
     if (!confirm || submitting) return;
-    const approveNow = confirm.approveNow;
+    const mode = confirm.mode;
+    const approveNow = mode === "approve";
 
-    setSubmitting(approveNow ? "approve" : "draft");
+    setSubmitting(mode);
 
     try {
       const doc = await api<OutboundDocView>("/api/outbound", {
@@ -323,11 +331,19 @@ export function OutboundForm({ meta }: { meta: OutboundMeta }) {
             instanceIds: l.variantType === "custom" ? l.instanceIds : [],
           })),
           approveNow,
+          submitAfterSave: mode === "submit",
         },
       });
 
-      toast.success(approveNow ? `已出库，单号 ${doc.docNo}` : `草稿已保存：${doc.docNo}`);
+      toast.success(
+        mode === "approve"
+          ? `已出库，单号 ${doc.docNo}`
+          : mode === "submit"
+            ? `工单已提交：${doc.docNo}，等仓管确认`
+            : `草稿已保存：${doc.docNo}`,
+      );
       setConfirm(null);
+      if (mode === "submit") window.dispatchEvent(new Event("suteng:pending-changed"));
       router.push(`/outbound/${doc.id}`);
       router.refresh();
     } catch (err) {
@@ -348,9 +364,13 @@ export function OutboundForm({ meta }: { meta: OutboundMeta }) {
           <ArrowLeft size={16} />
         </Link>
         <div>
-          <h1 className="text-[19px] font-semibold tracking-tight text-ink">新建出库单</h1>
+          <h1 className="text-[19px] font-semibold tracking-tight text-ink">
+            {isClerk ? "整理发货工单" : "新建出库单"}
+          </h1>
           <p className="mt-0.5 text-[12.5px] text-muted">
-            搜名称或拼音首字母选款 → 填数量 → 保存。审核后库存立即扣减。
+            {isClerk
+              ? "选款 → 填收货信息和数量 → 提交给仓管。提交后库存不动，等仓管点了确认才扣。"
+              : "搜名称或拼音首字母选款 → 填数量 → 保存。审核后库存立即扣减。"}
           </p>
         </div>
       </div>
@@ -697,32 +717,18 @@ export function OutboundForm({ meta }: { meta: OutboundMeta }) {
                 <p className="mt-1 text-[11.5px] text-muted">次品区、报废区不走销售出库。</p>
               </div>
 
-              <div>
-                <label className="label" htmlFor="externalNo">
-                  淘宝订单号
-                </label>
-                <input
-                  id="externalNo"
-                  className="input tnum"
-                  value={externalNo}
-                  onChange={(e) => setExternalNo(e.target.value)}
-                  placeholder="选填，退货时靠它找回这张单"
-                  maxLength={60}
-                />
-              </div>
-
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="label" htmlFor="receiverName">
-                    收件人
+                  <label className="label" htmlFor="externalNo">
+                    淘宝订单号
                   </label>
                   <input
-                    id="receiverName"
-                    className="input"
-                    value={receiverName}
-                    onChange={(e) => setReceiverName(e.target.value)}
-                    placeholder="选填"
-                    maxLength={40}
+                    id="externalNo"
+                    className="input tnum"
+                    value={externalNo}
+                    onChange={(e) => setExternalNo(e.target.value)}
+                    placeholder="选填，退货时靠它找回这张单"
+                    maxLength={60}
                   />
                 </div>
                 <div>
@@ -734,10 +740,29 @@ export function OutboundForm({ meta }: { meta: OutboundMeta }) {
                     className="input tnum"
                     value={trackingNo}
                     onChange={(e) => setTrackingNo(e.target.value)}
-                    placeholder="选填"
+                    placeholder="选填，发出去之后再补"
                     maxLength={60}
                   />
                 </div>
+              </div>
+
+              {/* 收货信息整段粘进来就行：从淘宝后台复制的那串正好是「姓名，电话，地址」 */}
+              <div>
+                <label className="label" htmlFor="receiverName">
+                  收货信息
+                  <span className="ml-1 font-normal text-muted">（姓名、电话、地址）</span>
+                </label>
+                <textarea
+                  id="receiverName"
+                  className="input min-h-[78px] resize-y leading-[1.7]"
+                  value={receiverName}
+                  onChange={(e) => setReceiverName(e.target.value)}
+                  placeholder={"张伟，13812345678\n浙江省杭州市余杭区仓前街道文一西路 969 号 3 幢 1 单元 502"}
+                  maxLength={300}
+                />
+                <p className="mt-1 text-[11.5px] text-muted">
+                  从淘宝后台复制过来整段贴上即可，不用分开填。系统只当一段文字存，不拆分。
+                </p>
               </div>
 
               <div>
@@ -759,16 +784,20 @@ export function OutboundForm({ meta }: { meta: OutboundMeta }) {
           <section className="card bg-[#fbfcfd] p-4 text-[12px] leading-[1.85] text-ink-2 sm:p-5">
             <div className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-ink">
               <Truck size={14} strokeWidth={1.8} className="text-brand" />
-              审核后会发生什么
+              {isClerk ? "提交后会发生什么" : "审核后会发生什么"}
             </div>
             <ul className="space-y-1.5">
               <li className="flex gap-1.5">
                 <Check size={13} className="mt-1 shrink-0 text-ok" />
-                每个颜色行生成出库流水，主仓库存随之减少
+                {isClerk
+                  ? "仓库的仪表台和出库页会立刻出现这张待发货工单"
+                  : "每个颜色行生成出库流水，主仓库存随之减少"}
               </li>
               <li className="flex gap-1.5">
                 <Check size={13} className="mt-1 shrink-0 text-ok" />
-                库存不够的单审核不过，会告诉你哪一行差多少
+                {isClerk
+                  ? "仓管照着收货信息打包，点确认才算真正发出，库存那时候才减"
+                  : "库存不够的单审核不过，会告诉你哪一行差多少"}
               </li>
               <li className="flex gap-1.5">
                 <Check size={13} className="mt-1 shrink-0 text-ok" />
@@ -794,44 +823,87 @@ export function OutboundForm({ meta }: { meta: OutboundMeta }) {
             {lines.length} 行 · 合计 <b className="text-[14px] text-ink">{totalQty}</b> {totalUnit}
             {customQty > 0 ? ` · 其中 ${customQty} 件按件出库` : ""}
           </span>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
             <Link href="/outbound" className="btn-ghost">
               取消
             </Link>
-            <button
-              type="button"
-              className="btn-ghost"
-              onClick={() => requestSubmit(false)}
-              disabled={submitting !== null}
-              title="只存草稿，不影响库存"
-            >
-              {submitting === "draft" ? <Loader2 size={14} className="animate-spin" /> : null}
-              存为草稿
-            </button>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => requestSubmit(true)}
-              disabled={submitting !== null}
-            >
-              {submitting === "approve" ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Check size={14} />
-              )}
-              保存并审核
-            </button>
+            {isClerk ? (
+              // 内勤只有一个动作：把单子交给仓管。没有「存草稿」也没有「审核」，
+              // 免得他存了一张自己忘了交，仓库那边永远等不到
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => requestSubmit("submit")}
+                disabled={submitting !== null}
+                title="提交给仓管，库存这时候不动"
+              >
+                {submitting === "submit" ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Send size={14} />
+                )}
+                提交发货工单
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => requestSubmit("draft")}
+                  disabled={submitting !== null}
+                  title="只存草稿，不影响库存"
+                >
+                  {submitting === "draft" ? <Loader2 size={14} className="animate-spin" /> : null}
+                  存为草稿
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost border-brand text-brand"
+                  onClick={() => requestSubmit("submit")}
+                  disabled={submitting !== null}
+                  title="交给仓管去发，库存这时候不动"
+                >
+                  {submitting === "submit" ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Send size={14} />
+                  )}
+                  提交工单
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => requestSubmit("approve")}
+                  disabled={submitting !== null}
+                >
+                  {submitting === "approve" ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Check size={14} />
+                  )}
+                  保存并审核
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
       {/* 保存前的二次确认：把要扣掉的货原样摆一遍 */}
       <Modal
         open={!!confirm}
-        title={confirm?.approveNow ? "确认保存并审核出库？" : "确认存为草稿？"}
+        title={
+          confirm?.mode === "approve"
+            ? "确认保存并审核出库？"
+            : confirm?.mode === "submit"
+              ? "确认提交给仓管发货？"
+              : "确认存为草稿？"
+        }
         description={
-          confirm?.approveNow
+          confirm?.mode === "approve"
             ? "点确认后库存立刻扣减，这批货就算正式发出去了。"
-            : "草稿不产生任何库存流水，之后还能打开来改。"
+            : confirm?.mode === "submit"
+              ? "提交后仓库那边就会看到这张待发货工单，库存要等仓管点确认才扣。"
+              : "草稿不产生任何库存流水，之后还能打开来改。"
         }
         onClose={() => (submitting ? undefined : setConfirm(null))}
         width="max-w-[520px]"
@@ -847,12 +919,16 @@ export function OutboundForm({ meta }: { meta: OutboundMeta }) {
             </button>
             <button
               type="button"
-              className={confirm?.approveNow ? "btn-primary" : "btn-ghost border-brand text-brand"}
+              className={confirm?.mode === "draft" ? "btn-ghost border-brand text-brand" : "btn-primary"}
               onClick={() => void doSubmit()}
               disabled={submitting !== null}
             >
               {submitting ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-              {confirm?.approveNow ? "确认，出库" : "确认，存草稿"}
+              {confirm?.mode === "approve"
+                ? "确认，出库"
+                : confirm?.mode === "submit"
+                  ? "确认，提交工单"
+                  : "确认，存草稿"}
             </button>
           </>
         }
@@ -873,9 +949,11 @@ export function OutboundForm({ meta }: { meta: OutboundMeta }) {
               <div className="text-[11.5px] text-muted">淘宝订单号</div>
               <div className="tnum mt-0.5 text-ink">{externalNo.trim() || "—"}</div>
             </div>
-            <div>
-              <div className="text-[11.5px] text-muted">收件人</div>
-              <div className="mt-0.5 text-ink">{receiverName.trim() || "—"}</div>
+            <div className="col-span-2">
+              <div className="text-[11.5px] text-muted">收货信息</div>
+              <div className="mt-0.5 whitespace-pre-line leading-[1.7] text-ink">
+                {receiverName.trim() || "—"}
+              </div>
             </div>
           </div>
 
@@ -918,8 +996,15 @@ export function OutboundForm({ meta }: { meta: OutboundMeta }) {
 
           {!externalNo.trim() ? (
             <p className="text-[11.5px] leading-5 text-muted">
-              没填淘宝订单号。以后要退货，得靠订单号找回这张单——能填就填上。
+              没填淘宝订单号。以后这单要退货，得靠订单号找回原单——能填就填上。
             </p>
+          ) : null}
+
+          {confirm?.mode === "submit" ? (
+            <div className="flex items-start gap-1.5 rounded-lg bg-brand-soft px-3 py-2 text-[12px] leading-5 text-brand">
+              <Send size={13} className="mt-0.5 shrink-0" />
+              提交只是把单子交给仓管，库存一点不动。仓管点「确认」之后才会扣。
+            </div>
           ) : null}
         </div>
       </Modal>

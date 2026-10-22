@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { USER_ROLES, type UserRole } from "./user.types";
 
 const username = z
   .string({ message: "请输入用户名" })
@@ -18,7 +19,8 @@ const password = z
   .min(8, "密码至少 8 位")
   .max(72, "密码过长");
 
-const role = z.enum(["admin", "manager", "keeper", "viewer"], {
+/** 角色清单只写在 user.types.ts 一处，这里派生——加角色不用两头改、也不会漏 */
+const role = z.enum(USER_ROLES as [UserRole, ...UserRole[]], {
   message: "请选择角色",
 });
 

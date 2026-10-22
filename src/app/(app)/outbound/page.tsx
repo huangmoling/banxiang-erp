@@ -10,7 +10,9 @@ export default async function OutboundPage({
 }) {
   const { status } = await searchParams;
   const initialStatus =
-    status === "draft" || status === "approved" ? status : ("all" as const);
+    status === "draft" || status === "approved" || status === "pending"
+      ? status
+      : ("all" as const);
 
   const initial = await outboundService.list({
     q: "",

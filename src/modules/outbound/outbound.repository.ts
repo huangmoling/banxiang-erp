@@ -37,10 +37,13 @@ export const outboundDocSelect = {
   voidedAt: true,
   voidReason: true,
   createdAt: true,
+  createdById: true,
+  submittedAt: true,
   location: { select: { name: true } },
   createdBy: { select: { displayName: true } },
   approvedBy: { select: { displayName: true } },
   voidedBy: { select: { displayName: true } },
+  submittedBy: { select: { displayName: true } },
   items: { orderBy: { lineNo: "asc" }, select: outboundItemSelect },
 } satisfies Prisma.DocumentSelect;
 
@@ -80,14 +83,22 @@ export const outboundRepository = {
 
   async list(params: {
     q: string;
-    status: "all" | "draft" | "approved" | "voided";
+    status: "all" | "draft" | "approved" | "voided" | "pending";
     page: number;
     pageSize: number;
   }): Promise<{ items: OutboundDocRecord[]; total: number }> {
     const q = params.q.trim();
     const where: Prisma.DocumentWhereInput = {
       type: "outbound",
-      ...(params.status !== "all" ? { status: params.status } : {}),
+      // 草稿与待发货都是 status=draft，靠 submittedAt 分家：
+      // 「草稿」= 自己开了一半没提交，「待发货」= 内勤已经交过来了
+      ...(params.status === "pending"
+        ? { status: "draft", submittedAt: { not: null } }
+        : params.status === "draft"
+          ? { status: "draft", submittedAt: null }
+          : params.status !== "all"
+            ? { status: params.status }
+            : {}),
       ...(q
         ? {
             OR: [
@@ -107,7 +118,11 @@ export const outboundRepository = {
       prisma.document.findMany({
         where,
         select: outboundDocSelect,
-        orderBy: [{ bizDate: "desc" }, { createdAt: "desc" }],
+        // 待发货按提交时间正序：压得最久的排最前，别让老单烂在列表底下
+        orderBy:
+          params.status === "pending"
+            ? [{ submittedAt: "asc" }, { createdAt: "asc" }]
+            : [{ bizDate: "desc" }, { createdAt: "desc" }],
         skip: (params.page - 1) * params.pageSize,
         take: params.pageSize,
       }),
@@ -117,12 +132,47 @@ export const outboundRepository = {
     return { items, total };
   },
 
-  async counts(): Promise<{ draft: number; approved: number }> {
-    const [draft, approved] = await Promise.all([
-      prisma.document.count({ where: { type: "outbound", status: "draft" } }),
+  /** 三个页签的计数。草稿与待发货互不重叠，加起来就是全部未审核的单 */
+  async counts(): Promise<{ draft: number; approved: number; pending: number }> {
+    const [draft, approved, pending] = await Promise.all([
+      prisma.document.count({
+        where: { type: "outbound", status: "draft", submittedAt: null },
+      }),
       prisma.document.count({ where: { type: "outbound", status: "approved" } }),
+      prisma.document.count({
+        where: { type: "outbound", status: "draft", submittedAt: { not: null } },
+      }),
     ]);
-    return { draft, approved };
+    return { draft, approved, pending };
+  },
+
+  /** 仪表台与侧栏角标共用：待发货总张数 + 其中压过夜的张数与最早提交时间 */
+  async pendingSummary(since: Date): Promise<{
+    total: number;
+    today: number;
+    overdue: number;
+    oldestAt: Date | null;
+  }> {
+    const where: Prisma.DocumentWhereInput = {
+      type: "outbound",
+      status: "draft",
+      submittedAt: { not: null },
+    };
+    const [total, overdue, oldest] = await Promise.all([
+      prisma.document.count({ where }),
+      prisma.document.count({ where: { ...where, submittedAt: { lt: since } } }),
+      prisma.document.findFirst({
+        where,
+        orderBy: { submittedAt: "asc" },
+        select: { submittedAt: true },
+      }),
+    ]);
+    return {
+      total,
+      today: total - overdue,
+      overdue,
+      oldestAt: oldest?.submittedAt ?? null,
+    };
   },
 
   /** 取当天最大单号 +1。用 max 而不是 count：中间删过草稿也不会把单号重复发出去 */
@@ -161,6 +211,8 @@ export const outboundRepository = {
         status: true,
         bizDate: true,
         locationId: true,
+        // 内勤提交过没有：决定「隔天确认要不要改记账日」
+        submittedAt: true,
         items: {
           orderBy: { lineNo: "asc" },
           select: {
@@ -198,6 +250,36 @@ export const outboundRepository = {
       where: { id },
       data: { status: "approved", approvedById, approvedAt: new Date() },
     });
+  },
+
+  /** 内勤提交发货工单：只打时间戳，状态仍是 draft，库存一点不动 */
+  markSubmitted(id: string, submittedById: string, db: Db) {
+    return db.document.update({
+      where: { id },
+      data: { submittedAt: new Date(), submittedById },
+    });
+  },
+
+  /**
+   * 改收货信息这类「不动货」的字段。
+   * 只认 draft：已生效的单据要改只能红冲，不允许在这里偷偷改。
+   */
+  updateInfo(
+    id: string,
+    data: {
+      receiverName: string | null;
+      trackingNo: string | null;
+      externalNo: string | null;
+      remark: string | null;
+    },
+    db: Db | typeof prisma,
+  ) {
+    return db.document.update({ where: { id }, data });
+  },
+
+  /** 隔天确认时把记账日改到真实发货那天 */
+  updateBizDate(id: string, bizDate: Date, db: Db) {
+    return db.document.update({ where: { id }, data: { bizDate } });
   },
 
   /** 只允许删除草稿：已生效的单据必须走红冲，原始记录永久保留 */
