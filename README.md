@@ -485,6 +485,15 @@ suteng-erp/
     `receiverName / trackingNo / externalNo / remark` 四项（都不动货）。
     明细与数量一旦可改，库存校验就得多一套「改前后差额」逻辑，不值得。
     删除接口对 clerk 加了「只能删自己建的」校验，防止互相撤单。
+35. **站内跳转一律 `redirectTo()` 相对路径，禁止 `new URL(x, req.nextUrl.origin)`。**
+    容器里 `ENV HOSTNAME=0.0.0.0` 是绑卡必须的，但 Next 独立服务器把它当成
+    「应用自己的地址」拼 `initURL`（`next-server.js`：`${protocol}://${fetchHostname}:${port}${req.url}`），
+    于是路由处理器里 `req.nextUrl.origin` **恒为 `http://0.0.0.0:3000`，从不读 Host 头**。
+    用它拼 307 的 Location，浏览器就会被送去一个打不开的地址——局域网 IP、公网域名 +
+    反向代理都一样错。相对 Location 由浏览器按当前访问地址解析，端口映射 / 域名 / https 全自动正确。
+    2026-10-23 的「每天第一次打开跳到 0.0.0.0:3000」就是这条踩的：访问令牌 8 小时过期，
+    隔天首次访问走 `session-refresh` 换令牌，成功分支用 origin 拼了绝对地址。
+    **不要用 `experimental.trustHostHeader` 绕过**——它固定拼 `https://`，局域网 http 直接废。
 
 
 ## 已知限制
