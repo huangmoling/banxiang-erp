@@ -127,6 +127,8 @@ export type ReturnableOrigin = {
   bizDate: string;
   externalNo: string | null;
   receiverName: string | null;
+  /** 第一行的收货地址（一单多地址时用来看这张单都发去了哪，可能只显示第一个） */
+  receiverInfo: string | null;
   trackingNo: string | null;
   totalQty: number;
   /** 已经退过多少 */
@@ -153,6 +155,13 @@ export type OriginItemView = {
   returnableQty: number;
   /** 出库时扣的批次，良品回架按它回库 */
   batchNo: string | null;
+  /**
+   * 这一行的收货信息。一单多地址以后，同一张单里可能有 20 行同款沙发，
+   * 只能靠地址认出退的是哪个买家——所以退货选行时必须把它显示出来。
+   */
+  receiverInfo: string | null;
+  /** 这一行的淘宝订单号（行上没有则回退单据） */
+  externalNo: string | null;
   /** 定制款：这一行发出去的单件，勾选要退回的 */
   instances: {
     id: string;

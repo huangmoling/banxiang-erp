@@ -42,6 +42,8 @@ model User {
   voidedDocuments   Document[] @relation("DocumentVoidedBy")
   /// 他提交过哪些发货工单（内勤）—— 仓库问「这单谁整理的」时按这个查
   submittedDocuments Document[] @relation("DocumentSubmittedBy")
+  /// 他确认发出过哪些明细行 —— 一行一个包裹，谁打包的能追到人
+  shippedItems       DocumentItem[] @relation("DocumentItemShippedBy")
 
   @@map("users")
 }
@@ -266,6 +268,22 @@ model DocumentItem {
   /// 已退数量（退货单审核时累加到**原出库行**上，用于校验「已退 ≤ 已发」）
   returnedQty    Int       @default(0)
 
+  /// ── 行级收货信息（出库单用）──
+  /// 一行 = 一个包裹 = 一个买家。淘宝店绝大多数订单是一商品一地址，
+  /// 地址挂在行上，一张出库单才能装下当天几十个买家，不用建几十张单。
+  /// 留空表示「沿用单据上的整单地址」，老单据因此不用迁移。
+  receiverInfo String?
+  /// 这一行的淘宝订单号（选填；退货按它找单）
+  externalNo   String?
+  /// 这一行的物流单号。一个包裹一个号，发货时或发货后补
+  trackingNo   String?
+
+  /// 这一行实际发出去的时间。**空 = 还没发**。
+  /// 一单多地址后，缺货是常态，所以发货要按行确认：发掉的行扣库存，
+  /// 没发的行挂着等，整单不算完成。这也是「部分发货」唯一的实现方式。
+  shippedAt   DateTime?
+  shippedById String?
+
   /// 退货行：退的是原出库单的哪一行。校验、回批次、找单件都以这一行为锚点
   originItemId String?
   /// 退货去向：good 良品回架 | defective 次品区 | scrap 报废（只有退货行有值）
@@ -283,6 +301,8 @@ model DocumentItem {
 
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   sku      Sku      @relation(fields: [skuId], references: [id])
+  /// 这一行是谁确认发出的（仓库追责用）
+  shippedBy User?   @relation("DocumentItemShippedBy", fields: [shippedById], references: [id], onDelete: SetNull)
 
   /// 退货行 → 原出库行（自关联；原行没了退货行仍保留，只是丢了锚点）
   originItem  DocumentItem?  @relation("ReturnOriginItem", fields: [originItemId], references: [id], onDelete: SetNull)

@@ -178,6 +178,10 @@ export const returnService = {
         bizDate: formatDateOnly(doc.bizDate),
         externalNo: doc.externalNo,
         receiverName: doc.receiverName,
+        // 一单多地址：搜索结果里显示第一个包裹的地址，才认得出是哪张单
+        receiverInfo:
+          doc.items.find((i) => i.receiverInfo?.trim())?.receiverInfo?.trim() ||
+          doc.receiverName,
         trackingNo: doc.trackingNo,
         preview: doc.items
           .slice(0, 3)
@@ -243,6 +247,9 @@ export const returnService = {
         returnedQty: item.returnedQty,
         returnableQty: Math.max(0, item.qty - item.returnedQty),
         batchNo: item.batchNo,
+        // 行上没填地址的老单据，回退到整单地址，显示行为和以前一致
+        receiverInfo: item.receiverInfo?.trim() || doc.receiverName?.trim() || null,
+        externalNo: item.externalNo?.trim() || doc.externalNo?.trim() || null,
         instances: item.outboundInstances.map((inst) => ({
           id: inst.id,
           code: inst.code,

@@ -68,21 +68,25 @@ export function AppShell({
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
-  /** 待发货张数：侧栏「出库」旁边那个红点。拿不到就不显示，不能因为它把页面搞挂 */
+  /**
+   * 待发的**包裹数**：侧栏「出库」旁边那个红点。
+   * 一张单可能装几十个买家地址，用张数会严重低估工作量——仓管要跑几趟看的是这个数。
+   * 拿不到就不显示，不能因为一个角标把页面搞挂。
+   */
   const [pending, setPending] = useState(0);
 
   useEffect(() => {
     let alive = true;
     async function load() {
       try {
-        const row = await api<{ total: number }>("/api/outbound/pending-count");
-        if (alive) setPending(row.total);
+        const row = await api<{ packages: number }>("/api/outbound/pending-count");
+        if (alive) setPending(row.packages);
       } catch {
         /* 静默失败：角标只是提示，不该弹错误 */
       }
     }
     void load();
-    // 确认发货之后角标要立刻减一，别让人等 60 秒
+    // 确认发货之后角标要立刻减，别让人等 60 秒
     const onChanged = () => void load();
     window.addEventListener("suteng:pending-changed", onChanged);
     const timer = setInterval(load, 60_000);
@@ -140,7 +144,7 @@ export function AppShell({
             {item.href === "/outbound" && pending > 0 ? (
               <span
                 className="ml-auto min-w-[17px] rounded-full bg-danger px-1.5 text-center text-[10.5px] font-semibold leading-[17px] text-white"
-                title={`${pending} 张发货工单待确认`}
+                title={`${pending} 个包裹待发出`}
               >
                 {pending}
               </span>

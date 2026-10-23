@@ -48,6 +48,10 @@ type Line = {
   batchNo: string;
   /** 定制款：勾选的件 id。qty 始终等于它的长度 */
   instanceIds: string[];
+  /** 自定义收货信息 / 单号 */
+  receiverInfo: string;
+  externalNo: string;
+  trackingNo: string;
   avail: SkuAvailability | null;
   availLoading: boolean;
   /** 定制款：是否展开选件面板 */
@@ -74,6 +78,8 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
   const [receiverName, setReceiverName] = useState("");
   const [trackingNo, setTrackingNo] = useState("");
   const [remark, setRemark] = useState("");
+  /** 整单通用地址：默认收起，一单多地址才是常态 */
+  const [wholeAddrOpen, setWholeAddrOpen] = useState(false);
 
   const [lines, setLines] = useState<Line[]>([]);
   const [error, setError] = useState("");
@@ -174,21 +180,9 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
   }
 
   function addLine(option: SkuOption, qty = 1) {
-    const existing = lines.find((l) => l.skuId === option.skuId);
-
-    if (existing) {
-      // 定制款按件出，一件就是一行里的一个勾选项，不能叠数量
-      if (option.variantType === "custom") {
-        toast.info("这一款已经在单里了，去那一行勾选要出的件");
-        return;
-      }
-      setLines((prev) =>
-        prev.map((l) => (l.key === existing.key ? { ...l, qty: l.qty + qty } : l)),
-      );
-      focusQty(existing.key);
-      return;
-    }
-
+    // 一单多地址以后，**同一个款出现多次是正常的**——三个买家都买「米白沙发」
+    // 就是三行、三个地址、三个包裹。以前那种「已存在就叠数量」的写法会把
+    // 三个人的货并成一个包裹，只打一张出货单，仓库当场就乱。所以一律新建一行。
     const key = newKey();
     const line: Line = {
       ...option,
@@ -199,6 +193,9 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
       avail: null,
       availLoading: true,
       picking: option.variantType === "custom",
+      receiverInfo: "",
+      externalNo: "",
+      trackingNo: "",
     };
 
     setLines((prev) => [...prev, line]);
@@ -263,9 +260,18 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
   function validate(mode: "draft" | "submit" | "approve"): string {
     if (lines.length === 0) return "先搜一个款、加一行货，再保存";
 
-    // 发货工单是给仓库照着发的，没有收货信息仓管发不出去
-    if (mode === "submit" && !receiverName.trim()) {
-      return "发货工单要填收货信息（姓名、电话、地址），不然后面发不出去";
+    // 发货工单是给仓库照着发的：一行一个包裹，每个包裹都得有地址。
+    // 普通草稿不拦——录到一半出去接个电话是常事。
+    if (mode !== "draft" && !receiverName.trim()) {
+      const missing = lines
+        .map((l, i) => ({ line: i + 1, ok: !!l.receiverInfo.trim() }))
+        .filter((x) => !x.ok)
+        .map((x) => x.line);
+      if (missing.length > 0) {
+        const shown = missing.slice(0, 6).join("、");
+        const more = missing.length > 6 ? ` 等 ${missing.length} 行` : "";
+        return `第 ${shown}${more} 行还没填收货信息。一行就是一个包裹，没地址仓管发不出去`;
+      }
     }
 
     for (const line of lines) {
@@ -329,6 +335,10 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
             qty: l.qty,
             batchNo: l.variantType === "custom" ? null : l.batchNo || null,
             instanceIds: l.variantType === "custom" ? l.instanceIds : [],
+            // 一行一个包裹：地址、订单号、物流单号都跟着行走
+            receiverInfo: l.receiverInfo.trim() || null,
+            externalNo: l.externalNo.trim() || null,
+            trackingNo: l.trackingNo.trim() || null,
           })),
           approveNow,
           submitAfterSave: mode === "submit",
@@ -369,8 +379,8 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
           </h1>
           <p className="mt-0.5 text-[12.5px] text-muted">
             {isClerk
-              ? "选款 → 填收货信息和数量 → 提交给仓管。提交后库存不动，等仓管点了确认才扣。"
-              : "搜名称或拼音首字母选款 → 填数量 → 保存。审核后库存立即扣减。"}
+              ? "搜款 → 每个商品填这个买家的收货信息 → 提交给仓管。提交后库存不动，仓管确认才扣。"
+              : "搜款 → 每个商品填这个买家的收货信息 → 保存。一行就是一个包裹，打印时按地址拆开。"}
           </p>
         </div>
       </div>
@@ -603,6 +613,68 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
                         </button>
                       </div>
 
+                      {/* 这一行的收货信息：一行 = 一个买家 = 一个包裹。
+                          淘宝店绝大多数订单是一商品一地址，地址挂在行上，
+                          一张出库单才装得下当天几十个买家，不用建几十张单。 */}
+                      <div className="border-t border-line-2 px-2.5 py-2">
+                        <div className="flex items-start gap-2">
+                          <textarea
+                            className={`input min-h-[44px] flex-1 resize-y py-1.5 text-[12px] leading-[1.55] ${
+                              !line.receiverInfo.trim() && !receiverName.trim()
+                                ? "border-[#e8c4bb]"
+                                : ""
+                            }`}
+                            rows={2}
+                            maxLength={300}
+                            value={line.receiverInfo}
+                            onChange={(e) => updateLine(line.key, { receiverInfo: e.target.value })}
+                            placeholder="收货信息：姓名，电话，收货地址（从后台整段复制粘贴，不用拆开填）"
+                          />
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            onClick={() => {
+                              const prev = lines[index - 1];
+                              if (!prev) return;
+                              updateLine(line.key, {
+                                receiverInfo: prev.receiverInfo,
+                                externalNo: prev.externalNo,
+                                trackingNo: prev.trackingNo,
+                              });
+                            }}
+                            className="shrink-0 rounded-md border border-line bg-white px-2 py-[7px] text-[11.5px] text-ink-2 transition-colors hover:border-[#c9d3f5] hover:text-brand disabled:cursor-not-allowed disabled:opacity-40"
+                            title="同一个买家买了两件，地址复制上一行的"
+                          >
+                            同上
+                          </button>
+                        </div>
+
+                        <div className="mt-1.5 grid grid-cols-2 gap-2">
+                          <input
+                            className="input py-1 text-[11.5px] tnum"
+                            value={line.externalNo}
+                            maxLength={60}
+                            onChange={(e) => updateLine(line.key, { externalNo: e.target.value })}
+                            placeholder="淘宝订单号（选填）"
+                          />
+                          <input
+                            className="input py-1 text-[11.5px] tnum"
+                            value={line.trackingNo}
+                            maxLength={60}
+                            onChange={(e) => updateLine(line.key, { trackingNo: e.target.value })}
+                            placeholder="物流单号（选填，发货后也能补）"
+                          />
+                        </div>
+
+                        {!line.receiverInfo.trim() ? (
+                          <p className="mt-1 text-[11px] text-muted">
+                            {receiverName.trim()
+                              ? "这一行没填地址，打印时沿用下面的「整单地址」"
+                              : "这一行还没有地址，提交前必须填上——没地址发不出去"}
+                          </p>
+                        ) : null}
+                      </div>
+
                       {/* 定制款：在库件列表 */}
                       {line.variantType === "custom" && line.picking ? (
                         <div className="border-t border-line-2 bg-white px-2.5 py-2.5">
@@ -717,52 +789,60 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
                 <p className="mt-1 text-[11.5px] text-muted">次品区、报废区不走销售出库。</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="label" htmlFor="externalNo">
-                    淘宝订单号
-                  </label>
-                  <input
-                    id="externalNo"
-                    className="input tnum"
-                    value={externalNo}
-                    onChange={(e) => setExternalNo(e.target.value)}
-                    placeholder="选填，退货时靠它找回这张单"
-                    maxLength={60}
-                  />
-                </div>
-                <div>
-                  <label className="label" htmlFor="trackingNo">
-                    物流单号
-                  </label>
-                  <input
-                    id="trackingNo"
-                    className="input tnum"
-                    value={trackingNo}
-                    onChange={(e) => setTrackingNo(e.target.value)}
-                    placeholder="选填，发出去之后再补"
-                    maxLength={60}
-                  />
-                </div>
-              </div>
+              {/*
+                整单通用地址：只有一个买家、或一整单都发同一个地址时才用。
+                默认收起——一单几十个买家地址是常态，地址填在行上更清楚。
+                填了这里，商品行上没填地址的就沿用它（老单据也是这么回退的）。
+              */}
+              <div className="rounded-lg border border-line-2 bg-[#fbfcfd]">
+                <button
+                  type="button"
+                  onClick={() => setWholeAddrOpen((v) => !v)}
+                  className="flex w-full items-center justify-between px-3 py-2 text-left"
+                >
+                  <span className="text-[12.5px] font-medium text-ink-2">
+                    整单通用地址
+                    <span className="ml-1 font-normal text-muted">
+                      （可选，{receiverName.trim() ? "已填" : "整单发同一个地址时才用"}）
+                    </span>
+                  </span>
+                  {wholeAddrOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                </button>
 
-              {/* 收货信息整段粘进来就行：从淘宝后台复制的那串正好是「姓名，电话，地址」 */}
-              <div>
-                <label className="label" htmlFor="receiverName">
-                  收货信息
-                  <span className="ml-1 font-normal text-muted">（姓名、电话、地址）</span>
-                </label>
-                <textarea
-                  id="receiverName"
-                  className="input min-h-[78px] resize-y leading-[1.7]"
-                  value={receiverName}
-                  onChange={(e) => setReceiverName(e.target.value)}
-                  placeholder={"张伟，13812345678\n浙江省杭州市余杭区仓前街道文一西路 969 号 3 幢 1 单元 502"}
-                  maxLength={300}
-                />
-                <p className="mt-1 text-[11.5px] text-muted">
-                  从淘宝后台复制过来整段贴上即可，不用分开填。系统只当一段文字存，不拆分。
-                </p>
+                {wholeAddrOpen ? (
+                  <div className="space-y-2.5 border-t border-line-2 px-3 py-3">
+                    <p className="text-[11.5px] leading-5 text-muted">
+                      填了这里，商品行上没填地址的就用它。从淘宝后台复制过来整段贴上即可，
+                      系统只当一段文字存，不拆分。
+                    </p>
+                    <textarea
+                      id="receiverName"
+                      className="input min-h-[70px] resize-y text-[12.5px] leading-[1.7]"
+                      value={receiverName}
+                      onChange={(e) => setReceiverName(e.target.value)}
+                      placeholder={"张伟，13812345678\n浙江省杭州市余杭区仓前街道文一西路 969 号 3 幢 1 单元 502"}
+                      maxLength={300}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        id="externalNo"
+                        className="input py-1.5 text-[12px] tnum"
+                        value={externalNo}
+                        onChange={(e) => setExternalNo(e.target.value)}
+                        placeholder="整单淘宝订单号"
+                        maxLength={60}
+                      />
+                      <input
+                        id="trackingNo"
+                        className="input py-1.5 text-[12px] tnum"
+                        value={trackingNo}
+                        onChange={(e) => setTrackingNo(e.target.value)}
+                        placeholder="整单物流单号"
+                        maxLength={60}
+                      />
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <div>
@@ -820,7 +900,7 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
       <div className="sticky bottom-0 -mx-4 border-t border-line bg-canvas/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="tnum text-[12px] text-muted">
-            {lines.length} 行 · 合计 <b className="text-[14px] text-ink">{totalQty}</b> {totalUnit}
+            {lines.length} 个包裹 · 合计 <b className="text-[14px] text-ink">{totalQty}</b> {totalUnit}
             {customQty > 0 ? ` · 其中 ${customQty} 件按件出库` : ""}
           </span>
           <div className="flex flex-wrap justify-end gap-2">
@@ -934,7 +1014,7 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
         }
       >
         <div className="space-y-3 pt-1">
-          <div className="grid grid-cols-2 gap-3 rounded-lg bg-[#fbfcfd] px-3 py-2.5 text-[12.5px]">
+          <div className="grid grid-cols-3 gap-3 rounded-lg bg-[#fbfcfd] px-3 py-2.5 text-[12.5px]">
             <div>
               <div className="text-[11.5px] text-muted">业务日期</div>
               <div className="tnum mt-0.5 font-medium text-ink">{bizDate}</div>
@@ -946,40 +1026,46 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
               </div>
             </div>
             <div>
-              <div className="text-[11.5px] text-muted">淘宝订单号</div>
-              <div className="tnum mt-0.5 text-ink">{externalNo.trim() || "—"}</div>
-            </div>
-            <div className="col-span-2">
-              <div className="text-[11.5px] text-muted">收货信息</div>
-              <div className="mt-0.5 whitespace-pre-line leading-[1.7] text-ink">
-                {receiverName.trim() || "—"}
+              <div className="text-[11.5px] text-muted">包裹数</div>
+              <div className="tnum mt-0.5 font-medium text-ink">
+                {lines.length} 个<span className="ml-1 text-[11px] font-normal text-muted">一行一个</span>
               </div>
             </div>
           </div>
 
-          <ul className="max-h-[230px] space-y-1.5 overflow-y-auto pr-1">
+          <ul className="max-h-[260px] space-y-1.5 overflow-y-auto pr-1">
             {lines.map((l, i) => (
-              <li key={l.key} className="flex items-center gap-2 text-[12.5px]">
-                <span className="tnum w-4 shrink-0 text-muted">{i + 1}</span>
-                <span className="min-w-0 flex-1 truncate text-ink">
-                  {l.productName}
-                  <span className="ml-1 text-ink-2">{colorText(l.colorName)}</span>
-                  {l.variantType === "custom" ? (
-                    <span className="ml-1 text-[11px] text-[#a15f12]">
-                      ·{l.instanceIds.length} 件指定编号
-                    </span>
-                  ) : null}
-                </span>
-                <span className={`tnum shrink-0 font-semibold ${l.qty >= 100 ? "text-[#c0553f]" : "text-ink"}`}>
-                  ×{l.qty} {l.unit}
-                </span>
+              <li key={l.key} className="rounded-lg border border-line-2 px-2.5 py-1.5">
+                <div className="flex items-center gap-2 text-[12.5px]">
+                  <span className="tnum w-4 shrink-0 text-muted">{i + 1}</span>
+                  <span className="min-w-0 flex-1 truncate text-ink">
+                    {l.productName}
+                    <span className="ml-1 text-ink-2">{colorText(l.colorName)}</span>
+                    {l.variantType === "custom" ? (
+                      <span className="ml-1 text-[11px] text-[#a15f12]">
+                        ·{l.instanceIds.length} 件指定编号
+                      </span>
+                    ) : null}
+                  </span>
+                  <span
+                    className={`tnum shrink-0 font-semibold ${l.qty >= 100 ? "text-[#c0553f]" : "text-ink"}`}
+                  >
+                    ×{l.qty} {l.unit}
+                  </span>
+                </div>
+                <div className="mt-0.5 truncate pl-6 text-[11.5px] text-muted">
+                  {l.receiverInfo.trim().replace(/\s+/g, " ") ||
+                    (receiverName.trim()
+                      ? "沿用整单地址"
+                      : "还没填收货信息")}
+                </div>
               </li>
             ))}
           </ul>
 
           <div className="flex items-center justify-between border-t border-line-2 pt-2.5 text-[12.5px]">
             <span className="text-muted">
-              共 {lines.length} 行
+              共 {lines.length} 个包裹
               {customQty > 0 ? ` · 其中 ${customQty} 件按件出库` : ""}
             </span>
             <span className="tnum font-semibold text-ink">
@@ -994,10 +1080,13 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
             </div>
           ) : null}
 
-          {!externalNo.trim() ? (
-            <p className="text-[11.5px] leading-5 text-muted">
-              没填淘宝订单号。以后这单要退货，得靠订单号找回原单——能填就填上。
-            </p>
+          {lines.some((l) => !l.receiverInfo.trim()) && !receiverName.trim() ? (
+            <div className="flex items-start gap-1.5 rounded-lg bg-[#fdf1f1] px-3 py-2 text-[12px] leading-5 text-danger">
+              <AlertCircle size={13} className="mt-0.5 shrink-0" />
+              有{" "}
+              {lines.filter((l) => !l.receiverInfo.trim()).length} 行还没填收货信息，
+              这样提交不了——一行就是一个包裹，没地址发不出去。
+            </div>
           ) : null}
 
           {confirm?.mode === "submit" ? (

@@ -26,6 +26,18 @@ export const outboundItemSchema = z
     /** 定制款：出库的是哪几件（编号 id）。常规款传空数组 */
     instanceIds: z.array(z.string().trim().min(1)).max(50, "一行最多 50 件").optional().default([]),
     remark: z.string().trim().max(100, "行备注最多 100 个字").optional().nullable(),
+    /**
+     * 这一行的收货信息：一行 = 一个买家 = 一个包裹。
+     * 留空表示沿用单据上的整单地址（老单据、单买家场景都靠这个回退）。
+     */
+    receiverInfo: z
+      .string()
+      .trim()
+      .max(300, "收货信息最多 300 个字，超了请精简一下地址")
+      .optional()
+      .nullable(),
+    externalNo: z.string().trim().max(60, "订单号过长").optional().nullable(),
+    trackingNo: z.string().trim().max(60, "物流单号过长").optional().nullable(),
   })
   .superRefine((val, ctx) => {
     const ids = val.instanceIds ?? [];
@@ -66,27 +78,16 @@ export const createOutboundSchema = z
       .nullable(),
     trackingNo: z.string().trim().max(60, "物流单号过长").optional().nullable(),
     remark: z.string().trim().max(500, "备注最多 500 个字").optional().nullable(),
-    items: z.array(outboundItemSchema).min(1, "至少录入一行").max(100, "一张单最多 100 行，请拆单"),
+    /** 一张单就是一天的量：200 行 ≈ 200 个包裹，再多就拆单 */
+    items: z.array(outboundItemSchema).min(1, "至少录入一行").max(200, "一张单最多 200 行，请拆单"),
     /** true = 保存并立即审核生效；false = 只存草稿 */
     approveNow: z.boolean().optional().default(true),
     /** true = 存成「待发货工单」交给仓管（内勤用的就是这个） */
     submitAfterSave: z.boolean().optional().default(false),
-  })
-  .superRefine((val, ctx) => {
-    // 同一个颜色同一个批次出现两次，其实是一行，合并掉更清楚
-    const seen = new Set<string>();
-    val.items.forEach((item, index) => {
-      const key = `${item.skuId}__${item.batchNo ?? ""}`;
-      if (seen.has(key)) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["items", index, "skuId"],
-          message: "同一颜色同一批次重复了，请合并成一行",
-        });
-      }
-      seen.add(key);
-    });
   });
+// 注意：这里**不做「同 SKU 同批次」去重**。一单多地址以后，三个买家都买
+// 「米白沙发·同批次」就是三行相同 SKU，这是正常情况，去重会把人正常录单挡在门外。
+// 防重复录入靠提交前的确认弹窗把整单摆出来看一眼，比在服务端猜意图管用。
 
 export type CreateOutboundInput = z.infer<typeof createOutboundSchema>;
 
@@ -121,6 +122,38 @@ export const updateOutboundInfoSchema = z
   });
 
 export type UpdateOutboundInfoInput = z.infer<typeof updateOutboundInfoSchema>;
+
+/**
+ * 按行确认发货。
+ * 一单几十个地址，缺货是常态：发出哪几行就传哪几行，剩下的挂着等。
+ * 传空数组会被拒——「什么都没发」不该产生一条发货记录。
+ */
+export const shipOutboundSchema = z.object({
+  itemIds: z
+    .array(z.string().trim().min(1))
+    .min(1, "至少选一个要发出的包裹")
+    .max(200, "一次最多确认 200 行"),
+});
+
+export type ShipOutboundInput = z.infer<typeof shipOutboundSchema>;
+
+/** 改某一行的收货信息（只许改还没发出的行） */
+export const updateOutboundItemSchema = z
+  .object({
+    receiverInfo: z
+      .string()
+      .trim()
+      .max(300, "收货信息最多 300 个字，超了请精简一下地址")
+      .optional()
+      .nullable(),
+    externalNo: z.string().trim().max(60, "订单号过长").optional().nullable(),
+    trackingNo: z.string().trim().max(60, "物流单号过长").optional().nullable(),
+  })
+  .refine((v) => Object.values(v).some((x) => x !== undefined), {
+    message: "没有要修改的内容",
+  });
+
+export type UpdateOutboundItemInput = z.infer<typeof updateOutboundItemSchema>;
 
 /** 可用量查询：一次问多个 SKU，避免选中一个查一次 */
 export const availabilityQuerySchema = z.object({

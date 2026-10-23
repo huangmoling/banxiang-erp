@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Loader2, Pencil, Trash2 } from "lucide-react";
+import { Check, Loader2, Pencil, Printer, Trash2 } from "lucide-react";
 import { ApiError, api } from "@/lib/api-client";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
@@ -25,11 +26,15 @@ export function OutboundDocActions({
     | "status"
     | "totalQty"
     | "items"
+    | "itemCount"
     | "pendingShip"
     | "receiverName"
     | "trackingNo"
     | "externalNo"
     | "remark"
+    | "pendingCount"
+    | "shippedCount"
+    | "hasShipped"
   >;
   role: string;
 }) {
@@ -57,11 +62,11 @@ export function OutboundDocActions({
     setApproving(true);
     try {
       await api(`/api/outbound/${doc.id}/approve`, { method: "POST" });
-      // 侧栏红角标立刻减一，不用等下一轮轮询
+      // 侧栏红角标立刻跟着减，不用等下一轮轮询
       window.dispatchEvent(new Event("suteng:pending-changed"));
       toast.success(
         doc.pendingShip
-          ? `已确认发货，${doc.totalQty} ${unit} 扣了库存`
+          ? `已确认发货：${doc.pendingCount} 个包裹扣了库存`
           : `已审核，${doc.totalQty} ${unit} 已出库`,
       );
       router.refresh();
@@ -110,32 +115,47 @@ export function OutboundDocActions({
     }
   }
 
-  // 已生效的单据不再能审核 / 删除，但可以红冲（把账按原路退回去）
+  // 已生效的单据不再能审核 / 删除，但可以打印、可以红冲（把账按原路退回去）
   if (doc.status !== "draft") {
     return (
-      <VoidDocButton
-        id={doc.id}
-        docNo={doc.docNo}
-        type="outbound"
-        status={doc.status as DocStatus}
-        totalQty={doc.totalQty}
-        unit={unit}
-      />
+      <div className="flex flex-wrap items-center gap-2">
+        <Link href={`/print/outbound/${doc.id}?mode=pick`} className="btn-ghost btn-sm">
+          <Printer size={13} />
+          打印出货单
+        </Link>
+        <VoidDocButton
+          id={doc.id}
+          docNo={doc.docNo}
+          type="outbound"
+          status={doc.status as DocStatus}
+          totalQty={doc.totalQty}
+          unit={unit}
+        />
+      </div>
     );
   }
 
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
-        {!isClerk ? (
+        {/* 打印是最常用的动作：仓管拿着纸单去货架找货，比盯屏幕快 */}
+        <Link href={`/print/outbound/${doc.id}?mode=pick`} className="btn-ghost btn-sm">
+          <Printer size={13} />
+          打印出货单
+        </Link>
+
+        {!isClerk && doc.pendingCount > 0 ? (
           <button
             type="button"
             className="btn-primary btn-sm"
             onClick={approve}
             disabled={approving}
+            title="把还没发的行一次全发掉；只想发一部分，在下面明细里勾选后点「确认发出」"
           >
             {approving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-            {doc.pendingShip ? "确认，已出货" : "审核出库"}
+            {doc.pendingCount === doc.itemCount
+              ? "审核出库"
+              : `全部确认发出（${doc.pendingCount}）`}
           </button>
         ) : null}
 
@@ -146,18 +166,21 @@ export function OutboundDocActions({
           disabled={approving}
         >
           <Pencil size={13} />
-          改收货信息
+          {doc.receiverName ? "改整单地址" : "设整单地址"}
         </button>
 
-        <button
-          type="button"
-          className="btn-danger btn-sm"
-          onClick={() => setConfirmOpen(true)}
-          disabled={approving}
-        >
-          <Trash2 size={14} />
-          {doc.pendingShip ? "撤销工单" : "删除草稿"}
-        </button>
+        {/* 有行发出去过就不许整单删：删了流水会跟着消失，货却已经走了 */}
+        {!doc.hasShipped ? (
+          <button
+            type="button"
+            className="btn-danger btn-sm"
+            onClick={() => setConfirmOpen(true)}
+            disabled={approving}
+          >
+            <Trash2 size={14} />
+            {doc.pendingShip ? "撤销工单" : "删除草稿"}
+          </button>
+        ) : null}
       </div>
 
       <Modal
@@ -182,11 +205,11 @@ export function OutboundDocActions({
         }
       />
 
-      {/* 只改「不动货」的四项：明细和数量不在这里改，那些一动就影响库存 */}
+      {/* 单据级只留「整单通用地址」：真正的收货地址在每一行上 */}
       <Modal
         open={infoOpen}
-        title="改收货信息"
-        description="这里只能改收货信息、物流单号、订单号、备注。要改商品或数量，只能撤销后重新整理一张。"
+        title="整单通用地址"
+        description="填了这里，商品行上没填地址的就沿用它。一单只发一个买家时才需要；多买家就在各自的行上填。商品和数量不在这里改。"
         onClose={() => (saving ? undefined : setInfoOpen(false))}
         width="max-w-[520px]"
         footer={

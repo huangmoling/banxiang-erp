@@ -252,6 +252,9 @@ export const returnRepository = {
                 { trackingNo: { contains: term } },
                 { receiverName: { contains: term } },
                 { items: { some: { sku: { product: { name: { contains: term } } } } } },
+                // 地址在行上：按买家姓名、手机号、城市找那张出库单
+                { items: { some: { receiverInfo: { contains: term } } } },
+                { items: { some: { externalNo: { contains: term } } } },
               ],
             }
           : {}),
@@ -262,6 +265,7 @@ export const returnRepository = {
           select: {
             qty: true,
             returnedQty: true,
+            receiverInfo: true,
             sku: { select: { colorName: true, product: { select: { name: true } } } },
           },
         },
@@ -286,6 +290,9 @@ export const returnRepository = {
             qty: true,
             returnedQty: true,
             batchNo: true,
+            // 一单多地址以后，退货必须能按地址认出退的是哪个买家
+            receiverInfo: true,
+            externalNo: true,
             sku: {
               select: {
                 colorName: true,

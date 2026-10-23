@@ -27,6 +27,12 @@ ENV DATABASE_URL="file:/tmp/build-placeholder.db" \
 COPY . .
 RUN npx prisma generate && npx next build
 
+# 把 prisma CLI 连同它的依赖闭包（含 linux 原生引擎）打成一个自包含目录，
+# 运行阶段直接拿过去用。原因见 scripts/bundle-prisma-cli.mjs 顶部注释：
+# 这台 NAS 的构建容器连 registry.npmjs.org 的 DNS 都解析不了，运行阶段
+# 只要需要联网装包，这一层就永远只能靠缓存蒙，`prisma/` 一变就构建失败。
+RUN node scripts/bundle-prisma-cli.mjs /app/node_modules /prisma-cli
+
 # ---------- 运行阶段 ----------
 FROM node:22-bookworm-slim AS runner
 WORKDIR /app
@@ -46,10 +52,12 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# 迁移用的 Prisma CLI 单独全局安装。
-# 不复制构建阶段的 node_modules/prisma —— 它有 effect / empathic 等传递依赖，
-# 只拷目录会在运行时抛 MODULE_NOT_FOUND；全局安装能保证依赖闭包完整。
-RUN npm i -g prisma@6.16.2 --no-audit --no-fund
+# 迁移用的 Prisma CLI：从构建阶段整套搬过来（JS + 依赖 + linux 原生引擎）。
+# 不再 `npm i -g prisma@6.16.2` ——那一步需要外网，NAS 的构建容器解析不了 npm registry，
+# 以前能过只是因为 Docker 层缓存没失效；只要 prisma/ 目录一变（加迁移就会变），
+# 缓存作废、构建必挂。整套搬运全程离线，且与构建期用的是同一份 CLI 版本。
+COPY --from=builder /prisma-cli /opt/prisma-cli
+ENV PATH="/opt/prisma-cli:${PATH}"
 
 # slim 运行镜像里没有 openssl，Prisma 会据此把部署平台判定成 debian-openssl-1.1.x，
 # 与构建时生成（3.0.x）不一致，启动即报找不到 Query Engine。

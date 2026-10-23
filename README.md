@@ -109,6 +109,17 @@ docker compose up -d --build
    拷 `/usr/bin/openssl` 与 `libssl.so.3` / `libcrypto.so.3`（同版本 Debian，ABI 一致）。
 5. 不要在 `schema.prisma` 里写多个 `binaryTargets`：会触发联网下载引擎，
    而内网常解析不了 `binaries.prisma.sh`，构建直接失败。只留 `native`。
+6. **运行阶段一个包都不许联网装**（2026-10-23 踩的）。原来 `RUN npm i -g prisma@6.16.2`
+   能过，纯粹是吃了 Docker 层缓存；P11 改了 `prisma/` 目录（加迁移），缓存作废，
+   这一层重新执行时 `getaddrinfo EAI_AGAIN registry.npmjs.org` 直接构建失败——
+   NAS 的构建容器**连 npm registry 的 DNS 都解析不了**（实测 `getent hosts` 无结果）。
+   现在改成 `RUN node scripts/bundle-prisma-cli.mjs` 在 builder 里把 CLI 的依赖闭包
+   （34 个包、约 200 MB，含 linux 原生引擎）拷成 `/prisma-cli`，运行阶段 `COPY` 过来，
+   全程离线、版本与构建期完全一致。**以后往运行阶段加任何 `npm i` / `apt install`
+   都是同一个雷**：本地有缓存看不出，哪天上游目录一变就炸。
+7. `fs.cpSync` 在 Windows 上拷 `node_modules/prisma` 会把 node 进程打死
+   （无任何报错、退出码 127）。`bundle-prisma-cli.mjs` 因此手写递归拷贝，
+   在容器（Linux）里跑反而没这个问题——但脚本要保持手写版本，因为本机也要能试跑。
 
 ### 部署到 NAS（当前在用的就是这套）
 
@@ -494,6 +505,28 @@ suteng-erp/
     2026-10-23 的「每天第一次打开跳到 0.0.0.0:3000」就是这条踩的：访问令牌 8 小时过期，
     隔天首次访问走 `session-refresh` 换令牌，成功分支用 origin 拼了绝对地址。
     **不要用 `experimental.trustHostHeader` 绕过**——它固定拼 `https://`，局域网 http 直接废。
+36. **一张出库单 = 一天一批发货，一行 = 一个包裹 = 一个买家。** P11 之后
+    「一单一地址」作废：`document_items.receiverInfo / externalNo / trackingNo` 是行级字段，
+    **行级留空就回退到单据级** `documents.receiverName / trackingNo / externalNo`。
+    回退只做在 `outbound.service.ts` 的 `resolveLine()` 一处，读的地方一律走它，
+    不要在 repository 里自己 `?? doc.receiverName`——散在十几处，改一次漏三处。
+    老单据、退货挂靠、打印都靠这个回退，所以行级字段**永远可以是空的**，别加 NOT NULL。
+37. **发货必须按行确认，`shippedAt` 非空 = 这一行发了。** 判据只看
+    `document_items.shippedAt`，不要拿 `documents.status` 推——部分发出的单 `status` 还是 `draft`。
+    全部行都发了才 `markApproved`。`ship(id, itemIds)` 里 `itemIds = null` 表示「全部未发行」，
+    只对选中的行做库存校验与扣减，**不要为了省事整单扣完再标记**（会多扣没发的行的库存）。
+    条件更新 `where shippedAt: null` + 比对影响行数，是防重复发货的唯一手段：
+    两个仓管同时点「确认发出」时，第二个必须拿到 409，不能把库存扣两遍。
+38. **有行发出去过，就不能整单删除。** `remove()` 里 `shipped > 0` 直接 409。
+    删单会级联删明细、而流水挂在单上，库存数字会凭空回来——这比「删不掉」危险得多。
+    要作废走红冲。反过来，**没发的行可以单独删**（`removeItem`）：删完 `recountItems()`，
+    剩下的行全发了就自动结案。删最后一行要拦——空单没有意义。
+39. **打印页在 `(app)` 组之外，零依赖，不引任何库、不生成 PDF。**
+    `/print/outbound/[id]` 自己注入 `@page` 的 `size`（A4 / `100mm 150mm`），
+    靠 `window.print()` 交给浏览器。同一个路由两种纸靠 `?mode=pick|label` 切换，
+    范围靠 `?scope=unshipped|shipped|all`。**按地址分组合并包裹的逻辑只在 `buildGroups()`**
+    （`print-sheet.tsx`），改分组规则就改那一处，否则屏幕上的包裹数和纸上的对不上。
+    默认 `scope=unshipped`：打印的目的是「拿着去找货」，把发过的打出来只会让人多跑一趟。
 
 
 ## 已知限制

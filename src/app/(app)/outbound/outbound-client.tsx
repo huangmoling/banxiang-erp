@@ -140,7 +140,9 @@ export function OutboundClient({
       {/* 待发货压着没发，是最该被看见的一件事，所以压在最上面 */}
       {data.counts.pending > 0 && status !== "pending" ? (
         <div className="flex flex-wrap items-center gap-2 rounded-card border border-[#f3cfc9] bg-danger-soft px-3.5 py-2.5 text-[12.5px] text-danger">
-          <b className="tnum text-[15px]">{data.counts.pending}</b> 张发货工单还等着发出去，库存还没扣。
+          <b className="tnum text-[15px]">{data.counts.pendingPackages}</b> 个包裹还等着发出去
+          <span className="text-[#a8544a]">（{data.counts.pending} 张单）</span>
+          ，库存还没扣。
           <button
             type="button"
             onClick={() => {
@@ -186,9 +188,9 @@ export function OutboundClient({
                   <th className="th w-[150px]">单号</th>
                   <th className="th w-[104px]">业务日期</th>
                   <th className="th">内容</th>
-                  <th className="th w-[88px] text-right">数量</th>
-                  <th className="th w-[132px]">淘宝订单号</th>
-                  <th className="th w-[86px]">状态</th>
+                  <th className="th w-[92px] text-right">数量</th>
+                  <th className="th w-[168px]">收货地址</th>
+                  <th className="th w-[92px]">状态</th>
                   <th className="th w-[92px]">制单</th>
                   <th className="th w-[32px]" />
                 </tr>
@@ -213,8 +215,30 @@ export function OutboundClient({
                       <span className="ml-0.5 text-[11.5px] font-normal text-muted">
                         {doc.items[0]?.unit ?? "件"}
                       </span>
+                      {doc.hasShipped ? (
+                        <div className="text-[11px] font-normal text-muted">
+                          已发 {doc.shippedCount}/{doc.itemCount}
+                        </div>
+                      ) : null}
                     </td>
-                    <td className="td tnum text-[12.5px] text-ink-2">{doc.externalNo ?? "—"}</td>
+                    {/* 一单多地址以后，这里显示「几个包裹 + 第一个地址」，
+                        比原来单列淘宝订单号信息量大得多 */}
+                    <td className="td">
+                      {doc.itemCount > 1 ? (
+                        <>
+                          <div className="text-[12.5px] text-ink-2">
+                            {doc.itemCount} 个地址
+                          </div>
+                          <div className="truncate text-[11.5px] text-muted">
+                            {shortAddress(doc)}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="truncate text-[12.5px] text-ink-2">
+                          {shortAddress(doc) || "—"}
+                        </div>
+                      )}
+                    </td>
                     <td className="td">
                       <StatusTag doc={doc} />
                     </td>
@@ -274,6 +298,14 @@ export function OutboundClient({
   );
 }
 
+/** 列表里地址只放得下一行，取第一行再压平空白 */
+function shortAddress(doc: OutboundDocView): string {
+  const raw = doc.items[0]?.receiverInfo;
+  if (!raw) return "";
+  const first = raw.split("\n").map((s) => s.trim()).filter(Boolean)[0] ?? "";
+  return first.length > 24 ? `${first.slice(0, 24)}…` : first;
+}
+
 function StatusTag({ doc }: { doc: OutboundDocView }) {
   // 待发货单独一个标签：它虽然也是 draft，但对仓管来说它是「该干的活」，不是「别人没填完的单」
   if (doc.pendingShip) {
@@ -281,7 +313,22 @@ function StatusTag({ doc }: { doc: OutboundDocView }) {
     return (
       <span className={`tag ${late ? "bg-[#fdf1f1] text-danger" : "bg-brand-soft text-brand"}`}>
         待发货
+        {doc.hasShipped ? (
+          <span className="tnum opacity-80">
+            {" "}
+            {doc.shippedCount}/{doc.itemCount}
+          </span>
+        ) : null}
         {late ? <span className="opacity-80">·等 {doc.waitedDays} 天</span> : null}
+      </span>
+    );
+  }
+
+  // 部分发出：既不是草稿也不该说「未扣库存」，盯着它的人关心的是还欠几个
+  if (doc.status === "draft" && doc.hasShipped) {
+    return (
+      <span className="tag bg-brand-soft text-brand">
+        已发 {doc.shippedCount}/{doc.itemCount}
       </span>
     );
   }

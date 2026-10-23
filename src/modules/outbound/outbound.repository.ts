@@ -12,6 +12,12 @@ export const outboundItemSelect = {
   qty: true,
   batchNo: true,
   remark: true,
+  // 行级收货信息：一行一个包裹。留空时由服务层回退到单据上的整单地址
+  receiverInfo: true,
+  externalNo: true,
+  trackingNo: true,
+  shippedAt: true,
+  shippedBy: { select: { displayName: true } },
   sku: {
     select: {
       colorName: true,
@@ -71,6 +77,10 @@ export type CreateItemData = {
   qty: number;
   batchNo: string | null;
   remark: string | null;
+  /** 这一行自己的收货信息 / 订单号 / 物流单号（可空 = 沿用单据） */
+  receiverInfo: string | null;
+  externalNo: string | null;
+  trackingNo: string | null;
 };
 
 export const outboundRepository = {
@@ -109,6 +119,10 @@ export const outboundRepository = {
               { receiverName: { contains: q } },
               { remark: { contains: q } },
               { items: { some: { sku: { product: { name: { contains: q } } } } } },
+              // 地址落到行上以后，按买家姓名 / 手机号 / 城市搜整单，只能走行级字段
+              { items: { some: { receiverInfo: { contains: q } } } },
+              { items: { some: { externalNo: { contains: q } } } },
+              { items: { some: { trackingNo: { contains: q } } } },
             ],
           }
         : {}),
@@ -132,9 +146,18 @@ export const outboundRepository = {
     return { items, total };
   },
 
-  /** 三个页签的计数。草稿与待发货互不重叠，加起来就是全部未审核的单 */
-  async counts(): Promise<{ draft: number; approved: number; pending: number }> {
-    const [draft, approved, pending] = await Promise.all([
+  /**
+   * 四个页签的计数。草稿与待发货互不重叠，加起来就是全部未审核的单。
+   * 待发货另外给一个「未发行数」（= 包裹数）：一张单可能装几十个地址，
+   * 只说「3 张单」会让人以为活儿很少。
+   */
+  async counts(): Promise<{
+    draft: number;
+    approved: number;
+    pending: number;
+    pendingPackages: number;
+  }> {
+    const [draft, approved, pending, pendingPackages] = await Promise.all([
       prisma.document.count({
         where: { type: "outbound", status: "draft", submittedAt: null },
       }),
@@ -142,34 +165,55 @@ export const outboundRepository = {
       prisma.document.count({
         where: { type: "outbound", status: "draft", submittedAt: { not: null } },
       }),
+      prisma.documentItem.count({
+        where: {
+          shippedAt: null,
+          document: { type: "outbound", status: "draft", submittedAt: { not: null } },
+        },
+      }),
     ]);
-    return { draft, approved, pending };
+    return { draft, approved, pending, pendingPackages };
   },
 
-  /** 仪表台与侧栏角标共用：待发货总张数 + 其中压过夜的张数与最早提交时间 */
+  /**
+   * 仪表台与侧栏角标共用。
+   * 一张单可能装几十个买家地址，所以「张数」已经不是工作量了——
+   * 真正要跑几趟看的是**未发出的明细行数**，也就是包裹数。
+   */
   async pendingSummary(since: Date): Promise<{
     total: number;
+    packages: number;
     today: number;
     overdue: number;
     oldestAt: Date | null;
   }> {
-    const where: Prisma.DocumentWhereInput = {
+    const docWhere: Prisma.DocumentWhereInput = {
       type: "outbound",
       status: "draft",
       submittedAt: { not: null },
     };
-    const [total, overdue, oldest] = await Promise.all([
-      prisma.document.count({ where }),
-      prisma.document.count({ where: { ...where, submittedAt: { lt: since } } }),
+    // 只数还没发的行：已发的行货已经走了，不该再提示
+    const itemWhere = (extra: Prisma.DocumentItemWhereInput = {}): Prisma.DocumentItemWhereInput => ({
+      shippedAt: null,
+      document: docWhere,
+      ...extra,
+    });
+
+    const [total, packages, overdue, oldest] = await Promise.all([
+      prisma.document.count({ where: docWhere }),
+      prisma.documentItem.count({ where: itemWhere() }),
+      prisma.documentItem.count({ where: itemWhere({ document: { ...docWhere, submittedAt: { lt: since } } }) }),
       prisma.document.findFirst({
-        where,
+        where: docWhere,
         orderBy: { submittedAt: "asc" },
         select: { submittedAt: true },
       }),
     ]);
+
     return {
       total,
-      today: total - overdue,
+      packages,
+      today: packages - overdue,
       overdue,
       oldestAt: oldest?.submittedAt ?? null,
     };
@@ -221,6 +265,9 @@ export const outboundRepository = {
             qty: true,
             batchNo: true,
             lineNo: true,
+            // 已发过的行不再参与确认：部分发货的基础
+            shippedAt: true,
+            receiverInfo: true,
             sku: {
               select: {
                 variantType: true,
@@ -249,6 +296,72 @@ export const outboundRepository = {
     return db.document.update({
       where: { id },
       data: { status: "approved", approvedById, approvedAt: new Date() },
+    });
+  },
+
+  /**
+   * 按行确认发出：给选中的行盖时间戳。
+   * 只认还没发的行（shippedAt: null），重复点确认不会把同一行扣两遍库存。
+   */
+  markItemsShipped(itemIds: string[], shippedById: string, at: Date, db: Db) {
+    return db.documentItem.updateMany({
+      where: { id: { in: itemIds }, shippedAt: null },
+      data: { shippedAt: at, shippedById },
+    });
+  },
+
+  /** 这张单还剩几行没发（0 = 全部发完，该结案了） */
+  countUnshipped(documentId: string, db: Db): Promise<number> {
+    return db.documentItem.count({ where: { documentId, shippedAt: null } });
+  },
+
+  /**
+   * 删掉一行（只允许删还没发的行，服务层已校验）。
+   * 删完要重算单据上的行数与件数，否则列表显示会对不上。
+   */
+  deleteItem(itemId: string, db: Db) {
+    return db.documentItem.delete({ where: { id: itemId } });
+  },
+
+  /** 删行后按真实剩余行重算冗余字段（行数、总件数），不靠前端传 */
+  async recountItems(documentId: string, db: Db): Promise<{ itemCount: number; totalQty: number }> {
+    const agg = await db.documentItem.aggregate({
+      where: { documentId },
+      _count: { _all: true },
+      _sum: { qty: true },
+    });
+    const itemCount = agg._count._all;
+    const totalQty = agg._sum.qty ?? 0;
+    await db.document.update({ where: { id: documentId }, data: { itemCount, totalQty } });
+    return { itemCount, totalQty };
+  },
+
+  /**
+   * 改某一行的收货信息 / 订单号 / 物流单号。
+   * 只碰这三样，数量与商品一律不动——那动了就要重算库存与批次。
+   */
+  updateItemInfo(
+    itemId: string,
+    data: { receiverInfo: string | null; externalNo: string | null; trackingNo: string | null },
+    db: Db | typeof prisma,
+  ) {
+    return db.documentItem.update({ where: { id: itemId }, data });
+  },
+
+  /** 单独读一行：校验它确实属于这张单、且还没发 */
+  findItem(documentId: string, itemId: string, db: Db | typeof prisma) {
+    return db.documentItem.findFirst({
+      where: { id: itemId, documentId },
+      select: {
+        id: true,
+        lineNo: true,
+        qty: true,
+        shippedAt: true,
+        receiverInfo: true,
+        externalNo: true,
+        trackingNo: true,
+        document: { select: { id: true, docNo: true, status: true, type: true, submittedAt: true } },
+      },
     });
   },
 

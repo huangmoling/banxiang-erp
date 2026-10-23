@@ -49,6 +49,7 @@ INCLUDE = [
     ".env.example",
     "README.md",
     "prisma",
+    "scripts",
     "src",
     "public",
 ]

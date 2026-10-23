@@ -9,6 +9,7 @@ import type {
   CreateOutboundInput,
   ListOutboundQuery,
   UpdateOutboundInfoInput,
+  UpdateOutboundItemInput,
 } from "./outbound.schema";
 import type {
   AvailabilityResult,
@@ -69,7 +70,50 @@ async function shortageWarningsOf(doc: OutboundDocRecord): Promise<string[]> {
   return warnings;
 }
 
-function toItemView(item: OutboundDocRecord["items"][number], codes: string[]): OutboundItemView {
+/**
+ * 行级字段留空时回退到单据上的整单地址。
+ * 老单据（地址只存在单据上）因此不用迁移就能原样显示、原样打印。
+ */
+function resolveLine(item: OutboundDocRecord["items"][number], doc: OutboundDocRecord) {
+  const own = item.receiverInfo?.trim();
+  return {
+    receiverInfo: own || doc.receiverName?.trim() || null,
+    receiverInherited: !own && !!doc.receiverName?.trim(),
+    externalNo: item.externalNo?.trim() || doc.externalNo?.trim() || null,
+    trackingNo: item.trackingNo?.trim() || doc.trackingNo?.trim() || null,
+  };
+}
+
+/**
+ * 交单之前逐行体检地址：一个包裹没地址，仓管拿着单也发不出去。
+ * 只拦「提交/立即发货」，普通草稿随便存——录到一半出去接个电话是常事。
+ */
+function assertReceiverComplete(
+  items: { receiverInfo?: string | null }[],
+  docReceiver: string | null,
+): void {
+  const fallback = docReceiver?.trim();
+  if (fallback) return; // 有整单地址兜底，行级不填也没关系
+
+  const missing: number[] = [];
+  items.forEach((item, index) => {
+    if (!item.receiverInfo?.trim()) missing.push(index + 1);
+  });
+  if (missing.length === 0) return;
+
+  const shown = missing.slice(0, 6).join("、");
+  const more = missing.length > 6 ? ` 等 ${missing.length} 行` : "";
+  throw new ValidationError(
+    `第 ${shown}${more} 行还没有填收货信息。一行就是一个包裹，没有地址仓管发不出去`,
+  );
+}
+
+function toItemView(
+  item: OutboundDocRecord["items"][number],
+  doc: OutboundDocRecord,
+  codes: string[],
+): OutboundItemView {
+  const line = resolveLine(item, doc);
   return {
     id: item.id,
     lineNo: item.lineNo,
@@ -83,6 +127,15 @@ function toItemView(item: OutboundDocRecord["items"][number], codes: string[]): 
     batchNo: item.batchNo,
     instanceCodes: codes,
     remark: item.remark,
+    receiverInfo: line.receiverInfo,
+    receiverInherited: line.receiverInherited,
+    externalNo: line.externalNo,
+    trackingNo: line.trackingNo,
+    shippedAt: item.shippedAt ? item.shippedAt.toISOString() : null,
+    shippedByName: item.shippedBy?.displayName ?? null,
+    // 已作废（红冲）的单按「全部已发」呈现：货当初确实走了、之后又被冲回来，
+    // 单据本身已经无效，不该再留一个点了必然 409 的「确认发出」按钮。
+    shipped: doc.status === "voided" || item.shippedAt !== null,
   };
 }
 
@@ -108,6 +161,10 @@ function waitedDaysOf(submittedAt: Date | null): number | null {
 function toView(doc: OutboundDocRecord, codesByItem?: Map<string, string[]>): OutboundDocView {
   const status = doc.status === "approved" ? "approved" : doc.status === "voided" ? "voided" : "draft";
   const submittedAt = doc.submittedAt ?? null;
+  const shippedCount =
+    status === "voided"
+      ? doc.items.length
+      : doc.items.filter((i) => i.shippedAt !== null).length;
 
   return {
     id: doc.id,
@@ -122,6 +179,11 @@ function toView(doc: OutboundDocRecord, codesByItem?: Map<string, string[]>): Ou
     remark: doc.remark,
     itemCount: doc.itemCount,
     totalQty: doc.totalQty,
+    shippedCount,
+    pendingCount: doc.items.length - shippedCount,
+    // 有行发出去过 = 这张单不能删（删了流水跟着走，库存会凭空回来）
+    hasShipped: shippedCount > 0,
+    allShipped: doc.items.length > 0 && shippedCount === doc.items.length,
     createdByName: doc.createdBy?.displayName ?? null,
     approvedByName: doc.approvedBy?.displayName ?? null,
     approvedAt: doc.approvedAt ? doc.approvedAt.toISOString() : null,
@@ -131,11 +193,11 @@ function toView(doc: OutboundDocRecord, codesByItem?: Map<string, string[]>): Ou
     createdAt: doc.createdAt.toISOString(),
     submittedAt: submittedAt ? submittedAt.toISOString() : null,
     submittedByName: doc.submittedBy?.displayName ?? null,
-    // 待发货 = 内勤交了、仓管还没点确认。审核后就不再算待办
-    pendingShip: status === "draft" && submittedAt !== null,
+    // 待发货 = 内勤交了、还有行没发出去。全部发完就不是待办了
+    pendingShip: status === "draft" && submittedAt !== null && shippedCount < doc.items.length,
     waitedDays: waitedDaysOf(submittedAt),
     preview: buildPreview(doc),
-    items: doc.items.map((item) => toItemView(item, codesByItem?.get(item.id) ?? [])),
+    items: doc.items.map((item) => toItemView(item, doc, codesByItem?.get(item.id) ?? [])),
   };
 }
 
@@ -354,6 +416,10 @@ export const outboundService = {
           qty: item.qty,
           batchNo: item.batchNo?.trim() || null,
           remark: item.remark?.trim() || null,
+          // 行级收货信息：一行一个包裹。留空就沿用单据上的整单地址
+          receiverInfo: item.receiverInfo?.trim() || null,
+          externalNo: item.externalNo?.trim() || null,
+          trackingNo: item.trackingNo?.trim() || null,
         })),
         tx,
       );
@@ -378,8 +444,13 @@ export const outboundService = {
       const approveNow = input.approveNow && !isClerk;
       const submitNow = input.submitAfterSave || isClerk;
 
+      // 交出去之前每个包裹都得有地址，否则仓管拿着单发不出去
+      if (approveNow || submitNow) {
+        assertReceiverComplete(input.items, input.receiverName ?? null);
+      }
+
       if (approveNow) {
-        await approveInTx(tx, id, actor.userId);
+        await shipItemsInTx(tx, id, null, actor.userId);
       } else if (submitNow) {
         // 内勤建完就直接进待发货，不留在自己手里当草稿——
         // 「存了忘了交」的孤儿单在仓库那边等于不存在，比什么都糟
@@ -422,6 +493,18 @@ export const outboundService = {
       throw new ForbiddenError("这单是别人整理的，内勤只能提交自己开的单");
     }
 
+    // 交给仓库之前把地址补齐：一行一个包裹，没地址的仓管发不出去
+    const missing = doc.items
+      .filter((i) => !(i.receiverInfo?.trim() || doc.receiverName?.trim()))
+      .map((i) => i.lineNo);
+    if (missing.length > 0) {
+      const shown = missing.slice(0, 6).join("、");
+      const more = missing.length > 6 ? ` 等 ${missing.length} 行` : "";
+      throw new ValidationError(
+        `第 ${shown}${more} 行还没有填收货信息，补齐再提交——仓管是照单发货的`,
+      );
+    }
+
     const warnings = await shortageWarningsOf(doc);
 
     await prisma.$transaction(async (tx) => {
@@ -438,11 +521,12 @@ export const outboundService = {
     return { doc: await outboundService.detail(id), warnings };
   },
 
-  /** 仪表台横幅与侧栏角标：今天还有多少张工单没发 */
+  /** 仪表台横幅与侧栏角标：还有多少个包裹没发（张数、包裹数一起给） */
   async pendingSummary(): Promise<PendingShipSummary> {
     const row = await outboundRepository.pendingSummary(startOfToday());
     return {
       total: row.total,
+      packages: row.packages,
       today: row.today,
       overdue: row.overdue,
       oldestAt: row.oldestAt ? row.oldestAt.toISOString() : null,
@@ -483,27 +567,56 @@ export const outboundService = {
     return outboundService.detail(id);
   },
 
-  /** 审核草稿：把单据变成负数流水，这一步之后库存才会减 */
-  async approve(id: string, actor: { userId: string; role: string }): Promise<OutboundDocView> {
+  /**
+   * 确认发货。
+   * 不传 itemIds = 把**所有还没发的行**一次发完（老的单地址单据走的还是这条路）；
+   * 传了 itemIds 就只发那几行，剩下的继续挂在待发货。
+   */
+  async ship(
+    id: string,
+    itemIds: string[] | null,
+    actor: { userId: string; role: string },
+  ): Promise<{ doc: OutboundDocView; shipped: number; remaining: number; allDone: boolean }> {
     // 接口层已经限了角色，这里再拦一道：内勤永远不能自己确认发货，
     // 否则「内勤提交、仓管确认」这个复核点就白设了
     if (actor.role === "clerk") {
       throw new ForbiddenError("内勤不能点确认发货，这一步要仓管来做");
     }
-    await prisma.$transaction(async (tx) => {
-      await approveInTx(tx, id, actor.userId);
+
+    const result = await prisma.$transaction(async (tx) => {
+      return shipItemsInTx(tx, id, itemIds, actor.userId);
     });
 
-    return outboundService.detail(id);
+    return { doc: await outboundService.detail(id), ...result };
   },
 
-  /** 删除草稿。删掉后行上锁定的定制件自动解锁（外键 SetNull） */
+  /** 兼容旧入口：整单确认 = 把剩下的全发掉 */
+  async approve(id: string, actor: { userId: string; role: string }): Promise<OutboundDocView> {
+    const { doc } = await outboundService.ship(id, null, actor);
+    return doc;
+  },
+
+  /**
+   * 删除草稿。删掉后行上锁定的定制件自动解锁（外键 SetNull）
+   *
+   * ⚠ 部分发出的单**绝不许删**：单据一删，明细和库存流水会级联消失，
+   * 但货已经走了——账上库存会凭空回来。这条校验只能硬拦，不能提示了事。
+   */
   async remove(id: string, actor: { userId: string; role: string }): Promise<void> {
     const doc = await outboundRepository.findById(id);
     if (!doc) throw new NotFoundError("找不到这张出库单");
     if (doc.status === "approved") {
-      throw new ConflictError("已生效的出库单不能删除。要更正请等红冲功能上线，或联系管理员");
+      throw new ConflictError("已生效的出库单不能删除。要更正请走红冲，或联系管理员");
     }
+
+    const shipped = doc.items.filter((i) => i.shippedAt).length;
+    if (shipped > 0) {
+      throw new ConflictError(
+        `这张单已经发出 ${shipped} 个包裹并扣了库存，不能整单删除。` +
+          `没发的行可以单独删掉；确实整单不做了，找管理员处理`,
+      );
+    }
+
     // 内勤撤销自己整理的单（填错了重来），别人的单不许动
     if (actor.role === "clerk" && doc.createdById && doc.createdById !== actor.userId) {
       throw new ForbiddenError("这单是别人整理的，内勤只能撤销自己开的单");
@@ -515,6 +628,116 @@ export const outboundService = {
 
     await writeAudit(actor.userId, "outbound.delete", id, `删除出库草稿「${doc.docNo}」`);
   },
+
+  /**
+   * 删掉单据里还没发出的某一行（客户取消、货彻底没有了）。
+   * 已发出的行不能删——它的流水已经进了库存账。
+   * 删完之后：剩下的行全发完了 ⇒ 单据自动结案；一行不剩 ⇒ 空壳单据一并删掉。
+   */
+  async removeItem(
+    id: string,
+    itemId: string,
+    actor: { userId: string; role: string },
+  ): Promise<{ doc: OutboundDocView; allDone: boolean }> {
+    const doc = await outboundRepository.findById(id);
+    if (!doc) throw new NotFoundError("找不到这张出库单");
+    if (doc.status === "approved") throw new ConflictError("这张单已经全部发完了，不能再删行");
+    if (doc.status === "voided") throw new ConflictError("这张单已作废");
+
+    if (actor.role === "clerk" && doc.createdById && doc.createdById !== actor.userId) {
+      throw new ForbiddenError("这单是别人整理的，内勤只能删自己开的单");
+    }
+
+    const item = doc.items.find((i) => i.id === itemId);
+    if (!item) throw new NotFoundError("这一行已经不在单据里了，请刷新页面");
+
+    if (item.shippedAt) {
+      throw new ConflictError(
+        `第 ${item.lineNo} 行已经发出去了（库存已扣、流水已记），不能删。` +
+          `如果是发错了，等管理员走红冲`,
+      );
+    }
+
+    if (doc.items.length === 1) {
+      throw new ConflictError("这是单里最后一行。整张单都不要了的话，直接删单更干净");
+    }
+
+    const allDone = await prisma.$transaction(async (tx) => {
+      await outboundRepository.deleteItem(itemId, tx);
+      const agg = await outboundRepository.recountItems(id, tx);
+
+      // 删完发现剩下的行全都发过了 ⇒ 这张单没有待办事项了，直接结案
+      const unshipped = await outboundRepository.countUnshipped(id, tx);
+      if (unshipped === 0) {
+        await outboundRepository.markApproved(id, actor.userId, tx);
+        await writeAudit(
+          actor.userId,
+          "outbound.approve",
+          id,
+          `出库单「${doc.docNo}」剩 ${agg.itemCount} 行全部发完，结案`,
+          tx,
+        );
+      }
+      return unshipped === 0;
+    });
+
+    await writeAudit(
+      actor.userId,
+      "outbound.deleteItem",
+      id,
+      `从出库单「${doc.docNo}」删掉第 ${item.lineNo} 行（未发出）`,
+    );
+
+    return { doc: await outboundService.detail(id), allDone };
+  },
+
+  /**
+   * 改某一行的收货信息 / 订单号 / 物流单号。
+   * 已经发出去的行不改：货在路上了，改地址只会让系统显示的地址和箱子上的不一致。
+   * 数量与商品一律不动——那动了就得重算库存与批次。
+   */
+  async updateItemInfo(
+    id: string,
+    itemId: string,
+    input: UpdateOutboundItemInput,
+    actor: { userId: string; role: string },
+  ): Promise<OutboundDocView> {
+    const doc = await outboundRepository.findById(id);
+    if (!doc) throw new NotFoundError("找不到这张出库单");
+    if (doc.status === "voided") throw new ConflictError("这张单已作废，不能再改");
+    if (doc.status === "approved") {
+      throw new ConflictError("这张单已经全部发完了，收货信息不能改。要更正请让管理员红冲后重开");
+    }
+
+    if (actor.role === "clerk" && doc.createdById && doc.createdById !== actor.userId) {
+      throw new ForbiddenError("这单是别人整理的，内勤只能改自己开的单");
+    }
+
+    const item = doc.items.find((i) => i.id === itemId);
+    if (!item) throw new NotFoundError("这一行已经不在单据里了，请刷新页面");
+    if (item.shippedAt) {
+      throw new ConflictError("这一行已经发出去了，收货信息不能改。要更正请联系管理员");
+    }
+
+    // 没传的字段保持原值，别把人家填好的地址一键清空
+    const next = {
+      receiverInfo:
+        input.receiverInfo === undefined ? item.receiverInfo : input.receiverInfo?.trim() || null,
+      externalNo: input.externalNo === undefined ? item.externalNo : input.externalNo?.trim() || null,
+      trackingNo:
+        input.trackingNo === undefined ? item.trackingNo : input.trackingNo?.trim() || null,
+    };
+
+    await outboundRepository.updateItemInfo(itemId, next, prisma);
+    await writeAudit(
+      actor.userId,
+      "outbound.updateItem",
+      id,
+      `修改出库单「${doc.docNo}」第 ${item.lineNo} 行的收货信息`,
+    );
+
+    return outboundService.detail(id);
+  },
 };
 
 /**
@@ -525,12 +748,52 @@ export const outboundService = {
  * 4. 定制款逐件置为已出库，一件一条流水
  * 5. 单据置为已生效，刷新商品使用频次
  */
-async function approveInTx(tx: Prisma.TransactionClient, id: string, userId: string): Promise<void> {
+/**
+ * 确认发货（必须在事务内调用）。一单几十个买家地址，缺货是常态，
+ * 所以这一步按**行**做：传 itemIds 就只发这几行，传 null 就发全部还没发的。
+ *
+ * 1. 行级校验：定制款必须点够件、件必须还在库；常规款不能带件
+ * 2. 汇总校验：**只看本次要发的行**，同一颜色多行合并算，防止超发
+ * 3. 常规款按批次扣减：指定批次就扣指定批，否则按生产日期先后自动扣
+ * 4. 定制款逐件置为已出库，一件一条流水
+ * 5. 给这几行盖上发货时间；剩下的行还挂着，单据继续留在待发货
+ * 6. 全部行发完才算结案（status → approved）
+ */
+async function shipItemsInTx(
+  tx: Prisma.TransactionClient,
+  id: string,
+  itemIds: string[] | null,
+  userId: string,
+): Promise<{ shipped: number; remaining: number; allDone: boolean }> {
   const doc = await outboundRepository.findForApprove(id, tx);
   if (!doc) throw new NotFoundError("找不到这张出库单");
-  if (doc.status === "approved") throw new ConflictError("这张出库单已经审核过了，无需重复操作");
-  if (doc.status === "voided") throw new ConflictError("已作废的单据不能审核");
+  if (doc.status === "approved") throw new ConflictError("这张出库单已经全部发完了，不用再确认");
+  if (doc.status === "voided") throw new ConflictError("已作废的单据不能发货");
   if (!doc.locationId) throw new ValidationError("这张单没有指定发货仓位，请重新建单");
+
+  // 本次要处理的行：指定了就只处理指定的，没指定就处理全部还没发的
+  const targets = itemIds
+    ? doc.items.filter((i) => new Set(itemIds).has(i.id))
+    : doc.items.filter((i) => !i.shippedAt);
+
+  if (itemIds) {
+    const known = new Set(doc.items.map((i) => i.id));
+    const unknown = [...new Set(itemIds)].filter((x) => !known.has(x));
+    if (unknown.length > 0) {
+      throw new ValidationError("有一行已经不在单据里了（可能刚被删掉），请刷新页面重新勾选");
+    }
+  }
+  if (targets.length === 0) {
+    throw new ConflictError(
+      itemIds ? "勾选的这几行已经发过了，刷新一下看看" : "这张单没有待发的行",
+    );
+  }
+  const already = targets.filter((i) => i.shippedAt);
+  if (already.length > 0) {
+    throw new ConflictError(
+      `第 ${already.map((i) => i.lineNo).join("、")} 行已经发过了，不能重复发（会扣两遍库存）`,
+    );
+  }
 
   const location = await tx.location.findUnique({
     where: { id: doc.locationId },
@@ -541,7 +804,7 @@ async function approveInTx(tx: Prisma.TransactionClient, id: string, userId: str
   }
 
   // 行级校验：件必须在库，且数量要和勾选的件数一致
-  for (const item of doc.items) {
+  for (const item of targets) {
     const label = lineLabel(item);
 
     if (item.sku.variantType === "custom") {
@@ -575,9 +838,10 @@ async function approveInTx(tx: Prisma.TransactionClient, id: string, userId: str
     }
   }
 
-  // 汇总校验：同一颜色多行合并后一起看，别让两行各出一半把库存超掉
+  // 汇总校验：本次要发的行里，同一颜色多行合并后一起看，
+  // 别让两行各出一半把库存超掉。没勾的行不参与——它们这次不出货。
   const needBySku = new Map<string, number>();
-  for (const item of doc.items) {
+  for (const item of targets) {
     needBySku.set(item.skuId, (needBySku.get(item.skuId) ?? 0) + item.qty);
   }
 
@@ -586,34 +850,37 @@ async function approveInTx(tx: Prisma.TransactionClient, id: string, userId: str
   for (const [skuId, need] of needBySku) {
     const have = stockMap.get(skuId) ?? 0;
     if (need > have) {
-      const line = doc.items.find((i) => i.skuId === skuId)!;
+      const line = targets.find((i) => i.skuId === skuId)!;
       const unit = line.sku.product.unit || UNIT_FALLBACK;
-      shortages.push(`${lineLabel(line)} 只有 ${have} ${unit}，本单要出 ${need}`);
+      shortages.push(`${lineLabel(line)} 只有 ${have} ${unit}，这次要出 ${need}`);
     }
   }
   if (shortages.length > 0) {
     throw new ValidationError(`库存不够，先别发：${shortages.join("；")}`);
   }
 
-  // 业务日期就是流水发生时间：补录昨天的发货，账也记在昨天。
-  // 但「内勤昨天交单、仓管今天才发出去」不算补录——货是今天走的，账得记今天，
-  // 否则昨天的报表凭空多一笔、今天的少一笔，月底对账要抓半天。
-  // 只对「有提交时间的工单」动手；仓管自己开单补录昨天，那个能力原样保留。
-  let occurredAt = doc.bizDate;
-  if (doc.submittedAt && occurredAt.getTime() < startOfToday().getTime()) {
-    occurredAt = startOfToday();
-    await outboundRepository.updateBizDate(doc.id, occurredAt, tx);
-    await writeAudit(
-      userId,
-      "outbound.bizDateShift",
-      doc.id,
-      `工单隔天才发出，记账日由 ${formatDateOnly(doc.bizDate)} 改为 ${formatDateOnly(occurredAt)}`,
-      tx,
-    );
+  // 流水记在「这一行真正发出去的那天」。
+  // 一单几十个包裹常常分两三天发完，如果都记在单据日期上，
+  // 昨天的报表凭空多几笔、今天的少几笔，月底对账要抓半天。
+  // 例外：仓管自己开单补录昨天的货（没有提交标记），那种单仍按单据业务日期记账。
+  const backdated = !doc.submittedAt && doc.bizDate.getTime() < startOfToday().getTime();
+  const occurredAt = backdated ? doc.bizDate : startOfToday();
+
+  // 先给这几行盖时间戳：条件更新（shippedAt 仍是空）能兜住并发，
+  // 两个人同时点同一行确认，只有一个人能盖成功，另一人整笔回滚，不会扣两遍。
+  const marked = await outboundRepository.markItemsShipped(
+    targets.map((i) => i.id),
+    userId,
+    occurredAt,
+    tx,
+  );
+  if (marked.count !== targets.length) {
+    throw new ConflictError("有几行刚被别的操作发走了，请刷新后重新勾选");
   }
+
   const productIds = new Set<string>();
 
-  for (const item of doc.items) {
+  for (const item of targets) {
     productIds.add(item.sku.product.id);
 
     if (item.sku.variantType === "custom") {
@@ -671,10 +938,41 @@ async function approveInTx(tx: Prisma.TransactionClient, id: string, userId: str
     }
   }
 
-  await outboundRepository.markApproved(doc.id, userId, tx);
-  await outboundRepository.touchProducts([...productIds], tx);
+  const remaining = await outboundRepository.countUnshipped(doc.id, tx);
 
-  await writeAudit(userId, "outbound.approve", doc.id, `出库单「${doc.docNo}」审核生效`, tx);
+  if (remaining === 0) {
+    // 全部行发完才算结案。隔天才发完的工单顺手把单据日期挪到今天，
+    // 否则列表上这张单会一直沉在昨天那一段，看着像没处理。
+    if (doc.submittedAt && doc.bizDate.getTime() < startOfToday().getTime()) {
+      await outboundRepository.updateBizDate(doc.id, occurredAt, tx);
+      await writeAudit(
+        userId,
+        "outbound.bizDateShift",
+        doc.id,
+        `工单隔天才发完，单据日期由 ${formatDateOnly(doc.bizDate)} 改为 ${formatDateOnly(occurredAt)}`,
+        tx,
+      );
+    }
+    await outboundRepository.markApproved(doc.id, userId, tx);
+    await outboundRepository.touchProducts([...productIds], tx);
+    await writeAudit(
+      userId,
+      "outbound.approve",
+      doc.id,
+      `出库单「${doc.docNo}」全部 ${doc.items.length} 个包裹发完，结案`,
+      tx,
+    );
+  } else {
+    await writeAudit(
+      userId,
+      "outbound.ship",
+      doc.id,
+      `确认发出 ${targets.length} 个包裹（本单已发 ${doc.items.length - remaining}/${doc.items.length}），还有 ${remaining} 个待发`,
+      tx,
+    );
+  }
+
+  return { shipped: targets.length, remaining, allDone: remaining === 0 };
 }
 
 type Allocation = { batchId: string | null; batchNo: string | null; qty: number };

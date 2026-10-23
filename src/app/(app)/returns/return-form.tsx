@@ -349,7 +349,11 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
                               </span>
                               <span className="mt-0.5 block truncate text-[11.5px] text-ink-2">
                                 {c.preview || "—"}
-                                {c.receiverName ? ` · ${c.receiverName}` : ""}
+                                {c.receiverInfo
+                                  ? ` · ${c.receiverInfo.replace(/\s+/g, " ").slice(0, 34)}`
+                                  : c.receiverName
+                                    ? ` · ${c.receiverName}`
+                                    : ""}
                               </span>
                             </span>
                             <span
@@ -461,6 +465,15 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
                                 <span className="tnum text-[10.5px]">{item.batchNo}</span>
                               ) : null}
                             </div>
+                            {/* 一条单里可能有几十个买家买同一款，退的是谁只能看地址 */}
+                            {item.receiverInfo ? (
+                              <div
+                                className="mt-0.5 max-w-[300px] truncate text-[10.5px] text-muted"
+                                title={item.receiverInfo}
+                              >
+                                寄给 {item.receiverInfo.replace(/\s+/g, " ")}
+                              </div>
+                            ) : null}
                           </td>
                           <td className="td tnum text-right text-ink-2">{item.qty}</td>
                           <td className="td tnum text-right text-muted">{item.returnedQty}</td>
