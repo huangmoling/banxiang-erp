@@ -25,6 +25,7 @@ import {
 import { api } from "@/lib/api-client";
 import { ChangePasswordDialog } from "@/components/change-password-dialog";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { Wallpaper } from "@/components/wallpaper";
 
 type NavItem = {
   href: string;
@@ -102,6 +103,11 @@ function pageTitle(pathname: string): string {
   return label || "宿藤家居 ERP";
 }
 
+/**
+ * 壁纸。毛玻璃必须有东西可以模糊，否则就是一块灰。
+ * 三团雾斑固定在最底层、不随页面滚动，见 components/wallpaper.tsx。
+ */
+
 export function AppShell({
   user,
   children,
@@ -160,12 +166,10 @@ export function AppShell({
   })).filter((g) => g.items.length > 0);
 
   const nav = (
-    <nav className="flex-1 overflow-y-auto px-2.5 py-3">
+    <nav className="flex-1 overflow-y-auto px-2 pb-2">
       {groups.map((group, index) => (
-        <div key={group.label} className={index > 0 ? "mt-5" : ""}>
-          <div className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-sidebar-muted">
-            {group.label}
-          </div>
+        <div key={group.label}>
+          <div className={`nav-group ${index === 0 ? "!pt-2" : ""}`}>{group.label}</div>
           <div className="space-y-0.5">
             {group.items.map((item) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -174,10 +178,10 @@ export function AppShell({
                 return (
                   <div
                     key={item.href}
-                    className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] text-sidebar-muted opacity-60"
+                    className="flex h-8 cursor-not-allowed items-center gap-2.5 rounded-[9px] px-2.5 text-[13px] text-sidebar-muted opacity-60"
                     title="后续阶段开放"
                   >
-                    <Icon size={16} strokeWidth={1.7} />
+                    <Icon size={15} strokeWidth={1.7} />
                     <span>{item.label}</span>
                     <span className="ml-auto text-[10.5px] tracking-wide">待开放</span>
                   </div>
@@ -190,11 +194,11 @@ export function AppShell({
                   onClick={() => setMenuOpen(false)}
                   className={`nav-item ${active ? "nav-item-active" : ""}`}
                 >
-                  <Icon size={16} strokeWidth={1.7} />
-                  <span>{item.label}</span>
+                  <Icon size={15} strokeWidth={1.7} className="shrink-0" />
+                  <span className="truncate">{item.label}</span>
                   {item.href === "/outbound" && pending > 0 ? (
                     <span
-                      className="ml-auto min-w-[17px] rounded-full bg-danger-solid px-1.5 text-center text-[10.5px] font-semibold leading-[17px] text-white"
+                      className="ml-auto min-w-[18px] rounded-full bg-danger-solid px-1.5 text-center text-[10.5px] font-semibold leading-[17px] text-white shadow-[0_1px_2px_rgba(0,0,0,0.25)]"
                       title={`${pending} 个包裹待发出`}
                     >
                       {pending}
@@ -209,62 +213,67 @@ export function AppShell({
     </nav>
   );
 
-  // 品牌区在侧栏与移动抽屉里复用；抽屉外层已经有分隔线，这里用参数关掉重复的那条
-  const brandHead = (bordered: boolean) => (
-    <div
-      className={`flex items-center gap-2.5 px-4 py-4 ${
-        bordered ? "border-b border-sidebar-line" : ""
-      }`}
-    >
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-solid text-white">
-        <Boxes size={17} strokeWidth={1.8} />
+  // 品牌区在侧栏与移动抽屉里复用
+  const brandHead = (
+    <div className="flex items-center gap-2.5 px-4 pb-3 pt-1">
+      <div className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-brand-solid text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_2px_6px_-1px_rgba(0,60,160,0.45)]">
+        <Boxes size={16} strokeWidth={1.9} />
       </div>
       <div className="min-w-0">
-        <div className="truncate text-[14px] font-semibold tracking-tight text-sidebar-active-fg">
-          宿藤家居 ERP
+        <div className="truncate text-[13px] font-semibold leading-tight tracking-[-0.01em] text-sidebar-strong">
+          宿藤家居
         </div>
-        <div className="text-[10.5px] text-sidebar-muted">库房仓储管理</div>
+        <div className="text-[10.5px] leading-tight text-sidebar-muted">库房仓储管理</div>
       </div>
     </div>
   );
 
   const userBlock = (
-    <div className="border-t border-sidebar-line px-2.5 py-3">
-      <div className="flex items-center gap-2.5">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand/15 text-[11.5px] font-semibold text-sidebar-active-fg">
+    <div className="nav-divide border-t px-2 py-2.5">
+      <div className="flex items-center gap-2">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand/20 text-[11.5px] font-semibold text-sidebar-strong ring-1 ring-inset ring-white/10">
           {user.displayName.slice(0, 1)}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[12.5px] font-medium text-sidebar-active-fg">
+          <div className="truncate text-[12px] font-medium leading-tight text-sidebar-strong">
             {user.displayName}
           </div>
-          <div className="text-[11px] text-sidebar-muted">{ROLE_LABEL[user.role] ?? user.role}</div>
+          <div className="text-[10.5px] leading-tight text-sidebar-muted">
+            {ROLE_LABEL[user.role] ?? user.role}
+          </div>
         </div>
         <button
           type="button"
           onClick={() => setPasswordOpen(true)}
-          className="rounded-md p-1.5 text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-active-fg"
+          className="nav-btn"
           title="修改密码"
         >
-          <KeyRound size={15} strokeWidth={1.8} />
+          <KeyRound size={14} strokeWidth={1.9} />
         </button>
         <button
           type="button"
           onClick={logout}
-          className="rounded-md p-1.5 text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-danger"
+          className="nav-btn hover:!text-danger"
           title="退出登录"
         >
-          <LogOut size={15} strokeWidth={1.8} />
+          <LogOut size={14} strokeWidth={1.9} />
         </button>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen">
-      {/* 桌面端侧栏 */}
-      <aside className="app-sidebar fixed inset-y-0 left-0 z-30 hidden w-[216px] flex-col bg-sidebar md:flex">
-        {brandHead(true)}
+    <div className="relative min-h-screen">
+      <Wallpaper />
+
+      {/* 桌面端侧栏：玻璃 + 交通灯，这是整套 mac 语言的门面 */}
+      <aside className="app-sidebar glass-bar fixed inset-y-0 left-0 z-30 hidden w-[232px] flex-col md:flex">
+        <div className="flex items-center gap-[7px] px-4 pb-4 pt-4">
+          <span className="traffic-light tl-close" />
+          <span className="traffic-light tl-min" />
+          <span className="traffic-light tl-max" />
+        </div>
+        {brandHead}
         {nav}
         {userBlock}
       </aside>
@@ -273,21 +282,26 @@ export function AppShell({
       {menuOpen ? (
         <div className="fixed inset-0 z-40 md:hidden">
           <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
+            className="fade-in absolute inset-0 bg-ink/25 backdrop-blur-[3px]"
             onClick={() => setMenuOpen(false)}
           />
-          <div className="absolute inset-y-0 left-0 flex w-[248px] flex-col bg-sidebar shadow-pop">
-            <div className="flex items-center justify-between border-b border-sidebar-line pr-1.5">
-              <div className="min-w-0 flex-1">{brandHead(false)}</div>
+          <div className="sheet-in glass-bar absolute inset-y-0 left-0 flex w-[264px] flex-col shadow-pop">
+            <div className="flex items-center justify-between px-4 pb-4 pt-4">
+              <div className="flex items-center gap-[7px]">
+                <span className="traffic-light tl-close" />
+                <span className="traffic-light tl-min" />
+                <span className="traffic-light tl-max" />
+              </div>
               <button
                 type="button"
                 onClick={() => setMenuOpen(false)}
-                className="shrink-0 rounded-md p-1.5 text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-active-fg"
+                className="nav-btn"
                 aria-label="关闭菜单"
               >
-                <X size={16} />
+                <X size={15} />
               </button>
             </div>
+            {brandHead}
             {nav}
             {userBlock}
           </div>
@@ -295,29 +309,29 @@ export function AppShell({
       ) : null}
 
       {/* 主区域 */}
-      <div className="md:pl-[216px]">
+      <div className="relative z-10 md:pl-[232px]">
         {/*
-          顶栏在桌面端也留着：一是放主题切换和待发提醒这类全局的东西，
-          二是粘性标题让人滚到表格底部还知道自己在哪个页面。
+          顶栏：mac 的工具栏。粘性 + 浅玻璃，滚到表格底部还知道自己在哪个页面。
+          底部那条线用 border-line/60 —— 全不透明会在玻璃上割出一道灰边。
         */}
-        <header className="sticky top-0 z-20 flex h-[52px] items-center gap-2 border-b border-line bg-card/85 px-3 backdrop-blur-xl sm:px-6">
+        <header className="glass-head sticky top-0 z-20 flex h-[48px] items-center gap-2 border-b border-line/60 px-3 sm:px-6">
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
-            className="-ml-1 rounded-md p-1.5 text-ink-2 transition-colors hover:bg-sunken hover:text-ink md:hidden"
+            className="-ml-1 rounded-[8px] p-1.5 text-ink-2 transition-colors hover:bg-ink/[0.06] hover:text-ink md:hidden"
             aria-label="打开菜单"
           >
             <Menu size={18} />
           </button>
-          <h1 className="min-w-0 truncate text-[13.5px] font-medium text-ink">
+          <h1 className="min-w-0 truncate text-[13px] font-semibold tracking-[-0.01em] text-ink">
             {pageTitle(pathname)}
           </h1>
 
           <div className="ml-auto flex items-center gap-1.5">
             {pending > 0 ? (
               <Link
-                href="/outbound"
-                className="hidden items-center gap-1.5 rounded-full border border-danger/30 bg-danger-soft px-2.5 py-1 text-[11.5px] font-medium text-danger transition-colors hover:border-danger/50 sm:flex"
+                href="/outbound?status=pending"
+                className="hidden items-center gap-1.5 rounded-full bg-danger/12 px-2.5 py-1 text-[11.5px] font-medium text-danger transition-colors hover:bg-danger/20 sm:flex"
                 title={`${pending} 个包裹待发出`}
               >
                 <span className="relative flex h-1.5 w-1.5">
@@ -331,7 +345,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="mx-auto max-w-[1280px] px-4 py-5 sm:px-6 sm:py-7">{children}</main>
+        <main className="mx-auto max-w-[1320px] px-4 py-6 sm:px-6 sm:py-7">{children}</main>
       </div>
 
       <ChangePasswordDialog open={passwordOpen} onClose={() => setPasswordOpen(false)} />

@@ -20,9 +20,9 @@ export function BackLink({ href, title }: { href: string; title: string }) {
       href={href}
       title={title}
       aria-label={title}
-      className="mt-0.5 rounded-md p-1.5 text-muted transition-colors hover:bg-line-2 hover:text-ink"
+      className="-ml-1 mt-0.5 shrink-0 rounded-[8px] p-1.5 text-muted transition-colors hover:bg-ink/[0.06] hover:text-ink"
     >
-      <ArrowLeft size={16} />
+      <ArrowLeft size={16} strokeWidth={2} />
     </Link>
   );
 }
@@ -53,12 +53,12 @@ export function DocTitle({
         <BackLink href={backHref} title={backTitle} />
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="tnum text-[19px] leading-tight font-semibold tracking-[-0.01em] text-ink">
+            <h1 className="tnum text-[21px] leading-tight font-semibold tracking-[-0.02em] text-ink">
               {title}
             </h1>
             {statusBadge}
           </div>
-          {meta ? <p className="mt-1 text-[12.5px] text-muted">{meta}</p> : null}
+          {meta ? <p className="mt-1.5 text-[12px] text-muted">{meta}</p> : null}
         </div>
       </div>
       {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
@@ -69,11 +69,11 @@ export function DocTitle({
 /* ── 状态条 ───────────────────────────────────────────────────────── */
 
 const BAR: Record<"ok" | "warn" | "danger" | "info" | "brand", string> = {
-  ok: "border-ok/40 bg-ok-soft text-ok",
-  warn: "border-warn/40 bg-warn-soft text-warn",
-  danger: "border-danger/30 bg-danger-soft text-danger",
-  info: "border-line bg-sunken text-ink-2",
-  brand: "border-brand/30 bg-brand-soft text-brand-ink",
+  ok: "bg-ok/[0.11] text-ok",
+  warn: "bg-warn/[0.13] text-warn",
+  danger: "bg-danger/[0.1] text-danger",
+  info: "well text-ink-2",
+  brand: "bg-brand/[0.1] text-brand-ink",
 };
 
 const BAR_ICON = { ok: Check, warn: CircleAlert, danger: AlertCircle, info: Info, brand: CircleAlert } as const;
@@ -94,9 +94,9 @@ export function StateBar({
   const Icon = BAR_ICON[tone];
   return (
     <div
-      className={`flex items-start gap-2.5 rounded-card border px-3.5 py-3 text-[12.5px] leading-5 ${BAR[tone]}`}
+      className={`flex items-start gap-2.5 rounded-[12px] px-3.5 py-2.5 text-[12px] leading-5 ${BAR[tone]}`}
     >
-      <Icon size={15} className="mt-0.5 shrink-0" />
+      <Icon size={14} strokeWidth={2.2} className="mt-[1px] shrink-0" />
       <div className="min-w-0">{children}</div>
     </div>
   );
@@ -123,15 +123,15 @@ export function SectionCard({
   flush?: boolean;
 }) {
   return (
-    <section className="overflow-hidden rounded-card border border-line bg-card shadow-card">
+    <section className="card overflow-hidden">
       {title ? (
         <div
-          className={`flex flex-wrap items-center justify-between gap-2 px-4 py-3 ${
-            flush ? "" : "border-b border-line"
+          className={`flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 ${
+            flush ? "" : "border-b border-line/70"
           }`}
         >
           <div className="flex flex-wrap items-baseline gap-x-2">
-            <h2 className="text-[13.5px] font-semibold text-ink">{title}</h2>
+            <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-ink">{title}</h2>
             {hint ? <span className="text-[11.5px] text-muted">{hint}</span> : null}
           </div>
           {actions}
@@ -156,7 +156,7 @@ export function InfoRow({
   mono?: boolean;
 }) {
   return (
-    <div className="flex items-start gap-2.5 text-[12.5px]">
+    <div className="flex items-start gap-2.5 text-[12px]">
       {Icon ? (
         <Icon size={14} strokeWidth={1.7} className="mt-0.5 shrink-0 text-muted" />
       ) : (
@@ -171,8 +171,8 @@ export function InfoRow({
 /** 备注块。单据上的备注常带换行（收货地址、破损描述），必须保留 */
 export function RemarkBlock({ remark }: { remark: string }) {
   return (
-    <div className="mt-3 rounded-lg bg-sunken px-3 py-2.5 text-[12px] leading-5 whitespace-pre-wrap text-ink-2">
-      <div className="mb-0.5 text-[11.5px] text-muted">备注</div>
+    <div className="well mt-3 rounded-[10px] px-3 py-2.5 text-[12px] leading-5 whitespace-pre-wrap text-ink-2">
+      <div className="mb-0.5 text-[11px] text-muted">备注</div>
       {remark}
     </div>
   );
@@ -191,7 +191,7 @@ export function AgainLink({
   return (
     <Link
       href={href}
-      className="group flex items-center justify-between rounded-card border border-line bg-card px-4 py-3 text-[13px] text-ink shadow-card transition-colors hover:border-brand/40 hover:text-brand-ink"
+      className="card group flex items-center justify-between px-4 py-3 text-[12.5px] text-ink transition-all hover:brightness-[1.03] hover:text-brand-ink"
     >
       {children}
       <Icon
@@ -223,11 +223,11 @@ export function FormTitle({
       <div className="flex min-w-0 items-start gap-2">
         <BackLink href={backHref} title={backTitle} />
         <div className="min-w-0">
-          <h1 className="text-[19px] leading-tight font-semibold tracking-[-0.01em] text-ink">
+          <h1 className="text-[21px] leading-tight font-semibold tracking-[-0.02em] text-ink">
             {title}
           </h1>
           {description ? (
-            <p className="mt-1 text-[12.5px] leading-relaxed text-muted">{description}</p>
+            <p className="mt-1.5 max-w-[62ch] text-[12px] leading-relaxed text-muted">{description}</p>
           ) : null}
         </div>
       </div>
@@ -239,8 +239,8 @@ export function FormTitle({
 /** 表单校验错误。放在页头下面，不弹窗——错误要跟出错的地方同屏 */
 export function InlineError({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-start gap-2 rounded-card border border-danger/30 bg-danger-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-danger">
-      <AlertCircle size={15} className="mt-0.5 shrink-0" />
+    <div className="flex items-start gap-2 rounded-[12px] bg-danger/[0.1] px-3.5 py-2.5 text-[12px] leading-5 text-danger">
+      <AlertCircle size={14} strokeWidth={2.2} className="mt-[1px] shrink-0" />
       <div className="min-w-0">{children}</div>
     </div>
   );
@@ -260,7 +260,7 @@ export function FormActionBar({
   children: ReactNode;
 }) {
   return (
-    <div className="sticky bottom-0 -mx-4 border-t border-line bg-canvas/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+    <div className="glass-head sticky bottom-0 z-10 -mx-4 border-t border-line/60 px-4 py-2.5 sm:-mx-6 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="tnum text-[12px] text-muted">{summary}</span>
         <div className="flex flex-wrap gap-2">{children}</div>
@@ -283,8 +283,8 @@ export function RuleCard({
   items: ReactNode[];
 }) {
   return (
-    <section className="rounded-card border border-line bg-sunken px-4 py-3.5 text-[12px] leading-[1.8] text-ink-2">
-      <div className="mb-2 text-[12.5px] font-semibold text-ink">{title}</div>
+    <section className="well rounded-[12px] px-4 py-3.5 text-[11.5px] leading-[1.8] text-ink-2">
+      <div className="mb-1.5 text-[12px] font-semibold text-ink">{title}</div>
       <ul className="space-y-1.5">
         {items.map((it, i) => (
           <li key={i} className="flex gap-1.5">

@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 /**
- * 视觉规范 v1.3（UI 重构）
+ * 视觉规范 v2（macOS 通透层叠）
  * ----------------------------------------------------------------------------
  * 颜色一律走 CSS 变量，定义在 src/app/globals.css。
  * 三套主题（graphite / lumen / obsidian）只换变量值，这里不写死任何 hex——
@@ -9,6 +9,9 @@ import type { Config } from "tailwindcss";
  *
  * 变量值是 "R G B" 三元组，包成 rgb(... / <alpha-value>) 之后
  * bg-canvas/95、border-danger/40 这类透明度修饰符仍然可用。
+ *
+ * 圆角只有两档：card 16px（表面）、field 10px（控件）。
+ * 不再出现 rounded-lg/md 混用——那是上一版"模板味"的来源之一。
  */
 const v = (name: string) => `rgb(var(${name}) / <alpha-value>)`;
 
@@ -52,7 +55,7 @@ const config: Config = {
         },
         ok: { DEFAULT: v("--c-ok"), soft: v("--c-ok-soft") },
 
-        /* 侧栏自成一套：graphite/obsidian 深色，lumen 浅色 */
+        /* 侧栏自成一套：graphite/obsidian 深色玻璃，lumen 浅色玻璃 */
         sidebar: {
           DEFAULT: v("--c-sidebar"),
           fg: v("--c-sidebar-fg"),
@@ -61,24 +64,37 @@ const config: Config = {
           hover: v("--c-sidebar-hover"),
           active: v("--c-sidebar-active"),
           "active-fg": v("--c-sidebar-active-fg"),
+          /** 侧栏里的主文字（品牌名、用户姓名）：深色主题白、浅色主题近黑 */
+          strong: v("--c-sidebar-strong"),
         },
       },
       borderRadius: {
-        card: "12px",
+        /** 表面：卡片、表格、面板 */
+        card: "16px",
+        /** 控件：按钮、输入框、下拉 */
+        field: "10px",
       },
       boxShadow: {
-        card: "var(--shadow-card)",
-        pop: "var(--shadow-pop)",
+        card: "var(--glass-shadow)",
+        pop: "0 18px 48px -12px rgb(16 22 40 / 0.28), 0 4px 12px -4px rgb(16 22 40 / 0.16)",
       },
       fontSize: {
-        num: ["30px", { lineHeight: "1.1", letterSpacing: "-0.02em" }],
+        /**
+         * 数字块的主数字。macOS 的大数字是 semibold + 负字距，
+         * 靠字重和字距压出"精致"，不是靠字号大。
+         */
+        num: ["30px", { lineHeight: "1", letterSpacing: "-0.025em" }],
+        /** 页面大标题 */
+        display: ["25px", { lineHeight: "1.15", letterSpacing: "-0.022em" }],
       },
       fontFamily: {
         /* 不自托管字体：客户内网部署，拿不到 CDN，中文字体包又太大。
-           继续用系统栈，把渲染质量交给 -webkit-font-smoothing。 */
+           继续用系统栈——macOS 上就是 SF Pro，Windows 上落到 Segoe UI。 */
         sans: [
           "-apple-system",
           "BlinkMacSystemFont",
+          "SF Pro Text",
+          "Segoe UI Variable Text",
           "Segoe UI",
           "PingFang SC",
           "Microsoft YaHei",
@@ -94,6 +110,10 @@ const config: Config = {
           "Liberation Mono",
           "monospace",
         ],
+      },
+      transitionTimingFunction: {
+        /** macOS 的默认缓动，比 ease 更"贴手" */
+        mac: "cubic-bezier(0.32, 0.72, 0, 1)",
       },
     },
   },

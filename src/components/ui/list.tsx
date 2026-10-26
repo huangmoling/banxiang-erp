@@ -20,7 +20,7 @@ export function ListToolbar({
   filters?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-card border border-line bg-card p-2 shadow-card">
+    <div className="card flex flex-wrap items-center gap-2 p-1.5">
       <div className="min-w-[220px] flex-1">{search}</div>
       {extra}
       {filters}
@@ -41,11 +41,12 @@ export function SearchBox({
   return (
     <div className="relative">
       <Search
-        size={15}
-        className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted"
+        size={14}
+        strokeWidth={2}
+        className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted"
       />
       <input
-        className="input h-9 py-0 pl-9 text-[13px]"
+        className="input h-[34px] py-0 pl-8 text-[12.5px]"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -85,7 +86,7 @@ export function SegmentedFilter<T extends string>({
 }) {
   return (
     <div
-      className="flex items-center gap-0.5 rounded-lg border border-line bg-sunken p-0.5"
+      className="flex items-center gap-[2px] rounded-[9px] bg-ink/[0.06] p-[3px]"
       role="group"
     >
       {options.map((o) => {
@@ -99,21 +100,21 @@ export function SegmentedFilter<T extends string>({
             type="button"
             aria-pressed={active}
             onClick={() => onChange(o.value)}
-            className={`inline-flex items-center rounded-[6px] px-2.5 py-1 text-[12.5px] whitespace-nowrap transition-colors ${
+            className={`inline-flex items-center rounded-[7px] px-2.5 py-[3px] text-[12px] whitespace-nowrap transition-all duration-150 ${
               active
-                ? "bg-card font-medium text-ink shadow-sm"
-                : "text-ink-2 hover:bg-card/60 hover:text-ink"
+                ? "bg-card font-medium text-ink shadow-[0_1px_2px_rgba(16,22,40,0.14),0_0_0_0.5px_rgba(16,22,40,0.04)]"
+                : "text-ink-2 hover:text-ink"
             }`}
           >
             {o.label}
             {showCount ? (
               <span
-                className={`tnum ml-1.5 rounded px-1 text-[10.5px] leading-[15px] ${
+                className={`tnum ml-1.5 rounded-[4px] px-1 text-[10px] leading-[14px] ${
                   danger
-                    ? "bg-danger-soft text-danger"
+                    ? "bg-danger/14 text-danger"
                     : active
-                      ? "bg-brand-soft text-brand-ink"
-                      : "bg-card text-muted"
+                      ? "bg-brand/14 text-brand-ink"
+                      : "bg-ink/[0.07] text-muted"
                 }`}
               >
                 {o.count}
@@ -140,15 +141,13 @@ export function NoticeBar({
   action?: ReactNode;
 }) {
   const cls =
-    tone === "danger"
-      ? "border-danger/30 bg-danger-soft text-danger"
-      : "border-warn/35 bg-warn-soft text-warn";
+    tone === "danger" ? "bg-danger/[0.1] text-danger" : "bg-warn/[0.12] text-warn";
 
   return (
     <div
-      className={`flex flex-wrap items-center gap-x-2 gap-y-1 rounded-card border px-3.5 py-2.5 text-[12.5px] ${cls}`}
+      className={`flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-[12px] px-3.5 py-2.5 text-[12px] ${cls}`}
     >
-      <AlertTriangle size={14} strokeWidth={2} className="shrink-0" />
+      <AlertTriangle size={13} strokeWidth={2.2} className="shrink-0" />
       <div className="min-w-0 flex-1">{children}</div>
       {action}
     </div>
@@ -193,7 +192,7 @@ export function Pagination({
   const nums = pageWindow(page, totalPages);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-3.5 py-2 text-[12.5px] text-muted">
+    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line/70 px-3 py-2 text-[12px] text-muted">
       <span className="tnum">
         共 <span className="font-medium text-ink-2">{total}</span> {unit}
       </span>
@@ -212,10 +211,10 @@ export function Pagination({
                 type="button"
                 onClick={() => onChange(n)}
                 aria-current={n === page ? "page" : undefined}
-                className={`tnum h-7 min-w-7 rounded-md px-1.5 text-[12px] transition-colors ${
+                className={`tnum h-6 min-w-6 rounded-[6px] px-1.5 text-[11.5px] transition-colors ${
                   n === page
                     ? "bg-brand-solid font-medium text-white"
-                    : "text-ink-2 hover:bg-sunken"
+                    : "text-ink-2 hover:bg-ink/[0.06]"
                 }`}
               >
                 {n}
@@ -252,7 +251,7 @@ function PageArrow({
       onClick={onClick}
       title={label}
       aria-label={label}
-      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-2 transition-colors hover:bg-sunken disabled:pointer-events-none disabled:opacity-40"
+      className="inline-flex h-6 w-6 items-center justify-center rounded-[6px] text-ink-2 transition-colors hover:bg-ink/[0.06] disabled:pointer-events-none disabled:opacity-40"
     >
       {dir === "prev" ? <ChevronLeft size={15} /> : <ChevronRight size={15} />}
     </button>

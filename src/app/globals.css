@@ -3,159 +3,255 @@
 @tailwind utilities;
 
 /* ============================================================================
-   主题令牌
+   主题令牌 v2 —— macOS 通透层叠
    ----------------------------------------------------------------------------
-   三套主题，靠 <html data-theme="..."> 切换，只换变量不换代码：
-     graphite  石墨仪表台（默认）—— 深色侧栏 + 近白工作区，明暗对比最强
-     lumen     冷白精密        —— 全浅色，侧栏也浅，适合白天强光环境
-     obsidian  深空            —— 全深色，夜班/暗房里盯报表用
+   视觉语言的四条规则，改任何页面之前先读这四条：
 
-   变量值统一写成 "R G B" 三元组（不是 hex）。Tailwind 侧用
-   rgb(var(--c-x) / <alpha-value>) 接，好处是 bg-canvas/95 这类透明度修饰符
-   照旧能用，而 hex 变量配不出来。
+   1. 背景不是"纯色"，是一层壁纸。页面上有一层固定的彩色雾斑（.app-wallpaper），
+      半透明表面才有东西可以模糊。没有壁纸的毛玻璃 = 一块灰。
+   2. 表面是半透明的，不是白的。卡片/侧栏/顶栏都走 backdrop-filter，
+      用 --glass-* 令牌控制透明度。深色主题下透明度要略低，否则糊成一团。
+   3. 层次靠"前后遮挡"和"模糊程度"，不靠边框加粗、不靠阴影加深。
+      所以 --glass-border-a 只有 0.07~0.75 这个量级，阴影极浅。
+   4. 字号紧凑、字重分明。macOS 正文 13px，标题 22~26px semibold，
+      中间不留 16/18px 这种"不上不下"的档。
 
-   改色只改这里。页面里不许再出现裸的 #rrggbb —— 那是过去界面"显脏"的根源
-   （同一个警示橙曾同时存在 #a15f12 / #8a5a15 / #6d4610 / #7a5a1a 四个值）。
+   三套主题只换变量，共用一份代码：
+     graphite  晨雾 —— 深色玻璃侧栏 + 浅色通透工作区（默认，最像 macOS）
+     lumen     素白 —— 全浅色，雾斑极淡，白天强光下最干净
+     obsidian  午夜 —— 全深色玻璃，夜班盯屏
+
+   变量值统一写 "R G B" 三元组，Tailwind 侧用 rgb(var(--c-x) / <alpha-value>) 接，
+   这样 bg-canvas/95、border-danger/40 这类透明度修饰符仍然可用。
+   页面里不许再出现裸的 #rrggbb —— 除 lib/theme.ts 里的主题元数据。
    ========================================================================= */
 
+/* ---------------------------------------------------------------- 晨雾 */
 :root,
 [data-theme="graphite"] {
   color-scheme: light;
 
-  /* 三层表面：画布 / 卡片 / 内嵌块。层次靠色阶拉，不靠一堆浮起来的阴影 */
-  --c-canvas: 247 248 250;
+  /* 壁纸：一块冷白底 + 三团雾（蓝 / 紫 / 青） */
+  --c-canvas: 240 242 247;
+  --wall-base: 241 243 248;
+  --wall-1: 132 164 236;
+  --wall-2: 174 160 232;
+  --wall-3: 122 202 198;
+  --wall-1-a: 0.3;
+  --wall-2-a: 0.21;
+  --wall-3-a: 0.15;
+  --wall-sheen: 255 255 255;
+  --wall-sheen-a: 0.34;
+  --wall-sheen-a2: 0.12;
+
+  /* 表面 */
   --c-card: 255 255 255;
-  --c-sunken: 241 242 245;
+  --c-sunken: 240 243 249;
+  --c-line: 223 228 238;
+  --c-line-2: 234 238 246;
 
-  --c-line: 227 231 237;
-  --c-line-2: 238 240 244;
+  /* 文字 */
+  --c-ink: 16 19 26;
+  --c-ink-2: 67 75 90;
+  --c-muted: 100 107 121;
 
-  --c-ink: 22 24 29;
-  --c-ink-2: 74 82 97;
-  --c-muted: 102 109 122;
+  /* 强调色：macOS 系统蓝 */
+  --c-brand: 0 122 255;
+  --c-brand-solid: 0 106 235;
+  --c-brand-soft: 229 240 255;
+  --c-brand-ink: 0 84 199;
 
-  --c-brand: 47 107 255;
-  --c-brand-solid: 42 99 240;
-  --c-brand-soft: 238 243 255;
-  --c-brand-ink: 26 79 214;
+  --c-custom: 122 90 196;
+  --c-custom-soft: 243 238 253;
 
-  --c-custom: 123 94 167;
-  --c-custom-soft: 243 239 249;
+  --c-warn: 148 87 0;
+  --c-warn-soft: 253 243 226;
+  --c-danger: 196 45 34;
+  --c-danger-solid: 196 45 34;
+  --c-danger-soft: 253 234 232;
+  --c-ok: 11 120 75;
+  --c-ok-soft: 227 246 236;
 
-  --c-warn: 154 92 0;
-  --c-warn-soft: 253 243 227;
-  --c-danger: 192 52 42;
-  --c-danger-solid: 192 52 42;
-  --c-danger-soft: 253 236 234;
-  --c-ok: 16 121 79;
-  --c-ok-soft: 232 246 239;
+  /* 玻璃：内容表面 */
+  --glass-fill: 255 255 255;
+  --glass-a: 0.72;
+  /* 浅色主题下边框必须是"淡墨线"，白色描边在浅底上完全看不见，
+     卡片就会糊在一起——这是上一版看起来"没有边界"的真正原因 */
+  --glass-border: 17 24 39;
+  --glass-border-a: 0.06;
+  --glass-hi-a: 0.9;
+  --glass-blur: 22px;
+  --glass-sat: 150%;
+  --glass-shadow: 0 1px 2px rgb(16 22 40 / 0.05), 0 8px 24px -12px rgb(16 22 40 / 0.14),
+    0 24px 48px -30px rgb(16 22 40 / 0.18);
 
-  --c-sidebar: 28 31 39;
-  --c-sidebar-fg: 182 188 200;
-  --c-sidebar-muted: 131 139 153;
-  --c-sidebar-line: 40 45 56;
-  --c-sidebar-hover: 34 38 48;
-  --c-sidebar-active: 42 47 58;
+  /* 玻璃：侧栏（深色玻璃，macOS 经典样式） */
+  --nav-fill: 30 34 45;
+  --nav-a: 0.7;
+  --nav-border: 255 255 255;
+  --nav-border-a: 0.1;
+  --c-sidebar: 30 34 45;
+  --c-sidebar-strong: 255 255 255;
+  --c-sidebar-fg: 197 203 215;
+  --c-sidebar-hover-fg: 255 255 255;
+  --c-sidebar-muted: 143 151 167;
+  --c-sidebar-line: 255 255 255;
+  --c-sidebar-line-a: 0.09;
+  --c-sidebar-hover: 255 255 255;
+  --c-sidebar-hover-a: 0.08;
+  --c-sidebar-active: 0 106 235;
   --c-sidebar-active-fg: 255 255 255;
 
-  --c-scroll-thumb: 216 221 229;
-  --c-scroll-track: 247 248 250;
-
-  --shadow-card: 0 1px 2px rgb(16 20 28 / 0.05), 0 1px 3px rgb(16 20 28 / 0.04);
-  --shadow-pop: 0 8px 28px rgb(16 20 28 / 0.1), 0 2px 6px rgb(16 20 28 / 0.06);
+  --c-scroll-thumb: 190 198 214;
+  --c-scroll-track: transparent;
 }
 
+/* ---------------------------------------------------------------- 素白 */
 [data-theme="lumen"] {
   color-scheme: light;
 
-  --c-canvas: 244 246 249;
+  --c-canvas: 246 248 251;
+  --wall-base: 249 250 252;
+  --wall-1: 156 182 232;
+  --wall-2: 190 180 230;
+  --wall-3: 168 214 214;
+  --wall-1-a: 0.17;
+  --wall-2-a: 0.12;
+  --wall-3-a: 0.09;
+  --wall-sheen: 255 255 255;
+  --wall-sheen-a: 0.45;
+  --wall-sheen-a2: 0.18;
+
   --c-card: 255 255 255;
-  --c-sunken: 238 241 246;
+  --c-sunken: 243 245 249;
+  --c-line: 224 229 238;
+  --c-line-2: 236 240 246;
 
-  --c-line: 223 228 236;
-  --c-line-2: 236 240 245;
+  --c-ink: 14 17 23;
+  --c-ink-2: 64 72 87;
+  --c-muted: 100 107 121;
 
-  --c-ink: 16 20 28;
-  --c-ink-2: 70 80 95;
-  --c-muted: 102 109 122;
+  --c-brand: 0 122 255;
+  --c-brand-solid: 0 106 235;
+  --c-brand-soft: 230 240 255;
+  --c-brand-ink: 0 84 199;
 
-  --c-brand: 47 107 255;
-  --c-brand-solid: 42 99 240;
-  --c-brand-soft: 238 243 255;
-  --c-brand-ink: 26 79 214;
+  --c-custom: 122 90 196;
+  --c-custom-soft: 243 238 253;
 
-  --c-custom: 123 94 167;
-  --c-custom-soft: 243 239 249;
+  --c-warn: 148 87 0;
+  --c-warn-soft: 253 243 226;
+  --c-danger: 198 42 32;
+  --c-danger-solid: 198 42 32;
+  --c-danger-soft: 253 233 231;
+  --c-ok: 9 116 72;
+  --c-ok-soft: 226 245 235;
 
-  --c-warn: 154 92 0;
-  --c-warn-soft: 253 243 227;
-  --c-danger: 198 45 34;
-  --c-danger-solid: 198 45 34;
-  --c-danger-soft: 253 235 233;
-  --c-ok: 13 116 76;
-  --c-ok-soft: 230 245 238;
+  --glass-fill: 255 255 255;
+  --glass-a: 0.82;
+  --glass-border: 17 24 39;
+  --glass-border-a: 0.055;
+  --glass-hi-a: 1;
+  --glass-blur: 18px;
+  --glass-sat: 130%;
+  --glass-shadow: 0 1px 2px rgb(16 22 40 / 0.04), 0 8px 22px -14px rgb(16 22 40 / 0.12);
 
+  /* 素白的侧栏也用浅玻璃：整体是一张纸，靠模糊和色差分层 */
+  --nav-fill: 255 255 255;
+  --nav-a: 0.68;
+  --nav-border: 255 255 255;
+  --nav-border-a: 0.9;
   --c-sidebar: 255 255 255;
-  --c-sidebar-fg: 70 80 95;
-  --c-sidebar-muted: 107 116 132;
-  --c-sidebar-line: 232 236 242;
-  --c-sidebar-hover: 246 248 251;
-  --c-sidebar-active: 238 243 255;
-  --c-sidebar-active-fg: 26 79 214;
+  /* 浅色玻璃侧栏：标题不能用白色，用近黑 */
+  --c-sidebar-strong: 14 17 23;
+  --c-sidebar-fg: 62 70 85;
+  --c-sidebar-hover-fg: 14 17 23;
+  --c-sidebar-muted: 106 114 129;
+  --c-sidebar-line: 0 0 0;
+  --c-sidebar-line-a: 0.07;
+  --c-sidebar-hover: 16 22 40;
+  --c-sidebar-hover-a: 0.05;
+  --c-sidebar-active: 0 106 235;
+  --c-sidebar-active-fg: 255 255 255;
 
-  --c-scroll-thumb: 209 216 226;
-  --c-scroll-track: 244 246 249;
-
-  --shadow-card: 0 1px 2px rgb(16 20 28 / 0.05), 0 1px 3px rgb(16 20 28 / 0.04);
-  --shadow-pop: 0 8px 28px rgb(16 20 28 / 0.1), 0 2px 6px rgb(16 20 28 / 0.06);
+  --c-scroll-thumb: 198 205 219;
+  --c-scroll-track: transparent;
 }
 
+/* ---------------------------------------------------------------- 午夜 */
 [data-theme="obsidian"] {
   color-scheme: dark;
 
-  --c-canvas: 14 17 22;
-  --c-card: 21 26 34;
-  --c-sunken: 27 33 43;
+  --c-canvas: 10 11 15;
+  --wall-base: 11 12 17;
+  --wall-1: 42 92 214;
+  --wall-2: 96 66 178;
+  --wall-3: 0 138 132;
+  --wall-1-a: 0.22;
+  --wall-2-a: 0.15;
+  --wall-3-a: 0.1;
+  --wall-sheen: 96 140 235;
+  --wall-sheen-a: 0.2;
+  --wall-sheen-a2: 0.1;
 
-  --c-line: 38 45 56;
-  --c-line-2: 31 36 45;
+  --c-card: 24 27 34;
+  --c-sunken: 30 34 42;
+  --c-line: 52 58 70;
+  --c-line-2: 40 45 56;
 
-  --c-ink: 232 236 242;
-  --c-ink-2: 163 173 187;
-  --c-muted: 131 141 157;
+  --c-ink: 235 239 246;
+  --c-ink-2: 168 177 191;
+  --c-muted: 138 147 162;
 
-  /* 深底上品牌色要提亮才醒目；实心按钮仍用较深的 brand-solid 兜住白字对比 */
-  --c-brand: 63 118 255;
-  --c-brand-solid: 42 99 240;
-  --c-brand-soft: 22 32 58;
-  --c-brand-ink: 123 166 255;
+  /* 深底上系统蓝要提亮；实心按钮仍用较深一档兜住白字 */
+  --c-brand: 10 132 255;
+  --c-brand-solid: 0 100 224;
+  --c-brand-soft: 20 34 60;
+  --c-brand-ink: 122 178 255;
 
-  --c-custom: 160 132 208;
-  --c-custom-soft: 34 28 48;
+  --c-custom: 168 140 214;
+  --c-custom-soft: 36 30 50;
 
-  --c-warn: 224 160 58;
-  --c-warn-soft: 42 33 20;
-  --c-danger: 231 94 82;
-  --c-danger-solid: 201 69 58;
-  --c-danger-soft: 44 22 20;
-  --c-ok: 70 180 124;
-  --c-ok-soft: 18 36 26;
+  --c-warn: 228 164 62;
+  --c-warn-soft: 44 34 20;
+  --c-danger: 236 100 88;
+  --c-danger-solid: 198 62 52;
+  --c-danger-soft: 48 23 21;
+  --c-ok: 74 186 130;
+  --c-ok-soft: 16 38 27;
 
-  --c-sidebar: 10 13 18;
-  --c-sidebar-fg: 154 165 180;
-  --c-sidebar-muted: 118 127 141;
-  --c-sidebar-line: 27 32 41;
-  --c-sidebar-hover: 18 23 30;
-  --c-sidebar-active: 26 33 48;
+  --glass-fill: 30 33 42;
+  --glass-a: 0.72;
+  --glass-border: 255 255 255;
+  --glass-border-a: 0.075;
+  --glass-hi-a: 0.06;
+  --glass-blur: 22px;
+  --glass-sat: 160%;
+  --glass-shadow: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 16px 40px -20px rgb(0 0 0 / 0.7);
+
+  --nav-fill: 15 17 23;
+  --nav-a: 0.72;
+  --nav-border: 255 255 255;
+  --nav-border-a: 0.07;
+  --c-sidebar: 15 17 23;
+  --c-sidebar-strong: 255 255 255;
+  --c-sidebar-fg: 176 185 199;
+  --c-sidebar-hover-fg: 255 255 255;
+  --c-sidebar-muted: 128 137 152;
+  --c-sidebar-line: 255 255 255;
+  --c-sidebar-line-a: 0.06;
+  --c-sidebar-hover: 255 255 255;
+  --c-sidebar-hover-a: 0.06;
+  --c-sidebar-active: 0 100 224;
   --c-sidebar-active-fg: 255 255 255;
 
-  --c-scroll-thumb: 43 51 63;
-  --c-scroll-track: 14 17 22;
-
-  /* 深色下阴影是脏的，层次只靠边框和色阶 */
-  --shadow-card: none;
-  --shadow-pop: 0 12px 32px rgb(0 0 0 / 0.55);
+  --c-scroll-thumb: 62 70 84;
+  --c-scroll-track: transparent;
 }
+
+/* ============================================================================
+   基础
+   ========================================================================= */
 
 html,
 body {
@@ -163,6 +259,7 @@ body {
   color: rgb(var(--c-ink));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 * {
@@ -170,94 +267,274 @@ body {
 }
 
 ::selection {
-  background: rgb(var(--c-brand) / 0.22);
+  background: rgb(var(--c-brand) / 0.24);
 }
 
-/* 切主题时给底色一个短过渡，避免生硬闪断。
-   只过渡颜色，不过渡布局属性。 */
-body,
-.theme-surface {
-  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+body {
+  transition: background-color 240ms ease, color 240ms ease;
 }
 
-/* 数字等宽对齐，报表和卡片里的数量不会跳来跳去 */
+/* 数字等宽对齐：报表和卡片里的数量不会跳来跳去 */
 .tnum {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
 
-/* 极细网格 + 径向淡出，用于登录页与空状态做"精密"的底纹 */
+/* ============================================================================
+   壁纸 —— 毛玻璃的"内容"
+   ----------------------------------------------------------------------------
+   固定在最底层，不随页面滚动（滚动时玻璃下面的颜色缓缓移动，这是 macOS
+   毛玻璃最有质感的地方，如果壁纸跟着滚就完全没了）。
+   ========================================================================= */
+
+.app-wallpaper {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(115% 85% at 50% -30%, rgb(var(--wall-sheen) / var(--wall-sheen-a)) 0%, transparent 60%),
+    radial-gradient(140% 120% at 50% 120%, rgb(var(--wall-sheen) / var(--wall-sheen-a2)) 0%, transparent 55%),
+    rgb(var(--wall-base));
+  transition: background-color 300ms ease;
+}
+
+.w-blob {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(110px);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* 极慢的漂移：30 秒一个来回，肉眼几乎察觉不到在动，但玻璃下面的颜色是活的 */
+  .w-blob-1 {
+    animation: w-drift-1 38s ease-in-out infinite alternate;
+  }
+  .w-blob-2 {
+    animation: w-drift-2 46s ease-in-out infinite alternate;
+  }
+}
+
+.w-blob-1 {
+  left: -14%;
+  top: -26%;
+  width: min(820px, 78vw);
+  height: min(820px, 78vw);
+  background: rgb(var(--wall-1) / var(--wall-1-a));
+}
+
+.w-blob-2 {
+  right: -16%;
+  top: 6%;
+  width: min(700px, 66vw);
+  height: min(700px, 66vw);
+  background: rgb(var(--wall-2) / var(--wall-2-a));
+}
+
+.w-blob-3 {
+  left: 26%;
+  bottom: -32%;
+  width: min(760px, 74vw);
+  height: min(760px, 74vw);
+  background: rgb(var(--wall-3) / var(--wall-3-a));
+}
+
+@keyframes w-drift-1 {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(60px, 40px, 0) scale(1.08);
+  }
+}
+
+@keyframes w-drift-2 {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.04);
+  }
+  to {
+    transform: translate3d(-70px, 30px, 0) scale(1);
+  }
+}
+
+/* 不支持 backdrop-filter 的浏览器（老 Edge / 关掉硬件加速）：
+   把玻璃调成接近不透明，宁可平也不要把字糊在壁纸上。 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root,
+  [data-theme="graphite"],
+  [data-theme="lumen"] {
+    --glass-a: 0.96;
+    --nav-a: 0.98;
+  }
+  [data-theme="obsidian"] {
+    --glass-a: 0.97;
+    --nav-a: 0.98;
+  }
+}
+
+/* ============================================================================
+   玻璃表面
+   ========================================================================= */
+
+/* 内容表面：卡片、表格、面板 */
+.glass {
+  background: rgb(var(--glass-fill) / var(--glass-a));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border: 1px solid rgb(var(--glass-border) / var(--glass-border-a));
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgb(255 255 255 / var(--glass-hi-a));
+}
+
+/* 内嵌块：比卡片再往下沉一层，用极淡的填充，不模糊（模糊套模糊会发灰） */
+.well {
+  background: rgb(var(--c-sunken) / 0.72);
+  border: 1px solid rgb(var(--c-line) / 0.7);
+}
+
+/* 侧栏与顶栏：模糊更重、填充更透，让壁纸透上来 */
+.glass-bar {
+  background: rgb(var(--nav-fill) / var(--nav-a));
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  border-color: rgb(var(--nav-border) / var(--nav-border-a));
+}
+
+/* 顶栏用的浅玻璃：颜色跟内容表面一致，只是更透一点 */
+.glass-head {
+  background: rgb(var(--glass-fill) / calc(var(--glass-a) - 0.12));
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+}
+
+/* macOS 交通灯。11px 三个点，只在侧栏顶部出现一次——
+   它是"这是台 mac 上的应用"最省力的一眼印象，多了就成玩具。 */
+.traffic-light {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.14);
+}
+
+.tl-close {
+  background: #ff5f57;
+}
+.tl-min {
+  background: #febc2e;
+}
+.tl-max {
+  background: #28c840;
+}
+
+/* 极细网格 + 径向淡出：登录页与空状态做底纹 */
 .grid-fade {
-  background-image: linear-gradient(to right, rgb(var(--c-line) / 0.7) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(var(--c-line) / 0.7) 1px, transparent 1px);
-  background-size: 32px 32px;
-  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 20%, transparent 100%);
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 20%, transparent 100%);
+  background-image: linear-gradient(to right, rgb(var(--c-line) / 0.6) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--c-line) / 0.6) 1px, transparent 1px);
+  background-size: 36px 36px;
+  -webkit-mask-image: radial-gradient(ellipse 68% 58% at 50% 40%, #000 10%, transparent 100%);
+  mask-image: radial-gradient(ellipse 68% 58% at 50% 40%, #000 10%, transparent 100%);
 }
 
 @layer components {
+  /* ---- 卡片 ---------------------------------------------------------- */
   .card {
-    @apply rounded-card border border-line bg-card;
-    box-shadow: var(--shadow-card);
+    @apply glass rounded-card;
   }
 
+  /* ---- 按钮 ----------------------------------------------------------
+     macOS 按钮：10px 圆角、无重边框、主按钮有一层顶部内高光，
+     按下去像一块亚克力。 */
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-[13.5px] font-medium transition-colors
-      disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex select-none items-center justify-center gap-1.5 rounded-field px-3.5 py-[7px]
+      text-[13px] font-medium transition-all duration-150
+      active:scale-[0.985] disabled:pointer-events-none disabled:opacity-45;
   }
 
   .btn-primary {
-    @apply btn bg-brand-solid text-white hover:bg-brand-ink;
+    @apply btn bg-brand-solid text-white;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.22),
+      0 1px 2px rgb(0 60 160 / 0.24),
+      0 6px 16px -8px rgb(0 84 199 / 0.5);
+  }
+
+  .btn-primary:hover {
+    @apply brightness-105;
   }
 
   .btn-ghost {
-    @apply btn border border-line bg-card text-ink-2 hover:border-muted/60 hover:text-ink;
+    @apply btn border border-line text-ink-2;
+    background: rgb(var(--c-card) / 0.55);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5);
+  }
+
+  .btn-ghost:hover {
+    @apply border-muted/40 text-ink;
+    background: rgb(var(--c-card) / 0.85);
   }
 
   .btn-danger {
-    @apply btn border border-danger/40 bg-card text-danger hover:bg-danger-soft;
+    @apply btn border border-danger/30 text-danger;
+    background: rgb(var(--c-danger-soft) / 0.9);
+  }
+
+  .btn-danger:hover {
+    @apply border-danger/50;
+    background: rgb(var(--c-danger-soft));
   }
 
   .btn-sm {
-    @apply px-2.5 py-1.5 text-[12.5px];
+    @apply rounded-[8px] px-2.5 py-[5px] text-[12.5px];
   }
 
+  /* ---- 表单 ---------------------------------------------------------- */
   .input {
-    @apply w-full rounded-lg border border-line bg-card px-3 py-2 text-[14px] text-ink outline-none
-      transition-colors placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/20;
+    @apply w-full rounded-field border border-line px-3 py-[7px] text-[13.5px] text-ink outline-none
+      transition-all duration-150 placeholder:text-muted;
+    background: rgb(var(--c-card) / 0.7);
+  }
+
+  .input:focus {
+    @apply border-brand;
+    background: rgb(var(--c-card) / 0.95);
+    box-shadow: 0 0 0 3.5px rgb(var(--c-brand) / 0.18);
   }
 
   .label {
-    @apply mb-1.5 block text-[13px] font-medium text-ink-2;
+    @apply mb-1.5 block text-[12.5px] font-medium text-ink-2;
   }
 
   .tag {
-    @apply inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11.5px] font-medium leading-5;
+    @apply inline-flex items-center gap-1 rounded-[7px] px-1.5 py-0.5 text-[11.5px] font-medium leading-5;
   }
 
+  /* ---- 表格 ----------------------------------------------------------
+     表格本身是玻璃，但表头和行用极淡的填充，不再叠模糊——
+     几十行各自模糊一次会卡，而且会糊成一片。 */
   .th {
-    @apply border-b border-line px-4 py-2.5 text-left text-[12.5px] font-medium text-muted;
+    @apply border-b border-line px-3.5 py-2.5 text-left text-[12px] font-medium text-muted;
   }
 
   .td {
-    @apply border-b border-line-2 px-4 py-3 text-[13.5px] text-ink align-middle;
+    @apply border-b border-line-2 px-3.5 py-[11px] text-[13px] align-middle text-ink;
   }
 
-  /* 侧栏导航项：默认 / 悬停 / 当前页。
-     当前页左侧那条 2px 电光蓝是唯一的"你在哪"信号，其余全靠底色差异。 */
+  /* ---- 侧栏导航 ------------------------------------------------------
+     当前项是 macOS 那种填充式胶囊（整块染品牌蓝 + 白字），
+     不是左边一条竖线——竖线是仪表盘的做法，macOS 不这么干。 */
   .nav-item {
-    @apply relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] transition-colors;
+    @apply relative flex items-center gap-2.5 rounded-[9px] px-2.5 text-[13px] transition-colors duration-150;
+    height: 32px;
     color: rgb(var(--c-sidebar-fg));
   }
 
   .nav-item:hover {
-    background: rgb(var(--c-sidebar-hover));
-    color: rgb(var(--c-ink));
-  }
-
-  [data-theme="graphite"] .nav-item:hover,
-  [data-theme="obsidian"] .nav-item:hover {
-    color: rgb(var(--c-sidebar-active-fg));
+    background: rgb(var(--c-sidebar-hover) / var(--c-sidebar-hover-a));
+    color: rgb(var(--c-sidebar-hover-fg));
   }
 
   .nav-item-active,
@@ -265,36 +542,102 @@ body,
     background: rgb(var(--c-sidebar-active));
     color: rgb(var(--c-sidebar-active-fg));
     font-weight: 500;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.2),
+      0 1px 3px rgb(0 40 120 / 0.28);
   }
 
-  .nav-item-active::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 50%;
-    height: 14px;
-    width: 2px;
-    transform: translateY(-50%);
-    border-radius: 2px;
-    background: rgb(var(--c-brand));
+  /* 侧栏分组标题 */
+  .nav-group {
+    @apply px-2.5 pb-1 pt-4 text-[10.5px] font-semibold tracking-[0.08em];
+    color: rgb(var(--c-sidebar-muted));
+  }
+
+  /* 侧栏里的分隔线。不能直接用 border-sidebar-line ——
+     深色玻璃主题下那个值是白色，全不透明会亮得像根灯管。 */
+  .nav-divide {
+    border-color: rgb(var(--c-sidebar-line) / var(--c-sidebar-line-a));
+  }
+
+  /* 侧栏里的小图标按钮（改密码 / 退出） */
+  .nav-btn {
+    @apply rounded-[7px] p-1.5 transition-colors duration-150;
+    color: rgb(var(--c-sidebar-muted));
+  }
+
+  .nav-btn:hover {
+    background: rgb(var(--c-sidebar-hover) / var(--c-sidebar-hover-a));
+    color: rgb(var(--c-sidebar-hover-fg));
   }
 }
 
-/* lumen 侧栏是白的、内容区是浅灰，只靠色差很难一眼分出边界，补一条线 */
-[data-theme="lumen"] .app-sidebar {
-  border-right: 1px solid rgb(var(--c-sidebar-line));
+/* 侧栏右侧分隔线用半透明，浅色主题下也不生硬 */
+.app-sidebar {
+  border-right: 1px solid rgb(var(--c-sidebar-line) / var(--c-sidebar-line-a));
 }
 
-/* 滚动条：细一点，别抢视觉；跟随主题 */
+/* 滚动条：细一点、圆一点，跟 macOS 一样几乎看不见，hover 才显形 */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgb(var(--c-scroll-thumb));
+  background: rgb(var(--c-scroll-thumb) / 0.55);
   border-radius: 999px;
-  border: 3px solid rgb(var(--c-scroll-track));
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--c-scroll-thumb) / 0.9);
+  background-clip: content-box;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* ============================================================================
+   动效
+   ----------------------------------------------------------------------------
+   只做两件事：面板出现时从上方轻落（macOS sheet 的方向），遮罩淡入。
+   不做滑入滑出、不做弹跳——仓管一天开几十次弹窗，动效多一秒都是浪费。
+   ========================================================================= */
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.975);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sheet-in {
+  animation: sheet-in 200ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.fade-in {
+  animation: fade-in 160ms ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-in,
+  .fade-in {
+    animation: none;
+  }
+  .w-blob-1,
+  .w-blob-2 {
+    animation: none;
+  }
+}
+

@@ -8,16 +8,19 @@ import type { ReactNode } from "react";
  *
  * 定制紫是这套系统独有的语义：定制件一物一码、退回不可二次销售，
  * 它不该和普通款挤在同一个灰标签里。
+ *
+ * 形状上不用全圆胶囊——表格里几十个胶囊会显得软塌塌。
+ * 6px 小圆角 + 半档字号，密度更接近 macOS 的标签。
  */
 export type BadgeTone = "neutral" | "brand" | "ok" | "warn" | "danger" | "custom";
 
 const TONE: Record<BadgeTone, string> = {
-  neutral: "bg-sunken text-ink-2",
-  brand: "bg-brand-soft text-brand-ink",
-  ok: "bg-ok-soft text-ok",
-  warn: "bg-warn-soft text-warn",
-  danger: "bg-danger-soft text-danger",
-  custom: "bg-custom-soft text-custom",
+  neutral: "bg-ink/[0.07] text-ink-2",
+  brand: "bg-brand/12 text-brand-ink",
+  ok: "bg-ok/12 text-ok",
+  warn: "bg-warn/14 text-warn",
+  danger: "bg-danger/12 text-danger",
+  custom: "bg-custom/12 text-custom",
 };
 
 const DOT: Record<BadgeTone, string> = {
@@ -43,7 +46,7 @@ export function Badge({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[11.5px] font-medium leading-5 ${TONE[tone]}`}
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-[6px] px-1.5 text-[11px] font-medium leading-[19px] ${TONE[tone]}`}
       title={title}
     >
       {dot ? <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT[tone]}`} /> : null}

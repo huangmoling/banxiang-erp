@@ -15,26 +15,26 @@
 export const THEMES = [
   {
     id: "graphite",
-    label: "石墨",
+    label: "晨雾",
     /** 一句话说清它适合什么时候用，别让人靠猜 */
-    hint: "深色侧栏 · 浅色工作区",
+    hint: "深色玻璃侧栏 · 浅色通透",
     /** 色板预览的三个点：侧栏 / 画布 / 主色 */
-    swatch: ["#1c1f27", "#f7f8fa", "#2f6bff"],
-    themeColor: "#f7f8fa",
+    swatch: ["#1e222d", "#eceff6", "#007aff"],
+    themeColor: "#eef1f7",
   },
   {
     id: "lumen",
-    label: "冷白",
+    label: "素白",
     hint: "全浅色 · 白天强光",
-    swatch: ["#ffffff", "#f4f6f9", "#2f6bff"],
-    themeColor: "#f4f6f9",
+    swatch: ["#ffffff", "#f8f9fc", "#007aff"],
+    themeColor: "#f5f7fa",
   },
   {
     id: "obsidian",
-    label: "深空",
-    hint: "全深色 · 夜班盯屏",
-    swatch: ["#0a0d12", "#0e1116", "#3f76ff"],
-    themeColor: "#0e1116",
+    label: "午夜",
+    hint: "全深色玻璃 · 夜班盯屏",
+    swatch: ["#0f1117", "#090b10", "#0a84ff"],
+    themeColor: "#090b10",
   },
 ] as const;
 
@@ -76,7 +76,7 @@ export const THEME_INIT_SCRIPT = [
   "if(!t){try{t=localStorage.getItem(C);}catch(e){}}",
   "if(IDS.indexOf(t)<0)t=D;",
   "var d=document.documentElement;d.setAttribute('data-theme',t);",
-  "var c=t==='obsidian'?'#0e1116':(t==='lumen'?'#f4f6f9':'#f7f8fa');",
+  "var c=t==='obsidian'?'#090b10':(t==='lumen'?'#f5f7fa':'#eef1f7');",
   "var mt=document.querySelector('meta[name=\"theme-color\"]');if(mt)mt.setAttribute('content',c);",
   "}catch(e){}})();",
 ].join("");

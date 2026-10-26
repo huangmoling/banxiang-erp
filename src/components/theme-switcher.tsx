@@ -56,22 +56,22 @@ export function ThemeSwitcher() {
         aria-expanded={open}
         aria-label="切换主题"
         title="切换主题"
-        className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
+        className={`flex h-7 w-7 items-center justify-center rounded-[8px] transition-colors ${
           open
-            ? "border-brand/50 bg-brand-soft text-brand-ink"
-            : "border-transparent text-muted hover:border-line hover:bg-sunken hover:text-ink"
+            ? "bg-brand/14 text-brand-ink"
+            : "text-muted hover:bg-ink/[0.06] hover:text-ink"
         }`}
       >
-        <Palette size={16} strokeWidth={1.75} />
+        <Palette size={15} strokeWidth={1.9} />
       </button>
 
       {open ? (
         <div
           role="listbox"
           aria-label="主题"
-          className="absolute right-0 top-10 z-50 w-[232px] overflow-hidden rounded-xl border border-line bg-card p-1.5 shadow-pop"
+          className="sheet-in glass absolute right-0 top-9 z-50 w-[236px] overflow-hidden rounded-[14px] p-1.5"
         >
-          <div className="px-2 pb-1.5 pt-1 text-[10.5px] font-semibold tracking-[0.08em] text-muted">
+          <div className="px-2 pb-1.5 pt-1 text-[10px] font-semibold tracking-[0.08em] text-muted">
             界面主题
           </div>
           {THEMES.map((t) => {
@@ -83,18 +83,18 @@ export function ThemeSwitcher() {
                 role="option"
                 aria-selected={active}
                 onClick={() => pick(t.id)}
-                className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors ${
-                  active ? "bg-brand-soft" : "hover:bg-sunken"
+                className={`flex w-full items-center gap-2.5 rounded-[9px] px-2 py-[7px] text-left transition-colors ${
+                  active ? "bg-brand/12" : "hover:bg-ink/[0.06]"
                 }`}
               >
-                <span className="flex shrink-0 overflow-hidden rounded-[5px] border border-line">
+                <span className="flex shrink-0 overflow-hidden rounded-[5px] shadow-[0_0_0_1px_rgba(0,0,0,0.08)]">
                   {t.swatch.map((c) => (
-                    <span key={c} className="h-5 w-2" style={{ background: c }} />
+                    <span key={c} className="h-5 w-[7px]" style={{ background: c }} />
                   ))}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span
-                    className={`block text-[13px] leading-tight ${
+                    className={`block text-[12.5px] leading-tight ${
                       active ? "font-medium text-brand-ink" : "text-ink"
                     }`}
                   >
@@ -105,7 +105,7 @@ export function ThemeSwitcher() {
                   </span>
                 </span>
                 {active ? (
-                  <Check size={14} strokeWidth={2.4} className="shrink-0 text-brand-ink" />
+                  <Check size={13} strokeWidth={2.6} className="shrink-0 text-brand-ink" />
                 ) : null}
               </button>
             );
