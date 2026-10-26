@@ -2,30 +2,33 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Loader2, Plus, Search, Undo2 } from "lucide-react";
+import { ChevronRight, Plus, Undo2 } from "lucide-react";
 import { ApiError, api } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
-import {
-  DOC_STATUS_LABEL,
-  DOC_STATUS_TONE,
-  type DocStatus,
-  type ReturnListResult,
-} from "@/modules/returns/return.types";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { DataTable } from "@/components/ui/data-table";
+import { DocStatusBadge } from "@/components/ui/doc-status";
+import { SkeletonTable } from "@/components/ui/skeleton";
+import { ListToolbar, NoticeBar, Pagination, SearchBox, SegmentedFilter } from "@/components/ui/list";
+import type { ReturnDocView, ReturnListResult } from "@/modules/returns/return.types";
 
 const PAGE_SIZE = 20;
+
+type ListStatus = "all" | "draft" | "approved";
 
 export function ReturnsClient({
   initial,
   initialStatus = "all",
 }: {
   initial: ReturnListResult;
-  initialStatus?: "all" | "draft" | "approved";
+  initialStatus?: ListStatus;
 }) {
   const toast = useToast();
 
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
-  const [status, setStatus] = useState<"all" | "draft" | "approved">(initialStatus);
+  const [status, setStatus] = useState<ListStatus>(initialStatus);
   const [page, setPage] = useState(1);
   const [data, setData] = useState<ReturnListResult>(initial);
   const [loading, setLoading] = useState(false);
@@ -65,220 +68,218 @@ export function ReturnsClient({
     void load();
   }, [load]);
 
-  const totalPages = Math.max(1, Math.ceil(data.total / PAGE_SIZE));
+  const hasQuery = debouncedQ.length > 0 || status !== "all";
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-[20px] font-semibold tracking-tight text-ink">退货</h1>
-          <p className="mt-1 text-[12.5px] text-muted">
-            退货必须挂在原出库单上。收到货先验，再决定回良品架、进次品区还是报废。
-          </p>
-        </div>
-        <Link href="/returns/new" className="btn-primary btn-sm">
-          <Plus size={14} />
-          新建退货单
-        </Link>
-      </div>
+    <div className="space-y-3">
+      <PageHeader
+        title="退货"
+        meta={data.total > 0 ? `共 ${data.total} 张` : undefined}
+        description={
+          <>
+            退货必须挂在原出库单上。
+            <span className="text-ink-2">收到货先验，再决定回良品架、进次品区还是报废。</span>
+          </>
+        }
+        actions={
+          <Link href="/returns/new" className="btn-primary btn-sm">
+            <Plus size={14} />
+            新建退货单
+          </Link>
+        }
+      />
 
-      <div className="card flex flex-wrap items-center gap-2 p-2.5">
-        <div className="relative min-w-[200px] flex-1">
-          <Search
-            size={15}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
-          />
-          <input
-            className="input pl-9"
-            placeholder="搜退货单号、原出库单号、淘宝单号、物流单号、产品"
+      <ListToolbar
+        search={
+          <SearchBox
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={setQ}
+            placeholder="搜退货单号、原出库单号、淘宝单号、物流单号、产品"
           />
-        </div>
-
-        <div className="flex rounded-lg border border-line p-0.5">
-          {(
-            [
-              ["all", "全部", null],
-              ["approved", "已生效", data.counts.approved],
-              ["draft", "草稿", data.counts.draft],
-            ] as const
-          ).map(([value, label, count]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => {
-                setStatus(value);
-                setPage(1);
-              }}
-              className={`rounded-md px-2.5 py-1.5 text-[12.5px] transition-colors ${
-                status === value
-                  ? "bg-brand-soft font-medium text-brand-ink"
-                  : "text-ink-2 hover:bg-sunken"
-              }`}
-            >
-              {label}
-              {count !== null && count > 0 ? (
-                <span className="tnum ml-1 text-[11px] text-muted">{count}</span>
-              ) : null}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {data.counts.draft > 0 && status !== "draft" ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-card border border-warn/40 bg-warn-soft px-3.5 py-2.5 text-[12.5px] text-warn">
-          有 <b className="tnum">{data.counts.draft}</b> 张退货草稿还没审核，这些货还没回到账上。
-          <button
-            type="button"
-            onClick={() => {
-              setStatus("draft");
+        }
+        filters={
+          <SegmentedFilter<ListStatus>
+            value={status}
+            onChange={(v) => {
+              setStatus(v);
               setPage(1);
             }}
-            className="underline underline-offset-2 hover:text-warn"
-          >
-            去处理草稿
-          </button>
-        </div>
+            options={[
+              { value: "all", label: "全部" },
+              { value: "approved", label: "已生效", count: data.counts.approved },
+              { value: "draft", label: "草稿", count: data.counts.draft },
+            ]}
+          />
+        }
+      />
+
+      {data.counts.draft > 0 && status !== "draft" ? (
+        <NoticeBar
+          action={
+            <button
+              type="button"
+              onClick={() => {
+                setStatus("draft");
+                setPage(1);
+              }}
+              className="font-medium underline underline-offset-2 hover:opacity-80"
+            >
+              去处理草稿
+            </button>
+          }
+        >
+          有 <b className="tnum">{data.counts.draft}</b> 张退货草稿还没审核，这些货还没回到账上。
+        </NoticeBar>
       ) : null}
 
-      <div className="card overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center gap-2 py-16 text-[13px] text-muted">
-            <Loader2 size={16} className="animate-spin" />
-            加载中…
-          </div>
-        ) : data.items.length === 0 ? (
-          <EmptyState hasQuery={debouncedQ.length > 0 || status !== "all"} />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] border-collapse">
-              <thead>
-                <tr>
-                  <th className="th w-[150px]">退货单号</th>
-                  <th className="th w-[104px]">退货日期</th>
-                  <th className="th w-[150px]">原出库单</th>
-                  <th className="th">退的是什么</th>
-                  <th className="th w-[88px] text-right">数量</th>
-                  <th className="th w-[86px]">状态</th>
-                  <th className="th w-[92px]">制单</th>
-                  <th className="th w-[32px]" />
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((doc) => (
-                  <tr key={doc.id} className="group hover:bg-sunken">
-                    <td className="td">
-                      <Link
-                        href={`/returns/${doc.id}`}
-                        className="tnum font-medium text-ink hover:text-brand-ink"
-                      >
-                        {doc.docNo}
-                      </Link>
-                    </td>
-                    <td className="td tnum text-ink-2">{doc.bizDate}</td>
-                    <td className="td">
-                      {doc.originDocumentId && doc.originDocNo ? (
-                        <Link
-                          href={`/outbound/${doc.originDocumentId}`}
-                          className="tnum text-[12.5px] text-ink-2 hover:text-brand-ink"
-                          title="查看原出库单"
-                        >
-                          {doc.originDocNo}
-                        </Link>
-                      ) : (
-                        <span className="text-[12.5px] text-muted">—</span>
-                      )}
-                    </td>
-                    <td className="td">
-                      <div className="truncate text-ink-2">{doc.preview || "—"}</div>
-                    </td>
-                    <td className="td tnum text-right font-medium">
-                      {doc.totalQty}
-                      <span className="ml-0.5 text-[11.5px] font-normal text-muted">
-                        {doc.items[0]?.unit ?? "件"}
-                      </span>
-                    </td>
-                    <td className="td">
-                      <StatusTag status={doc.status} />
-                    </td>
-                    <td className="td text-[12.5px] text-muted">{doc.createdByName ?? "—"}</td>
-                    <td className="td">
-                      <Link
-                        href={`/returns/${doc.id}`}
-                        className="text-muted transition-colors group-hover:text-brand-ink"
-                        title="查看单据"
-                      >
-                        <ChevronRight size={15} />
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      {loading ? (
+        <SkeletonTable rows={7} cols={6} />
+      ) : (
+        <DataTable
+          minWidth="940px"
+          isEmpty={data.items.length === 0}
+          empty={
+            hasQuery ? (
+              <EmptyState
+                compact
+                icon={<Undo2 size={19} strokeWidth={1.6} />}
+                title="没有找到匹配的退货单"
+                description="换个关键词，或看看别的状态"
+              />
+            ) : (
+              <EmptyState
+                icon={<Undo2 size={19} strokeWidth={1.6} />}
+                title="还没有退货记录"
+                description="客户退回货时开一张单，先选原出库单"
+                action={
+                  <Link href="/returns/new" className="btn-primary btn-sm">
+                    <Plus size={14} />
+                    登记第一张退货单
+                  </Link>
+                }
+              />
+            )
+          }
+          head={
+            <tr>
+              <th className="th w-[156px]">退货单号</th>
+              <th className="th w-[112px]">退货日期</th>
+              <th className="th w-[150px]">原出库单</th>
+              <th className="th">退的是什么</th>
+              <th className="th w-[132px] text-right">数量 · 去向</th>
+              <th className="th w-[136px]">状态</th>
+              <th className="th w-[104px]">制单</th>
+              <th className="th w-[36px]" />
+            </tr>
+          }
+          footer={
+            <Pagination
+              total={data.total}
+              page={page}
+              pageSize={PAGE_SIZE}
+              onChange={setPage}
+              unit="张"
+            />
+          }
+        >
+          {data.items.map((doc) => (
+            <tr key={doc.id} className="group hover:bg-sunken/70">
+              <td className="td">
+                <Link
+                  href={`/returns/${doc.id}`}
+                  className="tnum whitespace-nowrap font-medium text-ink hover:text-brand-ink"
+                >
+                  {doc.docNo}
+                </Link>
+                {doc.trackingNo ? (
+                  <div className="tnum truncate text-[11.5px] text-muted" title={doc.trackingNo}>
+                    退回 {doc.trackingNo}
+                  </div>
+                ) : null}
+              </td>
 
-        {data.total > PAGE_SIZE ? (
-          <div className="flex items-center justify-between border-t border-line-2 px-4 py-2.5 text-[12.5px] text-muted">
-            <span className="tnum">
-              共 {data.total} 张，第 {page} / {totalPages} 页
-            </span>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className="btn-ghost btn-sm"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                上一页
-              </button>
-              <button
-                type="button"
-                className="btn-ghost btn-sm"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              >
-                下一页
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </div>
+              <td className="td tnum whitespace-nowrap text-ink-2">{doc.bizDate}</td>
+
+              <td className="td">
+                {doc.originDocumentId && doc.originDocNo ? (
+                  <Link
+                    href={`/outbound/${doc.originDocumentId}`}
+                    className="tnum whitespace-nowrap text-[12.5px] text-ink-2 hover:text-brand-ink"
+                    title="查看原出库单"
+                  >
+                    {doc.originDocNo}
+                  </Link>
+                ) : (
+                  <span className="text-[12.5px] text-muted">—</span>
+                )}
+                {doc.originBizDate ? (
+                  <div className="tnum text-[11.5px] text-muted">发于 {doc.originBizDate}</div>
+                ) : null}
+              </td>
+
+              <td className="td">
+                <div className="truncate text-ink-2" title={doc.preview}>
+                  {doc.preview || "—"}
+                </div>
+              </td>
+
+              {/*
+                退货最该看清的是"退回来的货去哪了"——回良品架是可售库存 +，
+                进次品区不是。原来这个信息只在详情页有，列表里看不见。
+              */}
+              <td className="td text-right">
+                <div>
+                  <span className="tnum font-medium">{doc.totalQty}</span>
+                  <span className="ml-1 text-[11.5px] font-normal text-muted">
+                    {doc.items[0]?.unit ?? "件"}
+                  </span>
+                </div>
+                <DestinationLine doc={doc} />
+              </td>
+
+              <td className="td">
+                <DocStatusBadge
+                  status={doc.status}
+                  hint={doc.status === "draft" ? "未回库存" : undefined}
+                />
+              </td>
+
+              <td className="td whitespace-nowrap text-[12.5px] text-muted">{doc.createdByName ?? "—"}</td>
+
+              <td className="td">
+                <Link
+                  href={`/returns/${doc.id}`}
+                  className="text-muted transition-colors group-hover:text-brand-ink"
+                  title="查看单据"
+                >
+                  <ChevronRight size={15} />
+                </Link>
+              </td>
+            </tr>
+          ))}
+        </DataTable>
+      )}
     </div>
   );
 }
 
-function StatusTag({ status }: { status: DocStatus }) {
-  return (
-    <span className={`tag ${DOC_STATUS_TONE[status]}`}>
-      {DOC_STATUS_LABEL[status]}
-      {status === "draft" ? <span className="opacity-60">·未回库存</span> : null}
-    </span>
-  );
-}
+/** 去向汇总：只显示非零项，全 0 时不出声 */
+function DestinationLine({ doc }: { doc: ReturnDocView }) {
+  const parts: { key: string; label: string; qty: number; cls: string }[] = [
+    { key: "good", label: "回架", qty: doc.destinationQty.good ?? 0, cls: "text-ok" },
+    { key: "defective", label: "次品", qty: doc.destinationQty.defective ?? 0, cls: "text-warn" },
+    { key: "scrap", label: "报废", qty: doc.destinationQty.scrap ?? 0, cls: "text-ink-2" },
+  ].filter((p) => p.qty > 0);
 
-function EmptyState({ hasQuery }: { hasQuery: boolean }) {
+  if (parts.length === 0) return null;
+
   return (
-    <div className="flex flex-col items-center gap-3 py-16 text-center">
-      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-sunken text-muted">
-        <Undo2 size={20} strokeWidth={1.6} />
-      </div>
-      {hasQuery ? (
-        <>
-          <p className="text-[13.5px] text-ink-2">没有找到匹配的退货单</p>
-          <p className="text-[12.5px] text-muted">换个关键词，或看看别的状态</p>
-        </>
-      ) : (
-        <>
-          <p className="text-[13.5px] text-ink-2">还没有退货记录</p>
-          <p className="text-[12.5px] text-muted">客户退回货时开一张单，先选原出库单</p>
-          <Link href="/returns/new" className="btn-primary btn-sm">
-            <Plus size={14} />
-            登记第一张退货单
-          </Link>
-        </>
-      )}
+    <div className="tnum flex items-center justify-end gap-1.5 text-[11px]">
+      {parts.map((p) => (
+        <span key={p.key} className={p.cls}>
+          {p.label} {p.qty}
+        </span>
+      ))}
     </div>
   );
 }

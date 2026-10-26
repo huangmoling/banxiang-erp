@@ -2,32 +2,35 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, ClipboardCheck, Loader2, Plus, Search } from "lucide-react";
+import { ChevronRight, ClipboardCheck, Plus } from "lucide-react";
 import { ApiError, api } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
+import { PageHeader } from "@/components/ui/page-header";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { DataTable } from "@/components/ui/data-table";
+import { DocStatusBadge } from "@/components/ui/doc-status";
+import { SkeletonTable } from "@/components/ui/skeleton";
+import { ListToolbar, NoticeBar, Pagination, SearchBox, SegmentedFilter } from "@/components/ui/list";
 import { formatDateTime } from "@/lib/date";
-import {
-  DOC_STATUS_LABEL,
-  DOC_STATUS_TONE,
-  LOCATION_TYPE_TONE,
-  type DocStatus,
-  type StocktakeListResult,
-} from "@/modules/stocktake/stocktake.types";
+import type { StocktakeListResult } from "@/modules/stocktake/stocktake.types";
 
 const PAGE_SIZE = 20;
+
+type ListStatus = "all" | "draft" | "approved";
 
 export function StocktakesClient({
   initial,
   initialStatus = "all",
 }: {
   initial: StocktakeListResult;
-  initialStatus?: "all" | "draft" | "approved";
+  initialStatus?: ListStatus;
 }) {
   const toast = useToast();
 
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
-  const [status, setStatus] = useState<"all" | "draft" | "approved">(initialStatus);
+  const [status, setStatus] = useState<ListStatus>(initialStatus);
   const [page, setPage] = useState(1);
   const [data, setData] = useState<StocktakeListResult>(initial);
   const [loading, setLoading] = useState(false);
@@ -67,227 +70,190 @@ export function StocktakesClient({
     void load();
   }, [load]);
 
-  const totalPages = Math.max(1, Math.ceil(data.total / PAGE_SIZE));
+  const hasQuery = debouncedQ.length > 0 || status !== "all";
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-[20px] font-semibold tracking-tight text-ink">盘点</h1>
-          <p className="mt-1 text-[12.5px] text-muted">
-            按仓位盘一次实物，系统拿账面数对差。盘点期间照常发货，不用停业。
-          </p>
-        </div>
-        <Link href="/stocktakes/new" className="btn-primary btn-sm">
-          <Plus size={14} />
-          新建盘点单
-        </Link>
-      </div>
-
-      <div className="card flex flex-wrap items-center gap-2 p-2.5">
-        <div className="relative min-w-[200px] flex-1">
-          <Search
-            size={15}
-            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted"
-          />
-          <input
-            className="input pl-9"
-            placeholder="搜盘点单号、仓位、产品名、备注"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-        </div>
-
-        <div className="flex rounded-lg border border-line p-0.5">
-          {(
-            [
-              ["all", "全部", null],
-              ["approved", "已生效", data.counts.approved],
-              ["draft", "草稿", data.counts.draft],
-            ] as const
-          ).map(([value, label, count]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => {
-                setStatus(value);
-                setPage(1);
-              }}
-              className={`rounded-md px-2.5 py-1.5 text-[12.5px] transition-colors ${
-                status === value
-                  ? "bg-brand-soft font-medium text-brand-ink"
-                  : "text-ink-2 hover:bg-sunken"
-              }`}
-            >
-              {label}
-              {count !== null && count > 0 ? (
-                <span className="tnum ml-1 text-[11px] text-muted">{count}</span>
-              ) : null}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {data.counts.draft > 0 && status !== "draft" ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-card border border-warn/40 bg-warn-soft px-3.5 py-2.5 text-[12.5px] text-warn">
-          有 <b className="tnum">{data.counts.draft}</b> 张盘点草稿还没审核，这些差异还没落到账上。
-          <button
-            type="button"
-            onClick={() => {
-              setStatus("draft");
-              setPage(1);
-            }}
-            className="underline underline-offset-2 hover:text-warn"
-          >
-            去处理草稿
-          </button>
-        </div>
-      ) : null}
-
-      <div className="card overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center gap-2 py-16 text-[13px] text-muted">
-            <Loader2 size={16} className="animate-spin" />
-            加载中…
-          </div>
-        ) : data.items.length === 0 ? (
-          <EmptyState hasQuery={debouncedQ.length > 0 || status !== "all"} />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] border-collapse">
-              <thead>
-                <tr>
-                  <th className="th w-[150px]">盘点单号</th>
-                  <th className="th w-[132px]">截止时点</th>
-                  <th className="th w-[124px]">仓位</th>
-                  <th className="th">盘点结果</th>
-                  <th className="th w-[96px] text-right">差异</th>
-                  <th className="th w-[86px]">状态</th>
-                  <th className="th w-[92px]">制单</th>
-                  <th className="th w-[32px]" />
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((doc) => (
-                  <tr key={doc.id} className="group hover:bg-sunken">
-                    <td className="td">
-                      <Link
-                        href={`/stocktakes/${doc.id}`}
-                        className="tnum font-medium text-ink hover:text-brand-ink"
-                      >
-                        {doc.docNo}
-                      </Link>
-                    </td>
-                    <td className="td tnum text-[12.5px] text-ink-2">
-                      {doc.snapshotAt ? formatDateTime(doc.snapshotAt) : doc.bizDate}
-                    </td>
-                    <td className="td">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-ink-2">{doc.locationName ?? "—"}</span>
-                        <span className={`tag ${LOCATION_TYPE_TONE[doc.locationType]}`}>
-                          {doc.isSellable ? "可售" : "不可售"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="td">
-                      <div className="truncate text-ink-2">{doc.preview || "—"}</div>
-                    </td>
-                    <td className="td tnum text-right">
-                      {doc.diffLines === 0 ? (
-                        <span className="text-[12.5px] text-muted">账实相符</span>
-                      ) : (
-                        <span className="text-[12.5px]">
-                          {doc.gainQty > 0 ? <span className="text-ok">+{doc.gainQty}</span> : null}
-                          {doc.gainQty > 0 && doc.lossQty > 0 ? (
-                            <span className="text-muted"> / </span>
-                          ) : null}
-                          {doc.lossQty > 0 ? (
-                            <span className="text-danger">-{doc.lossQty}</span>
-                          ) : null}
-                        </span>
-                      )}
-                    </td>
-                    <td className="td">
-                      <StatusTag status={doc.status} />
-                    </td>
-                    <td className="td text-[12.5px] text-muted">{doc.createdByName ?? "—"}</td>
-                    <td className="td">
-                      <Link
-                        href={`/stocktakes/${doc.id}`}
-                        className="text-muted transition-colors group-hover:text-brand-ink"
-                        title="查看单据"
-                      >
-                        <ChevronRight size={15} />
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {data.total > PAGE_SIZE ? (
-          <div className="flex items-center justify-between border-t border-line-2 px-4 py-2.5 text-[12.5px] text-muted">
-            <span className="tnum">
-              共 {data.total} 张，第 {page} / {totalPages} 页
-            </span>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className="btn-ghost btn-sm"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                上一页
-              </button>
-              <button
-                type="button"
-                className="btn-ghost btn-sm"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              >
-                下一页
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function StatusTag({ status }: { status: DocStatus }) {
-  return (
-    <span className={`tag ${DOC_STATUS_TONE[status]}`}>
-      {DOC_STATUS_LABEL[status]}
-      {status === "draft" ? <span className="opacity-60">·未调账</span> : null}
-    </span>
-  );
-}
-
-function EmptyState({ hasQuery }: { hasQuery: boolean }) {
-  return (
-    <div className="flex flex-col items-center gap-3 py-16 text-center">
-      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-sunken text-muted">
-        <ClipboardCheck size={20} strokeWidth={1.6} />
-      </div>
-      {hasQuery ? (
-        <>
-          <p className="text-[13.5px] text-ink-2">没有找到匹配的盘点单</p>
-          <p className="text-[12.5px] text-muted">换个关键词，或看看别的状态</p>
-        </>
-      ) : (
-        <>
-          <p className="text-[13.5px] text-ink-2">还没有盘点记录</p>
-          <p className="text-[12.5px] text-muted">
-            建议每月盘一次；先把主仓盘清，再盘次品区
-          </p>
+    <div className="space-y-3">
+      <PageHeader
+        title="盘点"
+        meta={data.total > 0 ? `共 ${data.total} 张` : undefined}
+        description={
+          <>
+            按仓位盘一次实物，系统拿账面数对差。
+            <span className="text-ink-2">盘点期间照常发货，不用停业。</span>
+          </>
+        }
+        actions={
           <Link href="/stocktakes/new" className="btn-primary btn-sm">
             <Plus size={14} />
-            开一张盘点单
+            新建盘点单
           </Link>
-        </>
+        }
+      />
+
+      <ListToolbar
+        search={
+          <SearchBox
+            value={q}
+            onChange={setQ}
+            placeholder="搜盘点单号、仓位、产品名、备注"
+          />
+        }
+        filters={
+          <SegmentedFilter<ListStatus>
+            value={status}
+            onChange={(v) => {
+              setStatus(v);
+              setPage(1);
+            }}
+            options={[
+              { value: "all", label: "全部" },
+              { value: "approved", label: "已生效", count: data.counts.approved },
+              { value: "draft", label: "草稿", count: data.counts.draft },
+            ]}
+          />
+        }
+      />
+
+      {data.counts.draft > 0 && status !== "draft" ? (
+        <NoticeBar
+          action={
+            <button
+              type="button"
+              onClick={() => {
+                setStatus("draft");
+                setPage(1);
+              }}
+              className="font-medium underline underline-offset-2 hover:opacity-80"
+            >
+              去处理草稿
+            </button>
+          }
+        >
+          有 <b className="tnum">{data.counts.draft}</b> 张盘点草稿还没审核，这些差异还没落到账上。
+        </NoticeBar>
+      ) : null}
+
+      {loading ? (
+        <SkeletonTable rows={7} cols={6} />
+      ) : (
+        <DataTable
+          minWidth="980px"
+          isEmpty={data.items.length === 0}
+          empty={
+            hasQuery ? (
+              <EmptyState
+                compact
+                icon={<ClipboardCheck size={19} strokeWidth={1.6} />}
+                title="没有找到匹配的盘点单"
+                description="换个关键词，或看看别的状态"
+              />
+            ) : (
+              <EmptyState
+                icon={<ClipboardCheck size={19} strokeWidth={1.6} />}
+                title="还没有盘点记录"
+                description="建议每月盘一次；先把主仓盘清，再盘次品区"
+                action={
+                  <Link href="/stocktakes/new" className="btn-primary btn-sm">
+                    <Plus size={14} />
+                    开一张盘点单
+                  </Link>
+                }
+              />
+            )
+          }
+          head={
+            <tr>
+              <th className="th w-[152px]">盘点单号</th>
+              <th className="th w-[136px]">截止时点</th>
+              <th className="th w-[136px]">仓位</th>
+              <th className="th">盘点结果</th>
+              <th className="th w-[124px] text-right">差异</th>
+              <th className="th w-[132px]">状态</th>
+              <th className="th w-[104px]">制单</th>
+              <th className="th w-[36px]" />
+            </tr>
+          }
+          footer={
+            <Pagination
+              total={data.total}
+              page={page}
+              pageSize={PAGE_SIZE}
+              onChange={setPage}
+              unit="张"
+            />
+          }
+        >
+          {data.items.map((doc) => (
+            <tr key={doc.id} className="group hover:bg-sunken/70">
+              <td className="td">
+                <Link
+                  href={`/stocktakes/${doc.id}`}
+                  className="tnum whitespace-nowrap font-medium text-ink hover:text-brand-ink"
+                >
+                  {doc.docNo}
+                </Link>
+              </td>
+
+              {/* 截止时点：盘点锁的是某一个瞬间，只写日期会让人误以为盘了一整天 */}
+              <td className="td">
+                <div className="tnum whitespace-nowrap text-[12.5px] text-ink-2">
+                  {doc.snapshotAt ? formatDateTime(doc.snapshotAt) : doc.bizDate}
+                </div>
+              </td>
+
+              <td className="td">
+                <div className="flex items-center gap-1.5">
+                  <span className="truncate text-ink-2">{doc.locationName ?? "—"}</span>
+                  {doc.isSellable ? (
+                    <Badge tone="brand">可售</Badge>
+                  ) : (
+                    <Badge tone="warn">不可售</Badge>
+                  )}
+                </div>
+              </td>
+
+              <td className="td">
+                <div className="truncate text-ink-2" title={doc.preview}>
+                  {doc.preview || "—"}
+                </div>
+              </td>
+
+              <td className="td text-right">
+                {doc.diffLines === 0 ? (
+                  <span className="text-[12.5px] text-muted">账实相符</span>
+                ) : (
+                  <>
+                    <div className="tnum flex items-center justify-end gap-1.5 text-[12.5px] font-medium">
+                      {doc.gainQty > 0 ? <span className="text-ok">+{doc.gainQty}</span> : null}
+                      {doc.lossQty > 0 ? <span className="text-danger">-{doc.lossQty}</span> : null}
+                    </div>
+                    <div className="tnum text-[11px] text-muted">{doc.diffLines} 行不符</div>
+                  </>
+                )}
+              </td>
+
+              <td className="td">
+                <DocStatusBadge
+                  status={doc.status}
+                  hint={doc.status === "draft" ? "未调账" : undefined}
+                />
+              </td>
+
+              <td className="td whitespace-nowrap text-[12.5px] text-muted">{doc.createdByName ?? "—"}</td>
+
+              <td className="td">
+                <Link
+                  href={`/stocktakes/${doc.id}`}
+                  className="text-muted transition-colors group-hover:text-brand-ink"
+                  title="查看单据"
+                >
+                  <ChevronRight size={15} />
+                </Link>
+              </td>
+            </tr>
+          ))}
+        </DataTable>
       )}
     </div>
   );

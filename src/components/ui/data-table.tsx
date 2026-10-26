@@ -18,6 +18,7 @@ export function DataTable({
   isEmpty = false,
   empty,
   footer,
+  minWidth,
 }: {
   head: ReactNode;
   children: ReactNode;
@@ -25,11 +26,16 @@ export function DataTable({
   empty?: ReactNode;
   /** 分页条之类，粘在表格底部 */
   footer?: ReactNode;
+  /** 列多到窄屏放不下时给个下限，靠横向滚动兜住，而不是把列挤成一条缝 */
+  minWidth?: string;
 }) {
   return (
     <div className="overflow-hidden rounded-card border border-line bg-card shadow-card">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-full border-collapse">
+        <table
+          className="w-full border-collapse"
+          style={minWidth ? { minWidth } : undefined}
+        >
           <thead className="bg-sunken/60">{head}</thead>
           <tbody>{isEmpty ? null : children}</tbody>
         </table>

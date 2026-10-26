@@ -3,28 +3,36 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Package, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Loader2, Package, Pencil, Plus, Trash2 } from "lucide-react";
 import { ApiError, api } from "@/lib/api-client";
 import { ProductThumb } from "@/components/product-thumb";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
+import { PageHeader } from "@/components/ui/page-header";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { DataTable } from "@/components/ui/data-table";
+import { SkeletonTable } from "@/components/ui/skeleton";
+import { ListToolbar, NoticeBar, Pagination, SearchBox, SegmentedFilter } from "@/components/ui/list";
 import { colorLabel, type ProductListResult, type ProductView } from "@/modules/product/product.types";
 
 const PAGE_SIZE = 20;
+
+type ListStatus = "all" | "pending" | "complete";
 
 export function ProductsClient({
   initial,
   initialStatus = "all",
 }: {
   initial: ProductListResult;
-  initialStatus?: "all" | "pending" | "complete";
+  initialStatus?: ListStatus;
 }) {
   const router = useRouter();
   const toast = useToast();
 
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
-  const [status, setStatus] = useState<"all" | "pending" | "complete">(initialStatus);
+  const [status, setStatus] = useState<ListStatus>(initialStatus);
   const [page, setPage] = useState(1);
   const [data, setData] = useState<ProductListResult>(initial);
   const [loading, setLoading] = useState(false);
@@ -83,207 +91,216 @@ export function ProductsClient({
     }
   }
 
-  const totalPages = Math.max(1, Math.ceil(data.total / PAGE_SIZE));
+  const hasQuery = debouncedQ.length > 0 || status !== "all";
 
   return (
-    <div className="space-y-4">
-      {/* 页头 */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-[20px] font-semibold tracking-tight text-ink">商品</h1>
-          <p className="mt-1 text-[12.5px] text-muted">
-            一个产品下按颜色分行，一色一个 SKU。入库前先把档案建好，仓管现场只选款和填数量。
-            <span className="text-ink-2">　鼠标移到图片上可看大图。</span>
-          </p>
-        </div>
-        <Link href="/products/new" className="btn-primary btn-sm">
-          <Plus size={14} />
-          新建产品
-        </Link>
-      </div>
+    <div className="space-y-3">
+      <PageHeader
+        title="商品"
+        meta={data.total > 0 ? `共 ${data.total} 款` : undefined}
+        description={
+          <>
+            一个产品下按颜色分行，一色一个 SKU。
+            <span className="text-ink-2">入库前先把档案建好，仓管现场只选款、填数量。</span>
+          </>
+        }
+        actions={
+          <Link href="/products/new" className="btn-primary btn-sm">
+            <Plus size={14} />
+            新建产品
+          </Link>
+        }
+      />
 
-      {/* 筛选条 */}
-      <div className="card flex flex-wrap items-center gap-2 p-2.5">
-        <div className="relative min-w-[200px] flex-1">
-          <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-          <input
-            className="input pl-9"
-            placeholder="搜产品名称、拼音首字母（如 boby）"
+      <ListToolbar
+        search={
+          <SearchBox
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={setQ}
+            placeholder="搜产品名称、拼音首字母（如 boby）"
           />
-        </div>
-
-        <div className="flex rounded-lg border border-line p-0.5">
-          {(
-            [
-              ["all", "全部"],
-              ["pending", "待完善"],
-              ["complete", "已完善"],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => {
-                setStatus(value);
-                setPage(1);
-              }}
-              className={`rounded-md px-2.5 py-1.5 text-[12.5px] transition-colors ${
-                status === value ? "bg-brand-soft font-medium text-brand-ink" : "text-ink-2 hover:bg-sunken"
-              }`}
-            >
-              {label}
-              {value === "pending" && data.pendingCount > 0 ? (
-                <span className="tnum ml-1 text-[11px] text-warn">{data.pendingCount}</span>
-              ) : null}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {data.pendingCount > 0 && status !== "pending" ? (
-        <div className="flex items-center gap-2 rounded-card border border-warn/40 bg-warn-soft px-3.5 py-2.5 text-[12.5px] text-warn">
-          有 <b className="tnum">{data.pendingCount}</b> 款产品还没传图，找货时不好认。
-          <button
-            type="button"
-            onClick={() => {
-              setStatus("pending");
+        }
+        filters={
+          <SegmentedFilter<ListStatus>
+            value={status}
+            onChange={(v) => {
+              setStatus(v);
               setPage(1);
             }}
-            className="underline underline-offset-2 hover:text-warn"
-          >
-            只看待完善
-          </button>
-        </div>
+            options={[
+              { value: "all", label: "全部" },
+              { value: "pending", label: "待完善", count: data.pendingCount },
+              { value: "complete", label: "已完善" },
+            ]}
+          />
+        }
+      />
+
+      {data.pendingCount > 0 && status !== "pending" ? (
+        <NoticeBar
+          action={
+            <button
+              type="button"
+              onClick={() => {
+                setStatus("pending");
+                setPage(1);
+              }}
+              className="font-medium underline underline-offset-2 hover:opacity-80"
+            >
+              只看待完善
+            </button>
+          }
+        >
+          有 <b className="tnum">{data.pendingCount}</b> 款产品还没传图，找货时不好认。
+        </NoticeBar>
       ) : null}
 
-      {/* 列表 */}
-      <div className="card overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center gap-2 py-16 text-[13px] text-muted">
-            <Loader2 size={16} className="animate-spin" />
-            加载中…
-          </div>
-        ) : data.items.length === 0 ? (
-          <EmptyState hasQuery={debouncedQ.length > 0 || status !== "all"} />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse">
-              <thead>
-                <tr>
-                  <th className="th">产品</th>
-                  <th className="th">颜色（一色一行）</th>
-                  <th className="th w-[86px] text-right">在库</th>
-                  <th className="th w-[70px]">单位</th>
-                  <th className="th w-[92px]">状态</th>
-                  <th className="th w-[96px] text-right">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((p) => (
-                  <tr key={p.id} className="group hover:bg-sunken">
-                    <td className="td">
-                      <div className="flex items-center gap-3">
-                        <ProductThumb url={p.imageUrl} name={p.name} size={36} />
-                        <div className="min-w-0">
-                          <div className="truncate font-medium text-ink">{p.name}</div>
-                          <div className="text-[11.5px] text-muted">
-                            {p.category ?? "未分类"} · {p.colorCount} 个颜色
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="td">
-                      <div className="flex flex-wrap gap-1">
-                        {p.colors.slice(0, 4).map((c) => (
-                          <span
-                            key={c.id}
-                            className={`tag ${
-                              c.variantType === "custom"
-                                ? "bg-warn-soft text-warn"
-                                : "bg-sunken text-ink-2"
-                            }`}
-                            title={
-                              c.variantType === "custom"
-                                ? `${colorLabel(c)} · 在库 ${c.stock} · 定制款（按件追踪，退货不可回良品）`
-                                : `${colorLabel(c)} · 在库 ${c.stock} · 常规款（按数量追踪）`
-                            }
-                          >
-                            {colorLabel(c)}
-                            {c.variantType === "custom" ? <span className="opacity-70">·定制</span> : null}
-                          </span>
-                        ))}
-                        {p.colors.length > 4 ? (
-                          <span className="tag bg-sunken text-muted">+{p.colors.length - 4}</span>
-                        ) : null}
-                      </div>
-                    </td>
-                    <td className="td tnum text-right font-medium">
-                      {p.totalStock}
-                      <span className="ml-0.5 text-[11.5px] font-normal text-muted">{p.unit}</span>
-                    </td>
-                    <td className="td text-ink-2">{p.unit}</td>
-                    <td className="td">
-                      {p.profileStatus === "pending" ? (
-                        <span className="tag bg-warn-soft text-warn">待完善</span>
-                      ) : (
-                        <span className="tag bg-ok-soft text-ok">已完善</span>
-                      )}
-                    </td>
-                    <td className="td">
-                      <div className="flex items-center justify-end gap-1">
-                        <Link
-                          href={`/products/${p.id}/edit`}
-                          className="rounded-md p-1.5 text-muted transition-colors hover:bg-line-2 hover:text-brand-ink"
-                          title="编辑"
-                        >
-                          <Pencil size={14} />
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => setToDelete(p)}
-                          className="rounded-md p-1.5 text-muted transition-colors hover:bg-danger-soft hover:text-danger"
-                          title="删除"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      {loading ? (
+        <SkeletonTable rows={7} cols={5} />
+      ) : (
+        <DataTable
+          minWidth="760px"
+          isEmpty={data.items.length === 0}
+          empty={
+            hasQuery ? (
+              <EmptyState
+                compact
+                icon={<Package size={19} strokeWidth={1.6} />}
+                title="没有找到匹配的产品"
+                description="换个关键词试试，或者直接新建一款"
+                action={
+                  <Link href="/products/new" className="btn-ghost btn-sm">
+                    <Plus size={14} />
+                    新建产品
+                  </Link>
+                }
+              />
+            ) : (
+              <EmptyState
+                icon={<Package size={19} strokeWidth={1.6} />}
+                title="还没有产品"
+                description="先把常卖的款建进来，入库时就能直接选"
+                action={
+                  <Link href="/products/new" className="btn-primary btn-sm">
+                    <Plus size={14} />
+                    新建第一个产品
+                  </Link>
+                }
+              />
+            )
+          }
+          head={
+            <tr>
+              <th className="th">产品</th>
+              <th className="th">颜色 · 各色在库（一色一行）</th>
+              <th className="th w-[110px] text-right">在库合计</th>
+              <th className="th w-[92px]">档案</th>
+              <th className="th w-[88px] text-right">操作</th>
+            </tr>
+          }
+          footer={
+            <Pagination
+              total={data.total}
+              page={page}
+              pageSize={PAGE_SIZE}
+              onChange={setPage}
+              unit="款"
+            />
+          }
+        >
+          {data.items.map((p) => (
+            <tr key={p.id} className="group hover:bg-sunken/70">
+              <td className="td">
+                <div className="flex items-center gap-3">
+                  <ProductThumb url={p.imageUrl} name={p.name} size={36} />
+                  <div className="min-w-0">
+                    <div className="truncate font-medium text-ink">{p.name}</div>
+                    <div className="text-[11.5px] text-muted">
+                      {p.category ?? "未分类"} · {p.colorCount} 色 · {p.unit}
+                    </div>
+                  </div>
+                </div>
+              </td>
 
-        {/* 分页 */}
-        {data.total > PAGE_SIZE ? (
-          <div className="flex items-center justify-between border-t border-line-2 px-4 py-2.5 text-[12.5px] text-muted">
-            <span className="tnum">
-              共 {data.total} 款，第 {page} / {totalPages} 页
-            </span>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className="btn-ghost btn-sm"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                上一页
-              </button>
-              <button
-                type="button"
-                className="btn-ghost btn-sm"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              >
-                下一页
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </div>
+              {/*
+                颜色标签里直接带在库数。原来这个数只写在 title 提示里，
+                要拿鼠标悬一下才看得见——仓管扫货时不会去悬停。
+              */}
+              <td className="td">
+                <div className="flex flex-wrap items-center gap-1">
+                  {p.colors.slice(0, 5).map((c) => (
+                    <span
+                      key={c.id}
+                      className={`tag ${
+                        c.variantType === "custom"
+                          ? "bg-custom-soft text-custom"
+                          : "bg-sunken text-ink-2"
+                      }`}
+                      title={
+                        c.variantType === "custom"
+                          ? `${colorLabel(c)} · 定制款，按件追踪，退货不可回良品`
+                          : `${colorLabel(c)} · 常规款，按数量追踪`
+                      }
+                    >
+                      {colorLabel(c)}
+                      <span
+                        className={`tnum font-semibold ${
+                          c.stock > 0 ? "" : "font-normal text-muted"
+                        }`}
+                      >
+                        {c.stock}
+                      </span>
+                      {c.variantType === "custom" ? <span>定制</span> : null}
+                    </span>
+                  ))}
+                  {p.colors.length > 5 ? (
+                    <span className="tag bg-sunken text-muted">+{p.colors.length - 5}</span>
+                  ) : null}
+                </div>
+              </td>
+
+              <td className="td text-right">
+                <span
+                  className={`tnum text-[15px] font-semibold ${
+                    p.totalStock > 0 ? "text-ink" : "text-muted"
+                  }`}
+                >
+                  {p.totalStock}
+                </span>
+                <span className="ml-1 text-[11.5px] text-muted">{p.unit}</span>
+              </td>
+
+              <td className="td">
+                {p.profileStatus === "pending" ? (
+                  <Badge tone="warn">待完善</Badge>
+                ) : (
+                  <Badge tone="ok">已完善</Badge>
+                )}
+              </td>
+
+              <td className="td">
+                <div className="flex items-center justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100">
+                  <Link
+                    href={`/products/${p.id}/edit`}
+                    className="rounded-md p-1.5 text-muted transition-colors hover:bg-line-2 hover:text-brand-ink"
+                    title="编辑"
+                  >
+                    <Pencil size={14} />
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setToDelete(p)}
+                    className="rounded-md p-1.5 text-muted transition-colors hover:bg-danger-soft hover:text-danger"
+                    title="删除"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </DataTable>
+      )}
 
       <Modal
         open={!!toDelete}
@@ -306,35 +323,6 @@ export function ProductsClient({
           </>
         }
       />
-    </div>
-  );
-}
-
-function EmptyState({ hasQuery }: { hasQuery: boolean }) {
-  return (
-    <div className="flex flex-col items-center gap-3 py-16 text-center">
-      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-sunken text-muted">
-        <Package size={20} strokeWidth={1.6} />
-      </div>
-      {hasQuery ? (
-        <>
-          <p className="text-[13.5px] text-ink-2">没有找到匹配的产品</p>
-          <p className="text-[12.5px] text-muted">换个关键词试试，或者直接新建</p>
-          <Link href="/products/new" className="btn-ghost btn-sm">
-            <Plus size={14} />
-            新建产品
-          </Link>
-        </>
-      ) : (
-        <>
-          <p className="text-[13.5px] text-ink-2">还没有产品</p>
-          <p className="text-[12.5px] text-muted">先把常卖的款建进来，入库时就能直接选</p>
-          <Link href="/products/new" className="btn-primary btn-sm">
-            <Plus size={14} />
-            新建第一个产品
-          </Link>
-        </>
-      )}
     </div>
   );
 }
