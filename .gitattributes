@@ -1,0 +1,28 @@
+# 统一行尾规则（2026-10-26 加）
+#
+# 背景：本项目旧仓库 core.autocrlf=false，git 比较时不转换行尾，
+# 而工作区长期混着 CRLF / LF（28 个 CRLF、195 个 LF）。后果有两个：
+#   1. 解压备份包或新克隆后，git 重读文件、满屏假的 modified；
+#   2. 一旦编辑到某个 CRLF 文件，提交里就是整文件重写，真实改动被淹掉。
+# 修法：仓库内一律存 LF，检出到工作区也用 LF，比较时自动规范化。
+
+* text=auto eol=lf
+
+# Windows 脚本必须 CRLF
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# 二进制，禁止任何行尾转换
+*.exe     binary
+*.db      binary
+*.db-wal  binary
+*.db-shm  binary
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.webp    binary
+*.ico     binary
+*.woff    binary
+*.woff2   binary
+*.zip     binary
