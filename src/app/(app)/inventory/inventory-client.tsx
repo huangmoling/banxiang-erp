@@ -9,6 +9,7 @@ import {
   TriangleAlert,
   Warehouse,
 } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import { api } from "@/lib/api-client";
 import type {
   InventoryBatch,
@@ -189,18 +190,16 @@ export function InventoryClient({ initial }: { initial: InventorySummary }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-[20px] font-semibold tracking-tight text-ink">库存</h1>
-          <p className="mt-1 text-[13px] text-muted">
-            库存数字全部由流水推导，没有任何地方可以直接改数。要改只能开单或红冲。
-          </p>
-        </div>
-        <a className="btn-ghost btn-sm" href={exportHref} download>
-          <Download size={14} strokeWidth={1.8} />
-          导出当前表格
-        </a>
-      </div>
+      <PageHeader
+        title="库存"
+        description="库存数字全部由流水推导，没有任何地方可以直接改数。要改只能开单或红冲。"
+        actions={
+          <a className="btn-ghost btn-sm" href={exportHref} download>
+            <Download size={14} strokeWidth={1.8} />
+            导出当前表格
+          </a>
+        }
+      />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard

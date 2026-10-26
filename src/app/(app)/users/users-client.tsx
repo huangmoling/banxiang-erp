@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { KeyRound, Plus, ShieldCheck, UserRound } from "lucide-react";
 import { api } from "@/lib/api-client";
+import { PageHeader } from "@/components/ui/page-header";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import type { UserListResult, UserRole, UserRow } from "@/modules/user/user.types";
@@ -86,18 +87,16 @@ export function UsersClient({ currentUserId }: { currentUserId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-[20px] font-semibold tracking-tight text-ink">账号</h1>
-          <p className="mt-1 text-[13px] text-muted">
-            5–10 个人的小团队，按角色分工就够用。停用比删除安全——单据上的经手人名字要留着。
-          </p>
-        </div>
-        <button type="button" className="btn-primary btn-sm" onClick={() => setCreateOpen(true)}>
-          <Plus size={14} strokeWidth={2} />
-          新增账号
-        </button>
-      </div>
+      <PageHeader
+        title="账号"
+        description="5–10 个人的小团队，按角色分工就够用。停用比删除安全——单据上的经手人名字要留着。"
+        actions={
+          <button type="button" className="btn-primary btn-sm" onClick={() => setCreateOpen(true)}>
+            <Plus size={14} strokeWidth={2} />
+            新增账号
+          </button>
+        }
+      />
 
       {error ? (
         <div className="card border-danger/30 bg-danger-soft px-4 py-3 text-[13px] text-danger">{error}</div>

@@ -22,6 +22,7 @@ import {
   Upload,
 } from "lucide-react";
 import { ApiError, api } from "@/lib/api-client";
+import { PageHeader } from "@/components/ui/page-header";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { CRON_PRESETS, describeCron, isValidCron, nextCronRun } from "@/lib/cron";
@@ -288,16 +289,11 @@ export function BackupsClient() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-[20px] font-semibold tracking-tight text-ink">数据备份</h1>
-          <p className="mt-1 text-[12.5px] leading-5 text-muted">
-            备份就是把整个库拷一份完整的快照。服务器坏了、升级出问题、数据被误删，
-            都能用这里的一份文件把账原样装回去。开启网盘上传后，还会再往云端存一份——
-            NAS 整台报废也还有救。
-          </p>
-        </div>
-        <div className="flex gap-2">
+      <PageHeader
+        title="数据备份"
+        description="备份就是把整个库拷一份完整的快照。服务器坏了、升级出问题、数据被误删，都能用这里的一份文件把账原样装回去。开启网盘上传后，还会再往云端存一份——NAS 整台报废也还有救。"
+        actions={
+          <div className="flex gap-2">
           <button type="button" className="btn-ghost btn-sm" onClick={() => void load()} disabled={loading}>
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             刷新
@@ -311,15 +307,16 @@ export function BackupsClient() {
             {busy === "manual" ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             立即备份
           </button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {data?.settings.lastAutoError ? (
         <div className="flex items-start gap-2 rounded-card border border-danger/30 bg-danger-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-danger">
           <AlertTriangle size={15} className="mt-0.5 shrink-0" />
           <div>
             上一次定时备份失败了：{data.settings.lastAutoError}
-            <div className="mt-0.5 text-[11.5px] opacity-80">
+            <div className="mt-0.5 text-[11.5px]">
               多半是磁盘满了或备份目录没有写权限。在处理之前，建议先点「立即备份」手动补一份。
             </div>
           </div>
@@ -331,7 +328,7 @@ export function BackupsClient() {
           <Cloud size={15} className="mt-0.5 shrink-0" />
           <div>
             最近一次上传网盘失败：{data.settings.lastUploadError}
-            <div className="mt-0.5 text-[11.5px] opacity-80">
+            <div className="mt-0.5 text-[11.5px]">
               本地备份是好的，只是云上那份没更新。网络恢复后在列表里点云朵图标重传即可。
             </div>
           </div>
@@ -633,7 +630,7 @@ export function BackupsClient() {
               )}
               <div>
                 {testResult.message}
-                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] opacity-85">
+                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
                   <span>登录账号：{testResult.user ?? "—"}</span>
                   <span>目录：{testResult.pathExists ? "存在" : "不存在"}</span>
                   <span>权限：{testResult.writable ? "可写" : "不可写 / 未知"}</span>
@@ -922,7 +919,7 @@ export function BackupsClient() {
                   <b>请重启一次服务</b>（NAS 上执行 <code>docker compose restart</code>），
                   启动时会自动把缺的表结构补上。
                   {restoreResult.pendingMigrations.length > 0 ? (
-                    <div className="mt-1 break-all text-[11px] opacity-80">
+                    <div className="mt-1 break-all text-[11px]">
                       缺失：{restoreResult.pendingMigrations.join("、")}
                     </div>
                   ) : null}

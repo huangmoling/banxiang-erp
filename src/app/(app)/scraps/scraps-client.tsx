@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Plus, Search } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import { ApiError, api } from "@/lib/api-client";
 import { DOC_STATUS_LABEL, DOC_STATUS_TONE, type ScrapListResult } from "@/modules/scrap/scrap.types";
 
@@ -63,18 +64,16 @@ export function ScrapsClient({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-[19px] font-semibold text-ink">报废与处置</h1>
-          <p className="mt-1 text-[13px] text-muted">
-            次品区的货从这里走出去：转报废、线下出售、自行处理。系统不记价格，只记数量与去向。
-          </p>
-        </div>
-        <Link href="/scraps/new" className="btn-primary btn-sm">
-          <Plus size={14} />
-          新建处置单
-        </Link>
-      </div>
+      <PageHeader
+        title="报废与处置"
+        description="次品区的货从这里走出去：转报废、线下出售、自行处理。系统不记价格，只记数量与去向。"
+        actions={
+          <Link href="/scraps/new" className="btn-primary btn-sm">
+            <Plus size={14} />
+            新建处置单
+          </Link>
+        }
+      />
 
       <div className="card overflow-hidden">
         <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3">

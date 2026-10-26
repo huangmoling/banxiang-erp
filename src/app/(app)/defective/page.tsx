@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, PackageOpen, Undo2 } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import { scrapService } from "@/modules/scrap/scrap.service";
 import { colorText } from "@/modules/scrap/scrap.types";
 
@@ -21,13 +22,10 @@ export default async function DefectivePage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-[19px] font-semibold text-ink">次品区</h1>
-        <p className="mt-1 text-[13px] text-muted">
-          退货判定为不能二次销售的货都在这里。它不计入可售库存，也不会自己消失——
-          每条都得走一条出路。
-        </p>
-      </div>
+      <PageHeader
+        title="次品区"
+        description="退货判定为不能二次销售的货都在这里。它不计入可售库存，也不会自己消失——每条都得走一条出路。"
+      />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="card px-4 py-3">

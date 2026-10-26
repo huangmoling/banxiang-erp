@@ -611,7 +611,7 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
                                         >
                                           {selected ? <Check size={11} /> : null}
                                           <span className="tnum">{inst.code}</span>
-                                          <span className="text-[10.5px] opacity-70">
+                                          <span className="text-[10.5px] text-muted">
                                             {blocked
                                               ? inst.reservedBy
                                                 ? `${inst.reservedBy} 占用`

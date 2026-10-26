@@ -9,6 +9,7 @@ import {
   Trash2,
   Undo2,
 } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import { reportService } from "@/modules/report/report.service";
 import { BATCH_AGE_LEVEL_TONE, type ReportOverview } from "@/modules/report/report.types";
 
@@ -140,24 +141,22 @@ export default async function ReportsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-[20px] font-semibold tracking-tight text-ink">报表</h1>
-          <p className="mt-1 text-[13px] text-muted">
-            统计区间：{report.range.label} · {report.range.from} 至 {report.range.to}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <a className="btn-ghost btn-sm" href="/api/export/documents" download>
-            <Download size={14} strokeWidth={1.8} />
-            单据清单
-          </a>
-          <a className="btn-ghost btn-sm" href="/api/export/loss" download>
-            <Download size={14} strokeWidth={1.8} />
-            损耗台账
-          </a>
-        </div>
-      </div>
+      <PageHeader
+        title="报表"
+        description={`统计区间：${report.range.label} · ${report.range.from} 至 ${report.range.to}`}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <a className="btn-ghost btn-sm" href="/api/export/documents" download>
+              <Download size={14} strokeWidth={1.8} />
+              单据清单
+            </a>
+            <a className="btn-ghost btn-sm" href="/api/export/loss" download>
+              <Download size={14} strokeWidth={1.8} />
+              损耗台账
+            </a>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <BigStat

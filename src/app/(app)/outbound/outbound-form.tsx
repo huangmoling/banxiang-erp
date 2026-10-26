@@ -709,7 +709,7 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
                                     >
                                       {selected ? <Check size={11} /> : null}
                                       <span className="tnum">{inst.code}</span>
-                                      <span className="text-[10.5px] opacity-70">
+                                      <span className="text-[10.5px] text-muted">
                                         {locked
                                           ? `已被 ${inst.reservedBy} 占用`
                                           : (inst.productionDate ?? "无生产日期")}
