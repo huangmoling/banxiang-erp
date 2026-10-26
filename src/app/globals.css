@@ -44,7 +44,8 @@
 
   --c-warn: 154 92 0;
   --c-warn-soft: 253 243 227;
-  --c-danger: 209 59 46;
+  --c-danger: 192 52 42;
+  --c-danger-solid: 192 52 42;
   --c-danger-soft: 253 236 234;
   --c-ok: 16 121 79;
   --c-ok-soft: 232 246 239;
@@ -89,6 +90,7 @@
   --c-warn: 154 92 0;
   --c-warn-soft: 253 243 227;
   --c-danger: 198 45 34;
+  --c-danger-solid: 198 45 34;
   --c-danger-soft: 253 235 233;
   --c-ok: 13 116 76;
   --c-ok-soft: 230 245 238;
@@ -134,6 +136,7 @@
   --c-warn: 224 160 58;
   --c-warn-soft: 42 33 20;
   --c-danger: 224 90 77;
+  --c-danger-solid: 201 69 58;
   --c-danger-soft: 44 22 20;
   --c-ok: 70 180 124;
   --c-ok-soft: 18 36 26;

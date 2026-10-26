@@ -194,7 +194,7 @@ export function AppShell({
                   <span>{item.label}</span>
                   {item.href === "/outbound" && pending > 0 ? (
                     <span
-                      className="ml-auto min-w-[17px] rounded-full bg-danger px-1.5 text-center text-[10.5px] font-semibold leading-[17px] text-white"
+                      className="ml-auto min-w-[17px] rounded-full bg-danger-solid px-1.5 text-center text-[10.5px] font-semibold leading-[17px] text-white"
                       title={`${pending} 个包裹待发出`}
                     >
                       {pending}

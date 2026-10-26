@@ -44,7 +44,12 @@ const config: Config = {
         },
 
         warn: { DEFAULT: v("--c-warn"), soft: v("--c-warn-soft") },
-        danger: { DEFAULT: v("--c-danger"), soft: v("--c-danger-soft") },
+        danger: {
+          DEFAULT: v("--c-danger"),
+          /** 实心红底：白字专用，比正文红暗一档 */
+          solid: v("--c-danger-solid"),
+          soft: v("--c-danger-soft"),
+        },
         ok: { DEFAULT: v("--c-ok"), soft: v("--c-ok-soft") },
 
         /* 侧栏自成一套：graphite/obsidian 深色，lumen 浅色 */
