@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "prisma generate && next build",
+    "postbuild": "node scripts/clean.mjs --keep 0 --quiet",
+    "clean": "node scripts/clean.mjs --keep 0",
+    "clean:dry": "node scripts/clean.mjs --keep 0 --dry",
     "start": "next start -p 3000",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",

@@ -233,10 +233,41 @@ suteng-erp/
 | `JWT_SECRET` | 令牌签名密钥，**至少 32 位随机字符** | 无（必填） |
 | `ACCESS_TOKEN_TTL` | 访问令牌有效期（秒） | 28800（8 小时） |
 | `REFRESH_TOKEN_TTL` | 刷新令牌有效期（秒） | 6048000（70 天） |
-| `UPLOAD_DIR` | 商品图片目录 | `./data/uploads` |
+| `UPLOAD_DIR` | 商品图片目录，支持绝对路径 | `./data/uploads` |
 | `UPLOAD_MAX_MB` | 单张图片上限 | 5 |
 | `BOOTSTRAP_ADMIN_*` | 首次建库时的初始管理员 | admin / suteng@2026 |
 | `LOG_LEVEL` | 日志级别 | info |
+
+### UPLOAD_DIR 怎么自定义（docker 部署）
+
+`UPLOAD_DIR` 是**容器内**的路径，不是宿主机路径。想让它落到宿主机某个磁盘上，
+必须再有一条 `volumes` 把那个宿主机目录接到这个容器内路径上，两处要一致：
+
+```yaml
+    environment:
+      UPLOAD_DIR: "/app/uploads"                  # 容器内，随便取名，只要和下一行对上
+    volumes:
+      - ./data:/app/data                          # 数据库照旧
+      - /data/suteng/uploads:/app/uploads         # 图片真正落地的地方
+```
+
+只改 `UPLOAD_DIR` 不配 `volumes`，容器会在自己那层新建一个空目录——宿主机上永远看不到
+图片，重建容器（`pull` 后 `up -d`）就全没了，而且没有任何报错。
+
+相对路径相对的是容器工作目录 `/app`，所以默认值 `./data/uploads` 等价于
+`/app/data/uploads`。**建议一律写绝对路径**，省得自己算。
+
+改路径之后老图片不会自动跟过去，要手工搬（否则历史图片全部 404）：
+
+```bash
+mkdir -p /data/suteng/uploads
+docker cp suteng-erp:/app/data/uploads/. /data/suteng/uploads/   # 从旧位置捞出来
+docker compose up -d --force-recreate
+```
+
+⚠️ 图片挪出 `./data` 之后，就不再被「整卷备份」带着走了。系统内的自动备份只做数据库
+快照（`VACUUM INTO`），**从来不含图片**，所以这个目录要单独安排备份（宝塔计划任务
+rsync／定时打包都行）。图片目录也不要放 SMB／NFS 网络盘。
 
 ---
 

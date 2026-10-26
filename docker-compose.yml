@@ -19,6 +19,13 @@ services:
       JWT_SECRET: "${JWT_SECRET:?请先设置 JWT_SECRET，可用 node -e \"console.log(require('crypto').randomBytes(48).toString('base64url'))\" 生成}"
       ACCESS_TOKEN_TTL: "28800"
       REFRESH_TOKEN_TTL: "6048000"
+      # 容器内绝对路径，默认跟数据库一起放在 /app/data 下，由下面的 ./data 整卷带出去。
+      # 想把图片单独放别的盘，改这里 + 加一条 volume，两处必须对上：
+      #   UPLOAD_DIR: "/app/uploads"
+      #   volumes:
+      #     - /data/suteng/uploads:/app/uploads
+      # 注意填的是「容器内」路径，不是宿主机路径；只改这里不加挂载，
+      # 图片会写在容器可写层，重建容器就没了，且不会有任何报错。
       UPLOAD_DIR: "/app/data/uploads"
       UPLOAD_MAX_MB: "5"
       APP_NAME: "宿藤家居 ERP"
