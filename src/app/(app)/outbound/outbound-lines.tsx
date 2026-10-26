@@ -226,12 +226,21 @@ export function OutboundLines({ doc, role }: { doc: OutboundDocView; role: strin
 
                 {/* 收货信息：整段显示，不截断——仓管照着这行字贴单 */}
                 <div className="mt-1 whitespace-pre-line break-words text-[12px] leading-[1.6] text-ink-2">
-                  {item.receiverInfo || (
-                    <span className="text-danger">还没填收货地址，发不出去</span>
+                  {item.receiverInfo ? (
+                    <>
+                      {item.receiverInfo}
+                      {item.receiverInherited ? (
+                        <span className="ml-1.5 text-[11px] text-muted">（沿用整单地址）</span>
+                      ) : null}
+                    </>
+                  ) : item.shipped ? (
+                    /* 已经发出的行不该再喊"发不出去"：历史单里地址可以是空的，那是过去的事 */
+                    <span className="text-muted">已发出，这张单当时没留收货地址</span>
+                  ) : (
+                    <Badge tone="danger" dot>
+                      还没填收货地址，发不出去
+                    </Badge>
                   )}
-                  {item.receiverInherited ? (
-                    <span className="ml-1.5 text-[11px] text-muted">（沿用整单地址）</span>
-                  ) : null}
                 </div>
 
                 <div className="tnum mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11.5px] text-muted">

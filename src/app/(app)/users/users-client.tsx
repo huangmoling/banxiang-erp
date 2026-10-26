@@ -11,6 +11,18 @@ import { USER_ROLES, USER_ROLE_HINT, USER_ROLE_LABEL, USER_ROLE_TONE } from "@/m
 
 const EMPTY_FORM = { username: "", displayName: "", role: "keeper" as UserRole, password: "" };
 
+/**
+ * 角色下拉自己带颜色，不再在左边叠一个同名 tag。
+ * 原来「仓管」徽章 + 「仓管」下拉并排出现两次，列宽被吃掉，一眼看过去像两个不同的角色。
+ */
+const ROLE_TEXT: Record<UserRole, string> = {
+  admin: "text-brand-ink",
+  manager: "text-ok",
+  keeper: "text-warn",
+  clerk: "text-brand-ink",
+  viewer: "text-muted",
+};
+
 export function UsersClient({ currentUserId }: { currentUserId: string }) {
   const toast = useToast();
   const [data, setData] = useState<UserListResult | null>(null);
@@ -140,24 +152,21 @@ export function UsersClient({ currentUserId }: { currentUserId: string }) {
                       </td>
                       <td className="td text-ink-2">{u.username}</td>
                       <td className="td">
-                        <div className="flex items-center gap-2">
-                          <span className={`tag ${USER_ROLE_TONE[u.role]}`}>{USER_ROLE_LABEL[u.role]}</span>
-                          <select
-                            className="rounded-md border border-line bg-card px-1.5 py-1 text-[12px] text-ink-2 outline-none focus:border-brand"
-                            value={u.role}
-                            disabled={isSelf}
-                            title={isSelf ? "不能改自己的角色" : USER_ROLE_HINT[u.role]}
-                            onChange={(e) =>
-                              patch(u.id, { role: e.target.value }, `「${u.displayName}」的角色已更新`)
-                            }
-                          >
-                            {USER_ROLES.map((r) => (
-                              <option key={r} value={r}>
-                                {USER_ROLE_LABEL[r]}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                        <select
+                          className={`rounded-md border border-line bg-card px-1.5 py-1 text-[12px] font-medium outline-none focus:border-brand ${ROLE_TEXT[u.role]}`}
+                          value={u.role}
+                          disabled={isSelf}
+                          title={isSelf ? "不能改自己的角色" : USER_ROLE_HINT[u.role]}
+                          onChange={(e) =>
+                            patch(u.id, { role: e.target.value }, `「${u.displayName}」的角色已更新`)
+                          }
+                        >
+                          {USER_ROLES.map((r) => (
+                            <option key={r} value={r}>
+                              {USER_ROLE_LABEL[r]}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                       <td className="td">
                         {u.isActive ? (
