@@ -7,6 +7,7 @@ import { AlertCircle, ArrowLeft, ImagePlus, Loader2, Plus, Trash2, X } from "luc
 import { ApiError, api } from "@/lib/api-client";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
+import { FormTitle, InlineError } from "@/components/ui/doc";
 import { UNIT_OPTIONS, type ProductView } from "@/modules/product/product.types";
 
 type ColorRow = {
@@ -185,29 +186,19 @@ export function ProductForm({
   return (
     <div className="space-y-4">
       {embedded ? null : (
-        <div className="flex items-center gap-2">
-          <Link href="/products" className="rounded-md p-1.5 text-muted hover:bg-line-2 hover:text-ink" title="返回列表">
-            <ArrowLeft size={16} />
-          </Link>
-          <div>
-            <h1 className="text-[19px] font-semibold tracking-tight text-ink">
-              {mode === "create" ? "新建产品" : "编辑产品"}
-            </h1>
-            <p className="mt-0.5 text-[12.5px] text-muted">
-              {mode === "create"
-                ? "一个产品下按颜色分行。多数款只有一个颜色，那就只填一行。"
-                : "改动会立即生效。历史单据里的名称与颜色不会跟着变，保证旧账可查。"}
-            </p>
-          </div>
-        </div>
+        <FormTitle
+          backHref="/products"
+          backTitle="返回商品列表"
+          title={mode === "create" ? "新建产品" : "编辑产品"}
+          description={
+            mode === "create"
+              ? "一个产品下按颜色分行。多数款只有一个颜色，那就只填一行。"
+              : "改动会立即生效。历史单据里的名称与颜色不会跟着变，保证旧账可查。"
+          }
+        />
       )}
 
-      {error ? (
-        <div className="flex items-start gap-2 rounded-card border border-danger/30 bg-danger-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-danger">
-          <AlertCircle size={15} className="mt-0.5 shrink-0" />
-          {error}
-        </div>
-      ) : null}
+      {error ? <InlineError>{error}</InlineError> : null}
 
       <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
         {/* 主表单 */}

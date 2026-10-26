@@ -18,6 +18,7 @@ import {
 import { ApiError, api } from "@/lib/api-client";
 import { ProductThumb } from "@/components/product-thumb";
 import { Modal } from "@/components/ui/modal";
+import { FormActionBar, FormTitle, InlineError, RuleCard } from "@/components/ui/doc";
 import { useToast } from "@/components/ui/toast";
 import { todayDateOnly } from "@/lib/date";
 import { ProductForm } from "@/app/(app)/products/product-form";
@@ -266,28 +267,14 @@ export function InboundForm({ meta }: { meta: InboundMeta }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Link
-          href="/inbound"
-          className="rounded-md p-1.5 text-muted hover:bg-line-2 hover:text-ink"
-          title="返回入库列表"
-        >
-          <ArrowLeft size={16} />
-        </Link>
-        <div>
-          <h1 className="text-[19px] font-semibold tracking-tight text-ink">新建入库单</h1>
-          <p className="mt-0.5 text-[12.5px] text-muted">
-            搜名称或拼音首字母选款 → 填数量 → 保存。审核后库存立即增加。
-          </p>
-        </div>
-      </div>
+      <FormTitle
+        backHref="/inbound"
+        backTitle="返回入库列表"
+        title="新建入库单"
+        description="搜名称或拼音首字母选款 → 填数量 → 保存。审核后库存立即增加。"
+      />
 
-      {error ? (
-        <div className="flex items-start gap-2 rounded-card border border-danger/30 bg-danger-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-danger">
-          <AlertCircle size={15} className="mt-0.5 shrink-0" />
-          {error}
-        </div>
-      ) : null}
+      {error ? <InlineError>{error}</InlineError> : null}
 
       <div className="grid gap-4 lg:grid-cols-[1.55fr_1fr]">
         <div className="space-y-4">
@@ -546,70 +533,52 @@ export function InboundForm({ meta }: { meta: InboundMeta }) {
             </div>
           </section>
 
-          <section className="card bg-sunken p-4 text-[12px] leading-[1.85] text-ink-2 sm:p-5">
-            <div className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-ink">
-              <Warehouse size={14} strokeWidth={1.8} className="text-brand-ink" />
-              审核后会发生什么
-            </div>
-            <ul className="space-y-1.5">
-              <li className="flex gap-1.5">
-                <Check size={13} className="mt-1 shrink-0 text-ok" />
-                每个颜色行生成入库流水，主仓库存随之增加
-              </li>
-              <li className="flex gap-1.5">
-                <Check size={13} className="mt-1 shrink-0 text-ok" />
-                填了生产日期的行自动归批，可按批次追溯
-              </li>
-              <li className="flex gap-1.5">
-                <Check size={13} className="mt-1 shrink-0 text-ok" />
-                定制款每一件生成唯一编号（一物一码，无需贴标）
-              </li>
-              <li className="flex gap-1.5">
-                <Check size={13} className="mt-1 shrink-0 text-ok" />
-                草稿不产生任何流水，库存数字不会动
-              </li>
-            </ul>
-          </section>
+          <RuleCard
+            title="审核后会发生什么"
+            items={[
+              "每个颜色行生成入库流水，主仓库存随之增加",
+              "填了生产日期的行自动归批，可按批次追溯",
+              "定制款每一件生成唯一编号（一物一码，无需贴标）",
+              "草稿不产生任何流水，库存数字不会动",
+            ]}
+          />
         </div>
       </div>
 
       {/* 底部操作 */}
-      <div className="sticky bottom-0 -mx-4 border-t border-line bg-canvas/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="tnum text-[12px] text-muted">
+      <FormActionBar
+        summary={
+          <>
             {lines.length} 行 · 合计 <b className="text-[14px] text-ink">{totalQty}</b> {totalUnit}
             {customQty > 0 ? ` · 其中 ${customQty} 件按件追踪` : ""}
-          </span>
-          <div className="flex gap-2">
-            <Link href="/inbound" className="btn-ghost">
-              取消
-            </Link>
-            <button
-              type="button"
-              className="btn-ghost"
-              onClick={() => requestSubmit(false)}
-              disabled={submitting !== null}
-              title="只存草稿，不影响库存"
-            >
-              {submitting === "draft" ? <Loader2 size={14} className="animate-spin" /> : null}
-              存为草稿
-            </button>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => requestSubmit(true)}
-              disabled={submitting !== null}
-            >
-              {submitting === "approve" ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Check size={14} />
-              )}
-              保存并审核
-            </button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      >
+        <Link href="/inbound" className="btn-ghost">
+          取消
+        </Link>
+        <button
+          type="button"
+          className="btn-ghost"
+          onClick={() => requestSubmit(false)}
+          disabled={submitting !== null}
+          title="只存草稿，不影响库存"
+        >
+          {submitting === "draft" ? <Loader2 size={14} className="animate-spin" /> : null}
+          存为草稿
+        </button>
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={() => requestSubmit(true)}
+          disabled={submitting !== null}
+        >
+          {submitting === "approve" ? <Loader2 size={14} className="animate-spin" /> : (
+            <Check size={14} />
+          )}
+          保存并审核
+        </button>
+      </FormActionBar>
 
       {/* 保存前的二次确认：把要记账的东西原样摆一遍 */}
       <Modal

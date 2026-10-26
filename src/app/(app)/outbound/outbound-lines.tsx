@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Check, Loader2, Pencil, Trash2 } from "lucide-react";
 import { ApiError, api } from "@/lib/api-client";
 import { Modal } from "@/components/ui/modal";
+import { Badge } from "@/components/ui/badge";
+import { SectionCard } from "@/components/ui/doc";
 import { useToast } from "@/components/ui/toast";
 import { formatDateTime } from "@/lib/date";
 import {
@@ -132,17 +134,18 @@ export function OutboundLines({ doc, role }: { doc: OutboundDocView; role: strin
   }
 
   return (
-    <section className="card overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-[14px] font-semibold text-ink">发货明细</h2>
-          <span className="tnum text-[11.5px] text-muted">
-            {doc.itemCount} 个包裹 · 合计 {doc.totalQty} {unit}
-            {doc.hasShipped ? ` · 已发 ${doc.shippedCount}` : ""}
-          </span>
-        </div>
-
-        {canShip && pending.length > 0 ? (
+    <SectionCard
+      padded={false}
+      title="发货明细"
+      hint={
+        <>
+          <span className="tnum">{doc.itemCount}</span> 个包裹 · 合计{" "}
+          <span className="tnum">{doc.totalQty}</span> {unit}
+          {doc.hasShipped ? ` · 已发 ${doc.shippedCount}` : ""}
+        </>
+      }
+      actions={
+        canShip && pending.length > 0 ? (
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -159,22 +162,26 @@ export function OutboundLines({ doc, role }: { doc: OutboundDocView; role: strin
               title="只对勾选的这几行扣库存，没勾的继续留着"
             >
               {shipping ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-              确认发出 {picked.length > 0 ? picked.length : ""} 个
+              确认发出{picked.length > 0 ? ` ${picked.length} 个` : ""}
             </button>
           </div>
-        ) : null}
-      </div>
-
+        ) : null
+      }
+    >
       <div className="divide-y divide-line-2">
         {doc.items.map((item) => {
           const selected = pickedSet.has(item.id);
           return (
             <div
               key={item.id}
-              className={`flex gap-3 px-4 py-3 transition-colors ${
-                item.shipped ? "bg-sunken" : selected ? "bg-brand-soft/40" : ""
+              className={`relative flex gap-3 px-4 py-3 transition-colors ${
+                item.shipped ? "bg-sunken" : selected ? "bg-brand-soft/50" : "hover:bg-sunken/50"
               }`}
             >
+              {/* 勾中的行左边立一条品牌色：列表长的时候，眼神不用来回扫勾选框 */}
+              {selected ? (
+                <span className="absolute inset-y-0 left-0 w-[2px] bg-brand" aria-hidden />
+              ) : null}
               {/* 勾选框：发过的行不给勾，避免重复扣库存 */}
               {canShip && editable && !item.shipped ? (
                 <input
@@ -194,20 +201,26 @@ export function OutboundLines({ doc, role }: { doc: OutboundDocView; role: strin
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="text-[13px] font-medium text-ink">{item.productName}</span>
                   <span className="text-[12px] text-ink-2">{colorText(item.colorName)}</span>
-                  {item.variantType === "custom" ? (
-                    <span className="tag bg-warn-soft text-warn">定制·按件</span>
-                  ) : null}
+                  {item.variantType === "custom" ? <Badge tone="custom">定制·按件</Badge> : null}
                   <span className="tnum text-[12.5px] font-semibold text-ink">
                     ×{item.qty} {item.unit}
                   </span>
                   {item.shipped ? (
-                    <span className="tag bg-ok-soft text-ok">
+                    <Badge tone="ok" dot>
                       已发
-                      {item.shippedAt ? ` ${formatDateTime(item.shippedAt).slice(5, 16)}` : ""}
-                      {item.shippedByName ? ` · ${item.shippedByName}` : ""}
-                    </span>
+                      {item.shippedAt ? (
+                        <span className="tnum font-normal">
+                          {formatDateTime(item.shippedAt).slice(5, 16)}
+                        </span>
+                      ) : null}
+                      {item.shippedByName ? (
+                        <span className="font-normal">· {item.shippedByName}</span>
+                      ) : null}
+                    </Badge>
                   ) : (
-                    <span className="tag bg-warn-soft text-warn">待发</span>
+                    <Badge tone="warn" dot>
+                      待发
+                    </Badge>
                   )}
                 </div>
 
@@ -335,6 +348,6 @@ export function OutboundLines({ doc, role }: { doc: OutboundDocView; role: strin
           </div>
         </div>
       </Modal>
-    </section>
+    </SectionCard>
   );
 }

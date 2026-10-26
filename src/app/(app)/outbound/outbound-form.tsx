@@ -20,6 +20,7 @@ import {
 import { ApiError, api } from "@/lib/api-client";
 import { ProductThumb } from "@/components/product-thumb";
 import { Modal } from "@/components/ui/modal";
+import { FormTitle, InlineError } from "@/components/ui/doc";
 import { useToast } from "@/components/ui/toast";
 import { todayDateOnly } from "@/lib/date";
 import type { ProductView } from "@/modules/product/product.types";
@@ -365,32 +366,18 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Link
-          href="/outbound"
-          className="rounded-md p-1.5 text-muted hover:bg-line-2 hover:text-ink"
-          title="返回出库列表"
-        >
-          <ArrowLeft size={16} />
-        </Link>
-        <div>
-          <h1 className="text-[19px] font-semibold tracking-tight text-ink">
-            {isClerk ? "整理发货工单" : "新建出库单"}
-          </h1>
-          <p className="mt-0.5 text-[12.5px] text-muted">
-            {isClerk
-              ? "搜款 → 每个商品填这个买家的收货信息 → 提交给仓管。提交后库存不动，仓管确认才扣。"
-              : "搜款 → 每个商品填这个买家的收货信息 → 保存。一行就是一个包裹，打印时按地址拆开。"}
-          </p>
-        </div>
-      </div>
+      <FormTitle
+        backHref="/outbound"
+        backTitle="返回出库列表"
+        title={isClerk ? "整理发货工单" : "新建出库单"}
+        description={
+          isClerk
+            ? "搜款 → 每个商品填这个买家的收货信息 → 提交给仓管。提交后库存不动，仓管确认才扣。"
+            : "搜款 → 每个商品填这个买家的收货信息 → 保存。一行就是一个包裹，打印时按地址拆开。"
+        }
+      />
 
-      {error ? (
-        <div className="flex items-start gap-2 rounded-card border border-danger/30 bg-danger-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-danger">
-          <AlertCircle size={15} className="mt-0.5 shrink-0" />
-          {error}
-        </div>
-      ) : null}
+      {error ? <InlineError>{error}</InlineError> : null}
 
       <div className="grid gap-4 lg:grid-cols-[1.55fr_1fr]">
         <div className="space-y-4">

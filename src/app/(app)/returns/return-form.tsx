@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { ApiError, api } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
+import { FormTitle, InlineError } from "@/components/ui/doc";
 import { todayDateOnly } from "@/lib/date";
 import {
   CUSTOM_ALLOWED_DESTINATIONS,
@@ -250,27 +251,15 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Link
-          href="/returns"
-          className="rounded-md p-1.5 text-muted hover:bg-line-2 hover:text-ink"
-          title="返回退货列表"
-        >
-          <ArrowLeft size={16} />
-        </Link>
-        <div>
-          <h1 className="text-[19px] font-semibold tracking-tight text-ink">新建退货单</h1>
-          <p className="mt-0.5 text-[12.5px] text-muted">
-            先找到原出库单 → 在要退的行上填数量、选去向 → 保存。审核后库存才会动。
-          </p>
-        </div>
-      </div>
+      <FormTitle
+        backHref="/returns"
+        backTitle="返回退货列表"
+        title="新建退货单"
+        description="先找到原出库单 → 在要退的行上填数量、选去向 → 保存。审核后库存才会动。"
+      />
 
       {error ? (
-        <div className="flex items-start gap-2 rounded-card border border-danger/30 bg-danger-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-danger">
-          <AlertCircle size={15} className="mt-0.5 shrink-0" />
-          {error}
-        </div>
+        <InlineError>{error}</InlineError>
       ) : null}
 
       {!origin ? (

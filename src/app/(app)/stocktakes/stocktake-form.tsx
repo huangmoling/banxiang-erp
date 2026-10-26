@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { ApiError, api } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
+import { FormTitle } from "@/components/ui/doc";
 import type { ProductView } from "@/modules/product/product.types";
 import {
   LOCATION_TYPE_LABEL,
@@ -303,23 +304,12 @@ export function StocktakeForm({ meta }: { meta: StocktakeMeta }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Link
-            href="/stocktakes"
-            className="rounded-md p-1.5 text-muted hover:bg-line-2 hover:text-ink"
-            title="返回盘点列表"
-          >
-            <ArrowLeft size={16} />
-          </Link>
-          <div>
-            <h1 className="text-[20px] font-semibold tracking-tight text-ink">新建盘点单</h1>
-            <p className="mt-1 text-[12.5px] text-muted">
-              选仓位、定截止时点，系统把账面数列出来，你只管填实盘数。
-            </p>
-          </div>
-        </div>
-      </div>
+      <FormTitle
+        backHref="/stocktakes"
+        backTitle="返回盘点列表"
+        title="新建盘点单"
+        description="选仓位、定截止时点，系统把账面数列出来，你只管填实盘数。盘点期间照常发货。"
+      />
 
       {/* 盘点范围 */}
       <section className="card p-4 sm:p-5">
