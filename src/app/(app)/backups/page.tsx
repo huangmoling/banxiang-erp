@@ -11,7 +11,7 @@ export default async function BackupsPage() {
   if (!user || user.role !== "admin") {
     return (
       <div className="card flex items-start gap-3 p-5">
-        <ShieldAlert size={18} strokeWidth={1.8} className="mt-0.5 text-[#a15f12]" />
+        <ShieldAlert size={18} strokeWidth={1.8} className="mt-0.5 text-warn" />
         <div>
           <h1 className="text-[15px] font-semibold text-ink">这个页面只有管理员能看</h1>
           <p className="mt-1 text-[13px] leading-6 text-muted">

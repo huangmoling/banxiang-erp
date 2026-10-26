@@ -38,14 +38,14 @@ const BIZ_TYPES = [
 
 const INSTANCE_STATUS_TONE: Record<string, string> = {
   in_stock: "bg-ok-soft text-ok",
-  outbound: "bg-[#f2f4f7] text-muted",
-  returned: "bg-warn-soft text-[#8a5a15]",
-  defective: "bg-[#fdf4e8] text-[#a15f12]",
-  scrapped: "bg-[#fdf1f1] text-[#b4433a]",
-  sold_offline: "bg-brand-soft text-brand",
-  disposed: "bg-[#f2f4f7] text-muted",
-  missing: "bg-[#fdf1f1] text-[#b4433a]",
-  voided: "bg-[#f2f4f7] text-muted",
+  outbound: "bg-sunken text-muted",
+  returned: "bg-warn-soft text-warn",
+  defective: "bg-warn-soft text-warn",
+  scrapped: "bg-danger-soft text-danger",
+  sold_offline: "bg-brand-soft text-brand-ink",
+  disposed: "bg-sunken text-muted",
+  missing: "bg-danger-soft text-danger",
+  voided: "bg-sunken text-muted",
 };
 
 function StatCard({
@@ -70,13 +70,13 @@ function StatCard({
         <Icon
           size={15}
           strokeWidth={1.7}
-          className={tone === "warn" ? "text-[#c98a3a]" : "text-[#c2c8d2]"}
+          className={tone === "warn" ? "text-warn" : "text-muted"}
         />
       </div>
       <div className="mt-2 flex items-baseline gap-1">
         <span
           className={`tnum text-[28px] font-semibold leading-none tracking-tight ${
-            tone === "warn" ? "text-[#a15f12]" : "text-ink"
+            tone === "warn" ? "text-warn" : "text-ink"
           }`}
         >
           {value}
@@ -238,14 +238,14 @@ export function InventoryClient({ initial }: { initial: InventorySummary }) {
 
       <div className="card overflow-hidden">
         <div className="flex flex-wrap items-center gap-2 border-b border-line px-3 py-2.5">
-          <div className="flex flex-wrap gap-1 rounded-lg bg-[#eef1f6] p-1">
+          <div className="flex flex-wrap gap-1 rounded-lg bg-sunken p-1">
             {TABS.map((t) => (
               <button
                 key={t.key}
                 type="button"
                 onClick={() => setTab(t.key)}
                 className={`rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors ${
-                  tab === t.key ? "bg-white text-ink" : "text-ink-2 hover:text-ink"
+                  tab === t.key ? "bg-card text-ink" : "text-ink-2 hover:text-ink"
                 }`}
               >
                 {t.label}
@@ -298,7 +298,7 @@ export function InventoryClient({ initial }: { initial: InventorySummary }) {
         </div>
 
         {error ? (
-          <div className="flex items-center gap-2 border-b border-[#f0cdc8] bg-danger-soft px-4 py-2.5 text-[12.5px] text-danger">
+          <div className="flex items-center gap-2 border-b border-danger/30 bg-danger-soft px-4 py-2.5 text-[12.5px] text-danger">
             <TriangleAlert size={14} strokeWidth={1.8} />
             {error}
           </div>
@@ -325,15 +325,15 @@ export function InventoryClient({ initial }: { initial: InventorySummary }) {
                   <EmptyRow colSpan={9} text="没有符合条件的款。换个搜索词，或先去入库建货。" />
                 ) : (
                   summary.rows.map((row) => (
-                    <tr key={row.skuId} className="hover:bg-[#fbfbfc]">
+                    <tr key={row.skuId} className="hover:bg-sunken">
                       <td className="td">
                         <span className="flex items-center gap-1.5">
                           {row.productName}
                           {row.variantType === "custom" ? (
-                            <span className="tag bg-[#f4f1fb] text-[#5c4b8a]">定制</span>
+                            <span className="tag bg-custom-soft text-custom">定制</span>
                           ) : null}
                           {row.isLow ? (
-                            <span className="tag bg-[#fdf4e8] text-[#a15f12]">偏低</span>
+                            <span className="tag bg-warn-soft text-warn">偏低</span>
                           ) : null}
                         </span>
                       </td>
@@ -390,12 +390,12 @@ export function InventoryClient({ initial }: { initial: InventorySummary }) {
                   <EmptyRow colSpan={6} text="没有还有余量的批次。批次是入库时按生产日期自动建的。" />
                 ) : (
                   batches.map((b) => (
-                    <tr key={b.id} className="hover:bg-[#fbfbfc]">
+                    <tr key={b.id} className="hover:bg-sunken">
                       <td className="td font-medium">{b.batchNo}</td>
                       <td className="td">
                         {b.productName}
                         {b.variantType === "custom" ? (
-                          <span className="ml-1.5 tag bg-[#f4f1fb] text-[#5c4b8a]">定制</span>
+                          <span className="ml-1.5 tag bg-custom-soft text-custom">定制</span>
                         ) : null}
                       </td>
                       <td className="td text-ink-2">{b.colorName ?? "无颜色"}</td>
@@ -409,7 +409,7 @@ export function InventoryClient({ initial }: { initial: InventorySummary }) {
                               b.ageDays > 90
                                 ? "text-danger"
                                 : b.ageDays > 60
-                                  ? "text-[#a15f12]"
+                                  ? "text-warn"
                                   : "text-ink-2"
                             }
                           >
@@ -447,12 +447,12 @@ export function InventoryClient({ initial }: { initial: InventorySummary }) {
                   <EmptyRow colSpan={8} text="还没有定制件。定制款每入库一件就自动生成一个编号。" />
                 ) : (
                   instances.map((i) => (
-                    <tr key={i.id} className="hover:bg-[#fbfbfc]">
+                    <tr key={i.id} className="hover:bg-sunken">
                       <td className="td font-medium">{i.code}</td>
                       <td className="td">{i.productName}</td>
                       <td className="td text-ink-2">{i.colorName ?? "无颜色"}</td>
                       <td className="td">
-                        <span className={`tag ${INSTANCE_STATUS_TONE[i.status] ?? "bg-[#f2f4f7] text-muted"}`}>
+                        <span className={`tag ${INSTANCE_STATUS_TONE[i.status] ?? "bg-sunken text-muted"}`}>
                           {INSTANCE_STATUS_LABEL[i.status] ?? i.status}
                         </span>
                       </td>
@@ -506,12 +506,12 @@ export function InventoryClient({ initial }: { initial: InventorySummary }) {
                   <EmptyRow colSpan={8} text="这个条件下没有流水。" />
                 ) : (
                   movements.items.map((m) => (
-                    <tr key={m.id} className="hover:bg-[#fbfbfc]">
+                    <tr key={m.id} className="hover:bg-sunken">
                       <td className="td tnum text-[12.5px] text-ink-2">{m.occurredOn}</td>
                       <td className="td">
                         <span className="text-[12.5px]">{bizTypeLabel(m.bizType)}</span>
                         {m.reversal ? (
-                          <span className="ml-1.5 tag bg-[#f2f4f7] text-muted">红冲</span>
+                          <span className="ml-1.5 tag bg-sunken text-muted">红冲</span>
                         ) : null}
                       </td>
                       <td className="td">
@@ -521,7 +521,7 @@ export function InventoryClient({ initial }: { initial: InventorySummary }) {
                       <td className="td text-[12.5px] text-ink-2">{m.locationName}</td>
                       <td
                         className={`td tnum text-right font-medium ${
-                          m.qtyDelta > 0 ? "text-ok" : "text-[#b4433a]"
+                          m.qtyDelta > 0 ? "text-ok" : "text-danger"
                         }`}
                       >
                         {m.qtyDelta > 0 ? `+${m.qtyDelta}` : m.qtyDelta}

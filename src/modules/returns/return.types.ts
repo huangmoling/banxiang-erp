@@ -32,8 +32,8 @@ export const DESTINATION_HINT: Record<ReturnDestination, string> = {
 
 export const DESTINATION_TONE: Record<ReturnDestination, string> = {
   good: "bg-ok-soft text-ok",
-  defective: "bg-[#fdf4e8] text-[#a15f12]",
-  scrap: "bg-[#f2f4f7] text-ink-2",
+  defective: "bg-warn-soft text-warn",
+  scrap: "bg-sunken text-ink-2",
 };
 
 export function toDestination(value: string | null): ReturnDestination {

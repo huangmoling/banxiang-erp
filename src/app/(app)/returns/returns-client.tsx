@@ -113,8 +113,8 @@ export function ReturnsClient({
               }}
               className={`rounded-md px-2.5 py-1.5 text-[12.5px] transition-colors ${
                 status === value
-                  ? "bg-brand-soft font-medium text-brand"
-                  : "text-ink-2 hover:bg-[#f4f6f8]"
+                  ? "bg-brand-soft font-medium text-brand-ink"
+                  : "text-ink-2 hover:bg-sunken"
               }`}
             >
               {label}
@@ -127,7 +127,7 @@ export function ReturnsClient({
       </div>
 
       {data.counts.draft > 0 && status !== "draft" ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-card border border-[#f0e2c8] bg-warn-soft px-3.5 py-2.5 text-[12.5px] text-[#8a5a15]">
+        <div className="flex flex-wrap items-center gap-2 rounded-card border border-warn/40 bg-warn-soft px-3.5 py-2.5 text-[12.5px] text-warn">
           有 <b className="tnum">{data.counts.draft}</b> 张退货草稿还没审核，这些货还没回到账上。
           <button
             type="button"
@@ -135,7 +135,7 @@ export function ReturnsClient({
               setStatus("draft");
               setPage(1);
             }}
-            className="underline underline-offset-2 hover:text-[#6d4610]"
+            className="underline underline-offset-2 hover:text-warn"
           >
             去处理草稿
           </button>
@@ -167,11 +167,11 @@ export function ReturnsClient({
               </thead>
               <tbody>
                 {data.items.map((doc) => (
-                  <tr key={doc.id} className="group hover:bg-[#fafbfc]">
+                  <tr key={doc.id} className="group hover:bg-sunken">
                     <td className="td">
                       <Link
                         href={`/returns/${doc.id}`}
-                        className="tnum font-medium text-ink hover:text-brand"
+                        className="tnum font-medium text-ink hover:text-brand-ink"
                       >
                         {doc.docNo}
                       </Link>
@@ -181,7 +181,7 @@ export function ReturnsClient({
                       {doc.originDocumentId && doc.originDocNo ? (
                         <Link
                           href={`/outbound/${doc.originDocumentId}`}
-                          className="tnum text-[12.5px] text-ink-2 hover:text-brand"
+                          className="tnum text-[12.5px] text-ink-2 hover:text-brand-ink"
                           title="查看原出库单"
                         >
                           {doc.originDocNo}
@@ -206,7 +206,7 @@ export function ReturnsClient({
                     <td className="td">
                       <Link
                         href={`/returns/${doc.id}`}
-                        className="text-[#c8ccd4] transition-colors group-hover:text-brand"
+                        className="text-muted transition-colors group-hover:text-brand-ink"
                         title="查看单据"
                       >
                         <ChevronRight size={15} />
@@ -261,7 +261,7 @@ function StatusTag({ status }: { status: DocStatus }) {
 function EmptyState({ hasQuery }: { hasQuery: boolean }) {
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center">
-      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#f4f6f8] text-[#c2c8d2]">
+      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-sunken text-muted">
         <Undo2 size={20} strokeWidth={1.6} />
       </div>
       {hasQuery ? (

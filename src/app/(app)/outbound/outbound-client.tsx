@@ -118,8 +118,8 @@ export function OutboundClient({
                 status === value
                   ? value === "pending"
                     ? "bg-danger-soft font-medium text-danger"
-                    : "bg-brand-soft font-medium text-brand"
-                  : "text-ink-2 hover:bg-[#f4f6f8]"
+                    : "bg-brand-soft font-medium text-brand-ink"
+                  : "text-ink-2 hover:bg-sunken"
               }`}
             >
               {label}
@@ -139,9 +139,9 @@ export function OutboundClient({
 
       {/* 待发货压着没发，是最该被看见的一件事，所以压在最上面 */}
       {data.counts.pending > 0 && status !== "pending" ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-card border border-[#f3cfc9] bg-danger-soft px-3.5 py-2.5 text-[12.5px] text-danger">
+        <div className="flex flex-wrap items-center gap-2 rounded-card border border-danger/30 bg-danger-soft px-3.5 py-2.5 text-[12.5px] text-danger">
           <b className="tnum text-[15px]">{data.counts.pendingPackages}</b> 个包裹还等着发出去
-          <span className="text-[#a8544a]">（{data.counts.pending} 张单）</span>
+          <span className="text-danger">（{data.counts.pending} 张单）</span>
           ，库存还没扣。
           <button
             type="button"
@@ -157,7 +157,7 @@ export function OutboundClient({
       ) : null}
 
       {data.counts.draft > 0 && status !== "draft" ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-card border border-[#f0e2c8] bg-warn-soft px-3.5 py-2.5 text-[12.5px] text-[#8a5a15]">
+        <div className="flex flex-wrap items-center gap-2 rounded-card border border-warn/40 bg-warn-soft px-3.5 py-2.5 text-[12.5px] text-warn">
           有 <b className="tnum">{data.counts.draft}</b> 张草稿还没审核，这些货还没有从库存里扣掉。
           <button
             type="button"
@@ -165,7 +165,7 @@ export function OutboundClient({
               setStatus("draft");
               setPage(1);
             }}
-            className="underline underline-offset-2 hover:text-[#6d4610]"
+            className="underline underline-offset-2 hover:text-warn"
           >
             去处理草稿
           </button>
@@ -197,11 +197,11 @@ export function OutboundClient({
               </thead>
               <tbody>
                 {data.items.map((doc) => (
-                  <tr key={doc.id} className="group hover:bg-[#fafbfc]">
+                  <tr key={doc.id} className="group hover:bg-sunken">
                     <td className="td">
                       <Link
                         href={`/outbound/${doc.id}`}
-                        className="tnum font-medium text-ink hover:text-brand"
+                        className="tnum font-medium text-ink hover:text-brand-ink"
                       >
                         {doc.docNo}
                       </Link>
@@ -255,7 +255,7 @@ export function OutboundClient({
                     <td className="td">
                       <Link
                         href={`/outbound/${doc.id}`}
-                        className="text-[#c8ccd4] transition-colors group-hover:text-brand"
+                        className="text-muted transition-colors group-hover:text-brand-ink"
                         title="查看单据"
                       >
                         <ChevronRight size={15} />
@@ -311,7 +311,7 @@ function StatusTag({ doc }: { doc: OutboundDocView }) {
   if (doc.pendingShip) {
     const late = (doc.waitedDays ?? 0) > 0;
     return (
-      <span className={`tag ${late ? "bg-[#fdf1f1] text-danger" : "bg-brand-soft text-brand"}`}>
+      <span className={`tag ${late ? "bg-danger-soft text-danger" : "bg-brand-soft text-brand-ink"}`}>
         待发货
         {doc.hasShipped ? (
           <span className="tnum opacity-80">
@@ -327,7 +327,7 @@ function StatusTag({ doc }: { doc: OutboundDocView }) {
   // 部分发出：既不是草稿也不该说「未扣库存」，盯着它的人关心的是还欠几个
   if (doc.status === "draft" && doc.hasShipped) {
     return (
-      <span className="tag bg-brand-soft text-brand">
+      <span className="tag bg-brand-soft text-brand-ink">
         已发 {doc.shippedCount}/{doc.itemCount}
       </span>
     );
@@ -345,7 +345,7 @@ function StatusTag({ doc }: { doc: OutboundDocView }) {
 function EmptyState({ hasQuery }: { hasQuery: boolean }) {
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center">
-      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#f4f6f8] text-[#c2c8d2]">
+      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-sunken text-muted">
         <ArrowUpFromLine size={20} strokeWidth={1.6} />
       </div>
       {hasQuery ? (

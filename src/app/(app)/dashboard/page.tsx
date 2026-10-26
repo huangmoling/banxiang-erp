@@ -35,7 +35,7 @@ function StatCard({
     <div className="card p-4">
       <div className="flex items-start justify-between">
         <span className="text-[12.5px] text-muted">{label}</span>
-        <Icon size={15} strokeWidth={1.7} className="text-[#c2c8d2]" />
+        <Icon size={15} strokeWidth={1.7} className="text-muted" />
       </div>
       <div className="mt-2 flex items-baseline gap-1">
         <span className="tnum text-[30px] font-semibold leading-none tracking-tight text-ink">{value}</span>
@@ -61,7 +61,7 @@ function MiniStat({
 }) {
   const inner = (
     <div className="flex items-center gap-3 rounded-lg border border-line-2 px-3 py-2.5 transition-colors hover:border-line">
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f4f6f8] text-ink-2">
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sunken text-ink-2">
         <Icon size={15} strokeWidth={1.7} />
       </div>
       <div className="min-w-0">
@@ -116,19 +116,19 @@ export default async function DashboardPage() {
           一单可能装几十个买家地址，所以数字用「包裹数」——那才是仓管要跑的量 */}
       {pending.packages > 0 ? (
         <Link href="/outbound?status=pending" className="group block">
-          <div className="flex items-center gap-3 rounded-card border border-[#f3cfc9] border-l-[3px] border-l-[#c0392b] bg-[#fdf1f1] px-3.5 py-3">
+          <div className="flex items-center gap-3 rounded-card border border-danger/30 border-l-[3px] border-l-danger bg-danger-soft px-3.5 py-3">
             <BellRing size={18} strokeWidth={1.8} className="shrink-0 text-danger" />
             <div className="tnum shrink-0 text-[26px] font-bold leading-none text-danger">
               {pending.packages}
               <span className="ml-0.5 text-[12px] font-medium">个</span>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-semibold text-[#8f2c1f]">
+              <div className="text-[13px] font-semibold text-danger">
                 {pending.overdue > 0
                   ? `还有 ${pending.packages} 个包裹没发出去`
                   : `今天还有 ${pending.packages} 个包裹没发出去`}
               </div>
-              <div className="mt-0.5 text-[11.5px] text-[#a8544a]">
+              <div className="mt-0.5 text-[11.5px] text-danger">
                 共 {pending.total} 张单 · 今天提交 {pending.today} 个
                 {pending.overdue > 0 ? ` · 隔天没发 ${pending.overdue} 个` : ""}
                 {pending.oldestAt ? ` · 最早一张 ${formatDateTime(pending.oldestAt)}` : ""}
@@ -156,11 +156,11 @@ export default async function DashboardPage() {
       </div>
 
       {!data.flowReady ? (
-        <div className="flex items-start gap-2.5 rounded-card border border-[#f0e2c8] bg-warn-soft px-3.5 py-3 text-[12.5px] leading-5 text-[#8a5a15]">
+        <div className="flex items-start gap-2.5 rounded-card border border-warn/40 bg-warn-soft px-3.5 py-3 text-[12.5px] leading-5 text-warn">
           <CircleAlert size={15} className="mt-0.5 shrink-0" />
           <div>
             上面四个数字目前都是 0 —— 出入库流水还没接入，这是第一阶段的正常状态。
-            <span className="text-[#a9782f]"> 入库功能上线后，这里会自动开始统计。</span>
+            <span className="text-warn"> 入库功能上线后，这里会自动开始统计。</span>
           </div>
         </div>
       ) : null}
@@ -170,7 +170,7 @@ export default async function DashboardPage() {
         <section className="card p-4">
           <div className="flex items-center justify-between">
             <h2 className="text-[14px] font-semibold text-ink">商品概况</h2>
-            <Link href="/products" className="flex items-center gap-1 text-[12.5px] text-brand hover:underline">
+            <Link href="/products" className="flex items-center gap-1 text-[12.5px] text-brand-ink hover:underline">
               查看全部 <ArrowRight size={13} />
             </Link>
           </div>
@@ -189,12 +189,12 @@ export default async function DashboardPage() {
           </div>
 
           {data.products.pending > 0 ? (
-            <div className="mt-3 rounded-lg bg-[#fbfaf7] px-3 py-2.5 text-[12.5px] leading-5 text-ink-2">
+            <div className="mt-3 rounded-lg bg-warn-soft px-3 py-2.5 text-[12.5px] leading-5 text-ink-2">
               有 <b className="tnum text-warn">{data.products.pending}</b> 款产品还没传图片。
               图片只影响找货时的识别速度，不影响入库，有空再补即可。
             </div>
           ) : (
-            <div className="mt-3 rounded-lg bg-[#f7faf8] px-3 py-2.5 text-[12.5px] leading-5 text-ink-2">
+            <div className="mt-3 rounded-lg bg-ok-soft px-3 py-2.5 text-[12.5px] leading-5 text-ink-2">
               产品档案都齐了。接下来可以开始登记入库。
             </div>
           )}
@@ -205,11 +205,11 @@ export default async function DashboardPage() {
           <h2 className="text-[14px] font-semibold text-ink">最近操作</h2>
           {data.recent.length === 0 ? (
             <div className="mt-6 flex flex-col items-center gap-2 py-6 text-center">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f4f6f8] text-[#c2c8d2]">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sunken text-muted">
                 <Boxes size={17} strokeWidth={1.7} />
               </div>
               <p className="text-[12.5px] text-muted">还没有操作记录</p>
-              <Link href="/products/new" className="text-[12.5px] text-brand hover:underline">
+              <Link href="/products/new" className="text-[12.5px] text-brand-ink hover:underline">
                 先建一个产品
               </Link>
             </div>
@@ -217,7 +217,7 @@ export default async function DashboardPage() {
             <ul className="mt-3 space-y-2.5">
               {data.recent.map((r) => (
                 <li key={r.id} className="flex items-start gap-2.5">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#d6dae1]" />
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-line" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[12.5px] text-ink">{r.summary}</div>
                     <div className="text-[11px] text-muted">

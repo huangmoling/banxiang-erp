@@ -12,9 +12,9 @@ export const BACKUP_KIND_LABEL: Record<BackupKind, string> = {
 };
 
 export const BACKUP_KIND_TONE: Record<BackupKind, string> = {
-  auto: "bg-[#f2f4f7] text-ink-2",
-  manual: "bg-brand-soft text-brand",
-  "pre-restore": "bg-warn-soft text-[#8a5a15]",
+  auto: "bg-sunken text-ink-2",
+  manual: "bg-brand-soft text-brand-ink",
+  "pre-restore": "bg-warn-soft text-warn",
 };
 
 export type BackupFile = {

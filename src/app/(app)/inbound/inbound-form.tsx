@@ -283,7 +283,7 @@ export function InboundForm({ meta }: { meta: InboundMeta }) {
       </div>
 
       {error ? (
-        <div className="flex items-start gap-2 rounded-card border border-[#f3cfc9] bg-danger-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-danger">
+        <div className="flex items-start gap-2 rounded-card border border-danger/30 bg-danger-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-danger">
           <AlertCircle size={15} className="mt-0.5 shrink-0" />
           {error}
         </div>
@@ -298,7 +298,7 @@ export function InboundForm({ meta }: { meta: InboundMeta }) {
               <button
                 type="button"
                 onClick={() => setNewProductOpen(true)}
-                className="flex items-center gap-1 text-[12.5px] text-brand hover:underline"
+                className="flex items-center gap-1 text-[12.5px] text-brand-ink hover:underline"
               >
                 <Plus size={13} />
                 新建产品
@@ -330,7 +330,7 @@ export function InboundForm({ meta }: { meta: InboundMeta }) {
               />
 
               {open ? (
-                <div className="absolute left-0 right-0 top-full z-30 mt-1.5 overflow-hidden rounded-card border border-line bg-white">
+                <div className="absolute left-0 right-0 top-full z-30 mt-1.5 overflow-hidden rounded-card border border-line bg-card">
                   {searching ? (
                     <div className="flex items-center justify-center gap-2 py-6 text-[12.5px] text-muted">
                       <Loader2 size={14} className="animate-spin" />
@@ -342,7 +342,7 @@ export function InboundForm({ meta }: { meta: InboundMeta }) {
                       <button
                         type="button"
                         onClick={() => setNewProductOpen(true)}
-                        className="mt-2 text-[12.5px] text-brand hover:underline"
+                        className="mt-2 text-[12.5px] text-brand-ink hover:underline"
                       >
                         ＋ 现在就给它建档
                       </button>
@@ -356,7 +356,7 @@ export function InboundForm({ meta }: { meta: InboundMeta }) {
                             onMouseEnter={() => setActiveIdx(i)}
                             onClick={() => pick(o)}
                             className={`flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors ${
-                              i === activeIdx ? "bg-brand-soft" : "hover:bg-[#f7f8fa]"
+                              i === activeIdx ? "bg-brand-soft" : "hover:bg-sunken"
                             }`}
                           >
                             <ProductThumb
@@ -369,7 +369,7 @@ export function InboundForm({ meta }: { meta: InboundMeta }) {
                               {o.productName}
                               <span className="ml-1.5 text-ink-2">{colorText(o.colorName)}</span>
                               {o.variantType === "custom" ? (
-                                <span className="tag ml-1.5 bg-[#fdf4e8] text-[#a15f12]">定制·按件</span>
+                                <span className="tag ml-1.5 bg-warn-soft text-warn">定制·按件</span>
                               ) : null}
                             </span>
                             <span className="tnum shrink-0 text-[11.5px] text-muted">
@@ -381,12 +381,12 @@ export function InboundForm({ meta }: { meta: InboundMeta }) {
                     </ul>
                   )}
 
-                  <div className="flex items-center justify-between border-t border-line-2 bg-[#fbfcfd] px-3 py-2 text-[11.5px] text-muted">
+                  <div className="flex items-center justify-between border-t border-line-2 bg-sunken px-3 py-2 text-[11.5px] text-muted">
                     <span>↑↓ 选择 · 回车加入 · 数字处回车继续搜下一个</span>
                     <button
                       type="button"
                       onClick={() => setNewProductOpen(true)}
-                      className="text-brand hover:underline"
+                      className="text-brand-ink hover:underline"
                     >
                       找不到？新建产品
                     </button>
@@ -398,15 +398,15 @@ export function InboundForm({ meta }: { meta: InboundMeta }) {
             {/* 已加的行 */}
             <div className="mt-3.5 space-y-2">
               {lines.length === 0 ? (
-                <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-[#d6dae1] bg-[#fcfcfd] py-8 text-center">
-                  <PackagePlus size={20} strokeWidth={1.6} className="text-[#c2c8d2]" />
+                <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-line bg-sunken py-8 text-center">
+                  <PackagePlus size={20} strokeWidth={1.6} className="text-muted" />
                   <p className="text-[12.5px] text-muted">还没有货。上面搜一个款，回车就加进来</p>
                 </div>
               ) : (
                 lines.map((line, index) => (
                   <div
                     key={line.key}
-                    className="grid grid-cols-[1fr_84px_32px] items-center gap-2 rounded-lg border border-line-2 bg-[#fcfcfd] p-2.5 sm:grid-cols-[1fr_78px_142px_32px]"
+                    className="grid grid-cols-[1fr_84px_32px] items-center gap-2 rounded-lg border border-line-2 bg-sunken p-2.5 sm:grid-cols-[1fr_78px_142px_32px]"
                   >
                     <div className="flex min-w-0 items-center gap-2.5">
                       <ProductThumb url={line.imageUrl} name={line.productName} size={34} />
@@ -420,7 +420,7 @@ export function InboundForm({ meta }: { meta: InboundMeta }) {
                             {colorText(line.colorName)}
                           </span>
                           {line.variantType === "custom" ? (
-                            <span className="tag bg-[#fdf4e8] text-[#a15f12]">定制·按件</span>
+                            <span className="tag bg-warn-soft text-warn">定制·按件</span>
                           ) : null}
                           <span className="tnum">当前在库 {line.stock}</span>
                         </div>
@@ -546,9 +546,9 @@ export function InboundForm({ meta }: { meta: InboundMeta }) {
             </div>
           </section>
 
-          <section className="card bg-[#fbfcfd] p-4 text-[12px] leading-[1.85] text-ink-2 sm:p-5">
+          <section className="card bg-sunken p-4 text-[12px] leading-[1.85] text-ink-2 sm:p-5">
             <div className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-ink">
-              <Warehouse size={14} strokeWidth={1.8} className="text-brand" />
+              <Warehouse size={14} strokeWidth={1.8} className="text-brand-ink" />
               审核后会发生什么
             </div>
             <ul className="space-y-1.5">
@@ -634,7 +634,7 @@ export function InboundForm({ meta }: { meta: InboundMeta }) {
             </button>
             <button
               type="button"
-              className={confirm?.approveNow ? "btn-primary" : "btn-ghost border-brand text-brand"}
+              className={confirm?.approveNow ? "btn-primary" : "btn-ghost border-brand text-brand-ink"}
               onClick={() => void doSubmit()}
               disabled={submitting !== null}
             >
@@ -645,7 +645,7 @@ export function InboundForm({ meta }: { meta: InboundMeta }) {
         }
       >
         <div className="space-y-3 pt-1">
-          <div className="grid grid-cols-2 gap-3 rounded-lg bg-[#fbfcfd] px-3 py-2.5 text-[12.5px]">
+          <div className="grid grid-cols-2 gap-3 rounded-lg bg-sunken px-3 py-2.5 text-[12.5px]">
             <div>
               <div className="text-[11.5px] text-muted">业务日期</div>
               <div className="tnum mt-0.5 font-medium text-ink">{bizDate}</div>
@@ -666,7 +666,7 @@ export function InboundForm({ meta }: { meta: InboundMeta }) {
                   {l.productName}
                   <span className="ml-1 text-ink-2">{colorText(l.colorName)}</span>
                 </span>
-                <span className={`tnum shrink-0 font-semibold ${l.qty >= 100 ? "text-[#c0553f]" : "text-ink"}`}>
+                <span className={`tnum shrink-0 font-semibold ${l.qty >= 100 ? "text-danger" : "text-ink"}`}>
                   ×{l.qty} {l.unit}
                 </span>
               </li>
@@ -684,7 +684,7 @@ export function InboundForm({ meta }: { meta: InboundMeta }) {
           </div>
 
           {lines.some((l) => l.qty >= 100) ? (
-            <div className="flex items-start gap-1.5 rounded-lg bg-[#fdf4e8] px-3 py-2 text-[12px] leading-5 text-[#8a5a15]">
+            <div className="flex items-start gap-1.5 rounded-lg bg-warn-soft px-3 py-2 text-[12px] leading-5 text-warn">
               <AlertCircle size={13} className="mt-0.5 shrink-0" />
               有一行数量到了三位数，多打一个 0 是最常见的错。确认一下是不是真这么多。
             </div>

@@ -12,9 +12,9 @@ export const DOC_STATUS_LABEL: Record<DocStatus, string> = {
 };
 
 export const DOC_STATUS_TONE: Record<DocStatus, string> = {
-  draft: "bg-warn-soft text-[#8a5a15]",
+  draft: "bg-warn-soft text-warn",
   approved: "bg-ok-soft text-ok",
-  voided: "bg-[#f2f4f7] text-muted",
+  voided: "bg-sunken text-muted",
 };
 
 /** 统一把数据库里的字符串收敛成三态，避免脏值让界面炸掉 */

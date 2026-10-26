@@ -41,7 +41,7 @@ function LoginForm() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="grid w-full max-w-[900px] overflow-hidden rounded-card border border-line bg-white md:grid-cols-[1.05fr_1fr]">
+      <div className="grid w-full max-w-[900px] overflow-hidden rounded-card border border-line bg-card md:grid-cols-[1.05fr_1fr]">
         {/* 左：品牌 */}
         <div className="hidden flex-col justify-between bg-brand p-9 text-white md:flex">
           <div className="flex items-center gap-2.5">
@@ -86,7 +86,7 @@ function LoginForm() {
         {/* 右：表单 */}
         <div className="p-8 sm:p-10">
           <div className="mb-7 md:hidden">
-            <div className="flex items-center gap-2 text-brand">
+            <div className="flex items-center gap-2 text-brand-ink">
               <Boxes size={20} strokeWidth={1.8} />
               <span className="text-[15px] font-semibold">宿藤家居 ERP</span>
             </div>
@@ -137,7 +137,7 @@ function LoginForm() {
             <label className="flex cursor-pointer items-center gap-2 text-[13px] text-ink-2">
               <input
                 type="checkbox"
-                className="h-3.5 w-3.5 rounded border-line text-brand focus:ring-brand-soft"
+                className="h-3.5 w-3.5 rounded border-line text-brand-ink focus:ring-brand-soft"
                 checked={remember}
                 onChange={(e) => setRemember(e.target.checked)}
               />
@@ -145,7 +145,7 @@ function LoginForm() {
             </label>
 
             {error ? (
-              <div className="rounded-lg border border-[#f3cfc9] bg-danger-soft px-3 py-2 text-[13px] text-danger">
+              <div className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-[13px] text-danger">
                 {error}
               </div>
             ) : null}

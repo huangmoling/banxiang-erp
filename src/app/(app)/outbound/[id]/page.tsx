@@ -72,7 +72,7 @@ export default async function OutboundDetailPage({
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="tnum text-[19px] font-semibold tracking-tight text-ink">{doc.docNo}</h1>
               {doc.pendingShip ? (
-                <span className="tag bg-[#fdf1f1] text-danger">待发货</span>
+                <span className="tag bg-danger-soft text-danger">待发货</span>
               ) : (
                 <span className={`tag ${DOC_STATUS_TONE[doc.status]}`}>
                   {DOC_STATUS_LABEL[doc.status]}
@@ -91,7 +91,7 @@ export default async function OutboundDetailPage({
       </div>
 
       {doc.pendingShip ? (
-        <div className="flex items-start gap-2.5 rounded-card border border-[#f3cfc9] bg-danger-soft px-3.5 py-3 text-[12.5px] leading-5 text-danger">
+        <div className="flex items-start gap-2.5 rounded-card border border-danger/30 bg-danger-soft px-3.5 py-3 text-[12.5px] leading-5 text-danger">
           <CircleAlert size={15} className="mt-0.5 shrink-0" />
           <div>
             内勤交来的<b>待发货工单</b>
@@ -101,7 +101,7 @@ export default async function OutboundDetailPage({
           </div>
         </div>
       ) : doc.status === "draft" && doc.hasShipped ? (
-        <div className="flex items-start gap-2.5 rounded-card border border-[#d4dcfb] bg-brand-soft px-3.5 py-3 text-[12.5px] leading-5 text-brand">
+        <div className="flex items-start gap-2.5 rounded-card border border-brand/30 bg-brand-soft px-3.5 py-3 text-[12.5px] leading-5 text-brand-ink">
           <CircleAlert size={15} className="mt-0.5 shrink-0" />
           <div>
             这张单<b>已经发出 {doc.shippedCount} 个包裹</b>、库存已扣，
@@ -110,14 +110,14 @@ export default async function OutboundDetailPage({
           </div>
         </div>
       ) : doc.status === "draft" ? (
-        <div className="flex items-start gap-2.5 rounded-card border border-[#f0e2c8] bg-warn-soft px-3.5 py-3 text-[12.5px] leading-5 text-[#8a5a15]">
+        <div className="flex items-start gap-2.5 rounded-card border border-warn/40 bg-warn-soft px-3.5 py-3 text-[12.5px] leading-5 text-warn">
           <CircleAlert size={15} className="mt-0.5 shrink-0" />
           <div>
             这张单还是草稿，<b>库存没有变动</b>。勾选要发的行、点「确认发出」之后，才会按实际发出的数量扣库存。
           </div>
         </div>
       ) : (
-        <div className="flex items-start gap-2.5 rounded-card border border-[#cfe6d9] bg-ok-soft px-3.5 py-3 text-[12.5px] leading-5 text-[#1f6b46]">
+        <div className="flex items-start gap-2.5 rounded-card border border-ok/40 bg-ok-soft px-3.5 py-3 text-[12.5px] leading-5 text-ok">
           <Check size={15} className="mt-0.5 shrink-0" />
           <div>
             已生效：{doc.totalQty} {unit} 已出库
@@ -170,7 +170,7 @@ export default async function OutboundDetailPage({
 
             {/* 收货信息现在在每一行上；这里只在填了「整单通用地址」时才有值 */}
             {doc.receiverName ? (
-              <div className="mt-3 flex gap-2 rounded-lg bg-[#fbfcfd] px-3 py-2.5 text-[12px] leading-[1.7]">
+              <div className="mt-3 flex gap-2 rounded-lg bg-sunken px-3 py-2.5 text-[12px] leading-[1.7]">
                 <User size={13} className="mt-[3px] shrink-0 text-muted" />
                 <div className="min-w-0 flex-1">
                   <div className="mb-0.5 text-[11.5px] text-muted">
@@ -182,7 +182,7 @@ export default async function OutboundDetailPage({
             ) : null}
 
             {doc.remark ? (
-              <div className="mt-3 rounded-lg bg-[#fbfcfd] px-3 py-2.5 text-[12px] leading-5 text-ink-2">
+              <div className="mt-3 rounded-lg bg-sunken px-3 py-2.5 text-[12px] leading-5 text-ink-2">
                 <div className="mb-0.5 text-[11.5px] text-muted">备注</div>
                 {doc.remark}
               </div>
@@ -191,7 +191,7 @@ export default async function OutboundDetailPage({
 
           <Link
             href={`/print/outbound/${doc.id}?mode=pick`}
-            className="flex items-center justify-between rounded-card border border-line bg-white px-4 py-3 text-[13px] text-ink transition-colors hover:border-[#d6dae1]"
+            className="flex items-center justify-between rounded-card border border-line bg-card px-4 py-3 text-[13px] text-ink transition-colors hover:border-line"
           >
             打印出货单（按地址拆页）
             <Printer size={14} className="text-muted" />
@@ -199,7 +199,7 @@ export default async function OutboundDetailPage({
 
           <Link
             href="/outbound/new"
-            className="flex items-center justify-between rounded-card border border-line bg-white px-4 py-3 text-[13px] text-ink transition-colors hover:border-[#d6dae1]"
+            className="flex items-center justify-between rounded-card border border-line bg-card px-4 py-3 text-[13px] text-ink transition-colors hover:border-line"
           >
             再开一张出库单
             <ArrowRight size={14} className="text-muted" />
@@ -223,7 +223,7 @@ function Row({
 }) {
   return (
     <div className="flex items-start gap-2.5">
-      <Icon size={14} strokeWidth={1.7} className="mt-0.5 shrink-0 text-[#b9bfc9]" />
+      <Icon size={14} strokeWidth={1.7} className="mt-0.5 shrink-0 text-muted" />
       <dt className="w-[62px] shrink-0 text-muted">{label}</dt>
       <dd className={`min-w-0 flex-1 text-ink ${mono ? "tnum" : ""}`}>{value}</dd>
     </div>

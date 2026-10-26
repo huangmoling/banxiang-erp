@@ -44,7 +44,7 @@ function BigStat({
     <div className="card p-4">
       <div className="flex items-start justify-between">
         <span className="text-[12.5px] text-muted">{label}</span>
-        <Icon size={15} strokeWidth={1.7} className="text-[#c2c8d2]" />
+        <Icon size={15} strokeWidth={1.7} className="text-muted" />
       </div>
       <div className="mt-2 flex items-baseline gap-1">
         <span className="tnum text-[30px] font-semibold leading-none tracking-tight text-ink">{value}</span>
@@ -66,11 +66,11 @@ function TrendChart({ months }: { months: ReportOverview["months"] }) {
     <div>
       <div className="mb-3 flex items-center gap-4 text-[11.5px] text-muted">
         <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-[#3b5bdb]" />
+          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-brand-solid" />
           入库
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-[#c3ccdf]" />
+          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-line" />
           出库
         </span>
         <span className="ml-auto">单位：件</span>
@@ -84,12 +84,12 @@ function TrendChart({ months }: { months: ReportOverview["months"] }) {
             <div key={m.month} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
               <div className="flex h-[150px] w-full items-end justify-center gap-[3px]">
                 <div
-                  className="w-2.5 rounded-t-[2px] bg-[#3b5bdb] sm:w-3"
+                  className="w-2.5 rounded-t-[2px] bg-brand-solid sm:w-3"
                   style={{ height: `${m.inbound === 0 ? 0 : Math.max(3, inPct)}%` }}
                   title={`${m.month} 入库 ${m.inbound} 件`}
                 />
                 <div
-                  className="w-2.5 rounded-t-[2px] bg-[#c3ccdf] sm:w-3"
+                  className="w-2.5 rounded-t-[2px] bg-line sm:w-3"
                   style={{ height: `${m.outbound === 0 ? 0 : Math.max(3, outPct)}%` }}
                   title={`${m.month} 出库 ${m.outbound} 件`}
                 />
@@ -222,7 +222,7 @@ export default async function ReportsPage() {
                           <span className="flex items-center gap-1.5">
                             {row.productName}
                             {row.variantType === "custom" ? (
-                              <span className="tag bg-[#f4f1fb] text-[#5c4b8a]">定制</span>
+                              <span className="tag bg-custom-soft text-custom">定制</span>
                             ) : null}
                           </span>
                         </td>
@@ -291,7 +291,7 @@ export default async function ReportsPage() {
               </div>
             </dl>
 
-            <div className="mt-3 rounded-lg bg-[#f8f9fb] px-3 py-2.5">
+            <div className="mt-3 rounded-lg bg-sunken px-3 py-2.5">
               <div className="flex items-baseline justify-between">
                 <span className="text-[12.5px] text-ink-2">本月消化率</span>
                 <span className="tnum text-[16px] font-semibold text-ink">
@@ -312,8 +312,8 @@ export default async function ReportsPage() {
                       {row.qty} 件 · {row.percent}%
                     </span>
                   </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-[#eef0f4]">
-                    <div className="h-full rounded-full bg-[#3b5bdb]" style={{ width: `${row.percent}%` }} />
+                  <div className="h-1.5 overflow-hidden rounded-full bg-sunken">
+                    <div className="h-full rounded-full bg-brand-solid" style={{ width: `${row.percent}%` }} />
                   </div>
                 </div>
               ))}
@@ -368,7 +368,7 @@ export default async function ReportsPage() {
           title="次品区存量按款"
           desc="这些货不能再当可售发出去，只能处置。"
           action={
-            <Link href="/defective" className="text-[12px] text-brand hover:underline">
+            <Link href="/defective" className="text-[12px] text-brand-ink hover:underline">
               去处理
             </Link>
           }
@@ -376,7 +376,7 @@ export default async function ReportsPage() {
           {report.defective.bySku.length === 0 ? (
             <EmptyHint text="次品区是空的" />
           ) : (
-            <ul className="divide-y divide-[#f0f2f5]">
+            <ul className="divide-y divide-line">
               {report.defective.bySku.map((row) => (
                 <li key={row.skuId} className="flex items-center justify-between gap-2 py-2 first:pt-0 last:pb-0">
                   <span className="min-w-0 truncate text-[13px] text-ink">
@@ -393,19 +393,19 @@ export default async function ReportsPage() {
         <SectionCard title="这些数字怎么来的" desc="报表出错多半是口径没对齐，先把话说清楚。">
           <ul className="space-y-2 text-[12px] leading-6 text-ink-2">
             <li className="flex gap-2">
-              <CircleAlert size={13} className="mt-1 shrink-0 text-[#c2c8d2]" />
+              <CircleAlert size={13} className="mt-1 shrink-0 text-muted" />
               出入库数量来自库存流水，只统计主仓，次品区和报废区不算「可售」。
             </li>
             <li className="flex gap-2">
-              <Layers size={13} className="mt-1 shrink-0 text-[#c2c8d2]" />
+              <Layers size={13} className="mt-1 shrink-0 text-muted" />
               损耗只看报废处置单，被红冲的单不计入；红冲不会取消已经发生过的出入库作业量。
             </li>
             <li className="flex gap-2">
-              <Recycle size={13} className="mt-1 shrink-0 text-[#c2c8d2]" />
+              <Recycle size={13} className="mt-1 shrink-0 text-muted" />
               定制款按件追踪，统计里也按件计，与常规款的「把 / 张 / 套」各自用各自的单位。
             </li>
             <li className="flex gap-2">
-              <ArrowDownToLine size={13} className="mt-1 shrink-0 text-[#c2c8d2]" />
+              <ArrowDownToLine size={13} className="mt-1 shrink-0 text-muted" />
               同比一律跟「上月同期」比，不跟上月整月比——月初看整月比永远像暴跌。
             </li>
           </ul>

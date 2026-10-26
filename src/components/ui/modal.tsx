@@ -35,12 +35,12 @@ export function Modal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-[#1f2430]/35" onClick={onClose} />
+      <div className="absolute inset-0 bg-ink/35" onClick={onClose} />
       <div
         ref={ref}
         role="dialog"
         aria-modal="true"
-        className={`relative w-full ${width} rounded-card border border-line bg-white`}
+        className={`relative w-full ${width} rounded-card border border-line bg-card`}
       >
         <div className="flex items-start justify-between gap-3 px-5 pb-2 pt-4">
           <div>

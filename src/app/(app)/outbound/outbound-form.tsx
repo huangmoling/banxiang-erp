@@ -386,7 +386,7 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
       </div>
 
       {error ? (
-        <div className="flex items-start gap-2 rounded-card border border-[#f3cfc9] bg-danger-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-danger">
+        <div className="flex items-start gap-2 rounded-card border border-danger/30 bg-danger-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-danger">
           <AlertCircle size={15} className="mt-0.5 shrink-0" />
           {error}
         </div>
@@ -422,7 +422,7 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
               />
 
               {open ? (
-                <div className="absolute left-0 right-0 top-full z-30 mt-1.5 overflow-hidden rounded-card border border-line bg-white">
+                <div className="absolute left-0 right-0 top-full z-30 mt-1.5 overflow-hidden rounded-card border border-line bg-card">
                   {searching ? (
                     <div className="flex items-center justify-center gap-2 py-6 text-[12.5px] text-muted">
                       <Loader2 size={14} className="animate-spin" />
@@ -443,7 +443,7 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
                               onMouseEnter={() => setActiveIdx(i)}
                               onClick={() => pick(o)}
                               className={`flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors ${
-                                i === activeIdx ? "bg-brand-soft" : "hover:bg-[#f7f8fa]"
+                                i === activeIdx ? "bg-brand-soft" : "hover:bg-sunken"
                               }`}
                             >
                               <ProductThumb
@@ -456,14 +456,14 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
                                 {o.productName}
                                 <span className="ml-1.5 text-ink-2">{colorText(o.colorName)}</span>
                                 {o.variantType === "custom" ? (
-                                  <span className="tag ml-1.5 bg-[#fdf4e8] text-[#a15f12]">
+                                  <span className="tag ml-1.5 bg-warn-soft text-warn">
                                     定制·按件
                                   </span>
                                 ) : null}
                               </span>
                               <span
                                 className={`tnum shrink-0 text-[11.5px] ${
-                                  out ? "text-[#c0553f]" : "text-muted"
+                                  out ? "text-danger" : "text-muted"
                                 }`}
                               >
                                 {out ? "无在库" : `在库 ${o.stock} ${o.unit}`}
@@ -475,7 +475,7 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
                     </ul>
                   )}
 
-                  <div className="flex items-center justify-between border-t border-line-2 bg-[#fbfcfd] px-3 py-2 text-[11.5px] text-muted">
+                  <div className="flex items-center justify-between border-t border-line-2 bg-sunken px-3 py-2 text-[11.5px] text-muted">
                     <span>↑↓ 选择 · 回车加入 · 数量处回车继续搜下一个</span>
                   </div>
                 </div>
@@ -485,8 +485,8 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
             {/* 已加的行 */}
             <div className="mt-3.5 space-y-2">
               {lines.length === 0 ? (
-                <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-[#d6dae1] bg-[#fcfcfd] py-8 text-center">
-                  <PackageMinus size={20} strokeWidth={1.6} className="text-[#c2c8d2]" />
+                <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-line bg-sunken py-8 text-center">
+                  <PackageMinus size={20} strokeWidth={1.6} className="text-muted" />
                   <p className="text-[12.5px] text-muted">还没有货。上面搜一个款，回车就加进来</p>
                 </div>
               ) : (
@@ -497,8 +497,8 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
                   return (
                     <div
                       key={line.key}
-                      className={`rounded-lg border bg-[#fcfcfd] ${
-                        over || noStock ? "border-[#f3cfc9]" : "border-line-2"
+                      className={`rounded-lg border bg-sunken ${
+                        over || noStock ? "border-danger/30" : "border-line-2"
                       }`}
                     >
                       <div className="grid grid-cols-[1fr_84px_32px] items-center gap-2 p-2.5 sm:grid-cols-[1fr_78px_150px_32px]">
@@ -516,9 +516,9 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
                                 {colorText(line.colorName)}
                               </span>
                               {line.variantType === "custom" ? (
-                                <span className="tag bg-[#fdf4e8] text-[#a15f12]">定制·按件</span>
+                                <span className="tag bg-warn-soft text-warn">定制·按件</span>
                               ) : null}
-                              <span className={`tnum ${noStock ? "text-[#c0553f]" : ""}`}>
+                              <span className={`tnum ${noStock ? "text-danger" : ""}`}>
                                 在库 {line.stock} {line.unit}
                               </span>
                             </div>
@@ -546,7 +546,7 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
                               max={Math.max(1, line.stock)}
                               inputMode="numeric"
                               className={`input px-1.5 py-1.5 text-center text-[13px] tnum ${
-                                over ? "border-[#e0a99e] text-danger" : ""
+                                over ? "border-danger/30 text-danger" : ""
                               }`}
                               value={Number.isFinite(line.qty) && line.qty !== 0 ? line.qty : ""}
                               onChange={(e) => updateLine(line.key, { qty: Number(e.target.value) })}
@@ -573,8 +573,8 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
                               disabled={line.availLoading}
                               className={`flex w-full items-center justify-between gap-1 rounded-md border px-2 py-1.5 text-[12px] transition-colors ${
                                 line.instanceIds.length > 0
-                                  ? "border-[#c9d3f5] bg-brand-soft text-brand"
-                                  : "border-line bg-white text-ink-2 hover:border-[#d6dae1]"
+                                  ? "border-brand/30 bg-brand-soft text-brand-ink"
+                                  : "border-line bg-card text-ink-2 hover:border-line"
                               }`}
                             >
                               <span className="truncate">
@@ -621,7 +621,7 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
                           <textarea
                             className={`input min-h-[44px] flex-1 resize-y py-1.5 text-[12px] leading-[1.55] ${
                               !line.receiverInfo.trim() && !receiverName.trim()
-                                ? "border-[#e8c4bb]"
+                                ? "border-danger/30"
                                 : ""
                             }`}
                             rows={2}
@@ -642,7 +642,7 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
                                 trackingNo: prev.trackingNo,
                               });
                             }}
-                            className="shrink-0 rounded-md border border-line bg-white px-2 py-[7px] text-[11.5px] text-ink-2 transition-colors hover:border-[#c9d3f5] hover:text-brand disabled:cursor-not-allowed disabled:opacity-40"
+                            className="shrink-0 rounded-md border border-line bg-card px-2 py-[7px] text-[11.5px] text-ink-2 transition-colors hover:border-brand/30 hover:text-brand-ink disabled:cursor-not-allowed disabled:opacity-40"
                             title="同一个买家买了两件，地址复制上一行的"
                           >
                             同上
@@ -677,14 +677,14 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
 
                       {/* 定制款：在库件列表 */}
                       {line.variantType === "custom" && line.picking ? (
-                        <div className="border-t border-line-2 bg-white px-2.5 py-2.5">
+                        <div className="border-t border-line-2 bg-card px-2.5 py-2.5">
                           {line.availLoading ? (
                             <div className="flex items-center gap-2 py-2 text-[12px] text-muted">
                               <Loader2 size={13} className="animate-spin" />
                               正在读取这一款的在库件…
                             </div>
                           ) : (line.avail?.instances.length ?? 0) === 0 ? (
-                            <p className="py-1.5 text-[12px] text-[#c0553f]">
+                            <p className="py-1.5 text-[12px] text-danger">
                               这一款现在没有在库的单件，出不了。等入库审核后再来。
                             </p>
                           ) : (
@@ -714,10 +714,10 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
                                       }
                                       className={`flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11.5px] transition-colors ${
                                         locked
-                                          ? "cursor-not-allowed border-line-2 bg-[#f7f8fa] text-[#b9bfc9]"
+                                          ? "cursor-not-allowed border-line-2 bg-sunken text-muted"
                                           : selected
-                                            ? "border-[#c9d3f5] bg-brand-soft text-brand"
-                                            : "border-line bg-white text-ink-2 hover:border-[#c9d3f5]"
+                                            ? "border-brand/30 bg-brand-soft text-brand-ink"
+                                            : "border-line bg-card text-ink-2 hover:border-brand/30"
                                       }`}
                                     >
                                       {selected ? <Check size={11} /> : null}
@@ -794,7 +794,7 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
                 默认收起——一单几十个买家地址是常态，地址填在行上更清楚。
                 填了这里，商品行上没填地址的就沿用它（老单据也是这么回退的）。
               */}
-              <div className="rounded-lg border border-line-2 bg-[#fbfcfd]">
+              <div className="rounded-lg border border-line-2 bg-sunken">
                 <button
                   type="button"
                   onClick={() => setWholeAddrOpen((v) => !v)}
@@ -861,9 +861,9 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
             </div>
           </section>
 
-          <section className="card bg-[#fbfcfd] p-4 text-[12px] leading-[1.85] text-ink-2 sm:p-5">
+          <section className="card bg-sunken p-4 text-[12px] leading-[1.85] text-ink-2 sm:p-5">
             <div className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-ink">
-              <Truck size={14} strokeWidth={1.8} className="text-brand" />
+              <Truck size={14} strokeWidth={1.8} className="text-brand-ink" />
               {isClerk ? "提交后会发生什么" : "审核后会发生什么"}
             </div>
             <ul className="space-y-1.5">
@@ -938,7 +938,7 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
                 </button>
                 <button
                   type="button"
-                  className="btn-ghost border-brand text-brand"
+                  className="btn-ghost border-brand text-brand-ink"
                   onClick={() => requestSubmit("submit")}
                   disabled={submitting !== null}
                   title="交给仓管去发，库存这时候不动"
@@ -999,7 +999,7 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
             </button>
             <button
               type="button"
-              className={confirm?.mode === "draft" ? "btn-ghost border-brand text-brand" : "btn-primary"}
+              className={confirm?.mode === "draft" ? "btn-ghost border-brand text-brand-ink" : "btn-primary"}
               onClick={() => void doSubmit()}
               disabled={submitting !== null}
             >
@@ -1014,7 +1014,7 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
         }
       >
         <div className="space-y-3 pt-1">
-          <div className="grid grid-cols-3 gap-3 rounded-lg bg-[#fbfcfd] px-3 py-2.5 text-[12.5px]">
+          <div className="grid grid-cols-3 gap-3 rounded-lg bg-sunken px-3 py-2.5 text-[12.5px]">
             <div>
               <div className="text-[11.5px] text-muted">业务日期</div>
               <div className="tnum mt-0.5 font-medium text-ink">{bizDate}</div>
@@ -1042,13 +1042,13 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
                     {l.productName}
                     <span className="ml-1 text-ink-2">{colorText(l.colorName)}</span>
                     {l.variantType === "custom" ? (
-                      <span className="ml-1 text-[11px] text-[#a15f12]">
+                      <span className="ml-1 text-[11px] text-warn">
                         ·{l.instanceIds.length} 件指定编号
                       </span>
                     ) : null}
                   </span>
                   <span
-                    className={`tnum shrink-0 font-semibold ${l.qty >= 100 ? "text-[#c0553f]" : "text-ink"}`}
+                    className={`tnum shrink-0 font-semibold ${l.qty >= 100 ? "text-danger" : "text-ink"}`}
                   >
                     ×{l.qty} {l.unit}
                   </span>
@@ -1074,14 +1074,14 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
           </div>
 
           {lines.some((l) => l.variantType === "normal" && l.qty >= 100) ? (
-            <div className="flex items-start gap-1.5 rounded-lg bg-[#fdf4e8] px-3 py-2 text-[12px] leading-5 text-[#8a5a15]">
+            <div className="flex items-start gap-1.5 rounded-lg bg-warn-soft px-3 py-2 text-[12px] leading-5 text-warn">
               <AlertCircle size={13} className="mt-0.5 shrink-0" />
               有一行数量到了三位数，多打一个 0 是最常见的错。确认一下是不是真这么多。
             </div>
           ) : null}
 
           {lines.some((l) => !l.receiverInfo.trim()) && !receiverName.trim() ? (
-            <div className="flex items-start gap-1.5 rounded-lg bg-[#fdf1f1] px-3 py-2 text-[12px] leading-5 text-danger">
+            <div className="flex items-start gap-1.5 rounded-lg bg-danger-soft px-3 py-2 text-[12px] leading-5 text-danger">
               <AlertCircle size={13} className="mt-0.5 shrink-0" />
               有{" "}
               {lines.filter((l) => !l.receiverInfo.trim()).length} 行还没填收货信息，
@@ -1090,7 +1090,7 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
           ) : null}
 
           {confirm?.mode === "submit" ? (
-            <div className="flex items-start gap-1.5 rounded-lg bg-brand-soft px-3 py-2 text-[12px] leading-5 text-brand">
+            <div className="flex items-start gap-1.5 rounded-lg bg-brand-soft px-3 py-2 text-[12px] leading-5 text-brand-ink">
               <Send size={13} className="mt-0.5 shrink-0" />
               提交只是把单子交给仓管，库存一点不动。仓管点「确认」之后才会扣。
             </div>

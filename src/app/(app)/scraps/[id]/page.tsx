@@ -44,7 +44,7 @@ export default async function ScrapDetailPage({ params }: { params: Promise<{ id
                 {DOC_STATUS_LABEL[doc.status]}
               </span>
               {doc.fromDefective ? (
-                <span className="tag bg-[#fdf1f1] text-[#b4433a]">来自次品区</span>
+                <span className="tag bg-danger-soft text-danger">来自次品区</span>
               ) : null}
             </div>
             <p className="mt-1 text-[13px] text-muted">
@@ -145,7 +145,7 @@ export default async function ScrapDetailPage({ params }: { params: Promise<{ id
         </dl>
       </div>
 
-      <div className="rounded-card border border-line bg-[#fbfcfd] px-4 py-3.5">
+      <div className="rounded-card border border-line bg-sunken px-4 py-3.5">
         <p className="text-[12.5px] font-medium text-ink-2">三种处理方式在账上的区别</p>
         <ul className="mt-1.5 space-y-1 text-[12.5px] leading-5 text-muted">
           <li>· 转报废：货还在仓库（进报废区），本月损耗统计里能看到；</li>

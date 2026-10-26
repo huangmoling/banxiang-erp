@@ -79,7 +79,7 @@ export default async function StocktakeDetailPage({ params }: { params: Promise<
       </div>
 
       {doc.status === "draft" ? (
-        <div className="flex items-start gap-2.5 rounded-card border border-[#f0e2c8] bg-warn-soft px-3.5 py-3 text-[12.5px] leading-5 text-[#8a5a15]">
+        <div className="flex items-start gap-2.5 rounded-card border border-warn/40 bg-warn-soft px-3.5 py-3 text-[12.5px] leading-5 text-warn">
           <CircleAlert size={15} className="mt-0.5 shrink-0" />
           <div>
             这张单还是草稿，<b>库存没有变动</b>。点右上角「审核并调账」之后，
@@ -88,7 +88,7 @@ export default async function StocktakeDetailPage({ params }: { params: Promise<
           </div>
         </div>
       ) : (
-        <div className="flex items-start gap-2.5 rounded-card border border-[#cfe6d9] bg-ok-soft px-3.5 py-3 text-[12.5px] leading-5 text-[#1f6b46]">
+        <div className="flex items-start gap-2.5 rounded-card border border-ok/40 bg-ok-soft px-3.5 py-3 text-[12.5px] leading-5 text-ok">
           <Check size={15} className="mt-0.5 shrink-0" />
           <div>
             已生效：
@@ -120,7 +120,7 @@ export default async function StocktakeDetailPage({ params }: { params: Promise<
                 <span className="tag tnum bg-danger-soft text-danger">盘亏 -{doc.lossQty}</span>
               ) : null}
               {doc.diffLines === 0 ? (
-                <span className="tag bg-[#f2f4f7] text-ink-2">账实相符</span>
+                <span className="tag bg-sunken text-ink-2">账实相符</span>
               ) : null}
             </div>
           </div>
@@ -140,7 +140,7 @@ export default async function StocktakeDetailPage({ params }: { params: Promise<
               </thead>
               <tbody>
                 {doc.items.map((item) => (
-                  <tr key={item.id} className={item.diffQty !== 0 ? "bg-[#fdfbf7]" : undefined}>
+                  <tr key={item.id} className={item.diffQty !== 0 ? "bg-warn-soft" : undefined}>
                     <td className="td tnum text-muted">{item.lineNo}</td>
                     <td className="td">
                       <div className="font-medium text-ink">{item.productName}</div>
@@ -149,7 +149,7 @@ export default async function StocktakeDetailPage({ params }: { params: Promise<
                           {colorText(item.colorName)}
                         </span>
                         {item.variantType === "custom" ? (
-                          <span className="tag bg-[#fdf4e8] text-[#a15f12]">定制·按件</span>
+                          <span className="tag bg-warn-soft text-warn">定制·按件</span>
                         ) : null}
                       </div>
                     </td>
@@ -223,7 +223,7 @@ export default async function StocktakeDetailPage({ params }: { params: Promise<
                 mono
               />
               <div className="flex items-start gap-2.5">
-                <Warehouse size={14} strokeWidth={1.7} className="mt-0.5 shrink-0 text-[#b9bfc9]" />
+                <Warehouse size={14} strokeWidth={1.7} className="mt-0.5 shrink-0 text-muted" />
                 <dt className="w-[62px] shrink-0 text-muted">仓位</dt>
                 <dd className="min-w-0 flex-1 text-ink">
                   {doc.locationName ?? "—"}
@@ -245,14 +245,14 @@ export default async function StocktakeDetailPage({ params }: { params: Promise<
             </dl>
 
             {doc.remark ? (
-              <div className="mt-3 rounded-lg bg-[#fbfcfd] px-3 py-2.5 text-[12px] leading-5 text-ink-2">
+              <div className="mt-3 rounded-lg bg-sunken px-3 py-2.5 text-[12px] leading-5 text-ink-2">
                 <div className="mb-0.5 text-[11.5px] text-muted">备注</div>
                 {doc.remark}
               </div>
             ) : null}
           </section>
 
-          <div className="rounded-card border border-line bg-white px-4 py-3 text-[12px] leading-[1.85] text-ink-2">
+          <div className="rounded-card border border-line bg-card px-4 py-3 text-[12px] leading-[1.85] text-ink-2">
             <div className="mb-1 text-[11.5px] text-muted">怎么读这张单</div>
             <div>
               <b className="text-ink">账面</b>是截止时点那一刻系统上的数；
@@ -271,7 +271,7 @@ export default async function StocktakeDetailPage({ params }: { params: Promise<
 
           <Link
             href="/stocktakes/new"
-            className="flex items-center justify-between rounded-card border border-line bg-white px-4 py-3 text-[13px] text-ink transition-colors hover:border-[#d6dae1]"
+            className="flex items-center justify-between rounded-card border border-line bg-card px-4 py-3 text-[13px] text-ink transition-colors hover:border-line"
           >
             <span className="flex items-center gap-2">
               <ClipboardCheck size={15} strokeWidth={1.7} className="text-muted" />
@@ -298,7 +298,7 @@ function Row({
 }) {
   return (
     <div className="flex items-start gap-2.5">
-      <Icon size={14} strokeWidth={1.7} className="mt-0.5 shrink-0 text-[#b9bfc9]" />
+      <Icon size={14} strokeWidth={1.7} className="mt-0.5 shrink-0 text-muted" />
       <dt className="w-[62px] shrink-0 text-muted">{label}</dt>
       <dd className={`min-w-0 flex-1 text-ink ${mono ? "tnum" : ""}`}>{value}</dd>
     </div>

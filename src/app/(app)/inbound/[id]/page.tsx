@@ -86,14 +86,14 @@ export default async function InboundDetailPage({
       </div>
 
       {doc.status === "draft" ? (
-        <div className="flex items-start gap-2.5 rounded-card border border-[#f0e2c8] bg-warn-soft px-3.5 py-3 text-[12.5px] leading-5 text-[#8a5a15]">
+        <div className="flex items-start gap-2.5 rounded-card border border-warn/40 bg-warn-soft px-3.5 py-3 text-[12.5px] leading-5 text-warn">
           <CircleAlert size={15} className="mt-0.5 shrink-0" />
           <div>
             这张单还是草稿，<b>库存没有变动</b>。点右上角「审核入库」之后，{doc.totalQty} {unit} 才算真正入账。
           </div>
         </div>
       ) : (
-        <div className="flex items-start gap-2.5 rounded-card border border-[#cfe6d9] bg-ok-soft px-3.5 py-3 text-[12.5px] leading-5 text-[#1f6b46]">
+        <div className="flex items-start gap-2.5 rounded-card border border-ok/40 bg-ok-soft px-3.5 py-3 text-[12.5px] leading-5 text-ok">
           <Check size={15} className="mt-0.5 shrink-0" />
           <div>
             已生效：{doc.totalQty} {unit} 已入账
@@ -133,9 +133,9 @@ export default async function InboundDetailPage({
                       <div className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-muted">
                         <span className={item.colorName ? "text-ink-2" : ""}>{colorText(item.colorName)}</span>
                         {item.variantType === "custom" ? (
-                          <span className="tag bg-[#fdf4e8] text-[#a15f12]">定制·按件</span>
+                          <span className="tag bg-warn-soft text-warn">定制·按件</span>
                         ) : (
-                          <span className="tag bg-[#f2f4f7] text-ink-2">常规·按数量</span>
+                          <span className="tag bg-sunken text-ink-2">常规·按数量</span>
                         )}
                       </div>
                     </td>
@@ -153,7 +153,7 @@ export default async function InboundDetailPage({
                       ) : (
                         <div className="flex flex-wrap gap-1">
                           {item.instanceCodes.map((code) => (
-                            <span key={code} className="tag tnum bg-brand-soft text-brand">
+                            <span key={code} className="tag tnum bg-brand-soft text-brand-ink">
                               {code}
                             </span>
                           ))}
@@ -199,7 +199,7 @@ export default async function InboundDetailPage({
             </dl>
 
             {doc.remark ? (
-              <div className="mt-3 rounded-lg bg-[#fbfcfd] px-3 py-2.5 text-[12px] leading-5 text-ink-2">
+              <div className="mt-3 rounded-lg bg-sunken px-3 py-2.5 text-[12px] leading-5 text-ink-2">
                 <div className="mb-0.5 text-[11.5px] text-muted">备注</div>
                 {doc.remark}
               </div>
@@ -208,7 +208,7 @@ export default async function InboundDetailPage({
 
           <Link
             href="/inbound/new"
-            className="flex items-center justify-between rounded-card border border-line bg-white px-4 py-3 text-[13px] text-ink transition-colors hover:border-[#d6dae1]"
+            className="flex items-center justify-between rounded-card border border-line bg-card px-4 py-3 text-[13px] text-ink transition-colors hover:border-line"
           >
             再开一张入库单
             <ArrowRight size={14} className="text-muted" />
@@ -232,7 +232,7 @@ function Row({
 }) {
   return (
     <div className="flex items-start gap-2.5">
-      <Icon size={14} strokeWidth={1.7} className="mt-0.5 shrink-0 text-[#b9bfc9]" />
+      <Icon size={14} strokeWidth={1.7} className="mt-0.5 shrink-0 text-muted" />
       <dt className="w-[62px] shrink-0 text-muted">{label}</dt>
       <dd className={`min-w-0 flex-1 text-ink ${mono ? "tnum" : ""}`}>{value}</dd>
     </div>

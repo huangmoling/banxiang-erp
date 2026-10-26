@@ -83,14 +83,14 @@ export default async function ReturnDetailPage({ params }: { params: Promise<{ i
       </div>
 
       {doc.status === "draft" ? (
-        <div className="flex items-start gap-2.5 rounded-card border border-[#f0e2c8] bg-warn-soft px-3.5 py-3 text-[12.5px] leading-5 text-[#8a5a15]">
+        <div className="flex items-start gap-2.5 rounded-card border border-warn/40 bg-warn-soft px-3.5 py-3 text-[12.5px] leading-5 text-warn">
           <CircleAlert size={15} className="mt-0.5 shrink-0" />
           <div>
             这张单还是草稿，<b>库存没有变动</b>。点右上角「审核入库」之后，{doc.totalQty} {unit} 才会按去向回到对应仓位。
           </div>
         </div>
       ) : (
-        <div className="flex items-start gap-2.5 rounded-card border border-[#cfe6d9] bg-ok-soft px-3.5 py-3 text-[12.5px] leading-5 text-[#1f6b46]">
+        <div className="flex items-start gap-2.5 rounded-card border border-ok/40 bg-ok-soft px-3.5 py-3 text-[12.5px] leading-5 text-ok">
           <Check size={15} className="mt-0.5 shrink-0" />
           <div>
             已生效：{doc.totalQty} {unit} 已按去向入库
@@ -137,9 +137,9 @@ export default async function ReturnDetailPage({ params }: { params: Promise<{ i
                           {colorText(item.colorName)}
                         </span>
                         {item.variantType === "custom" ? (
-                          <span className="tag bg-[#fdf4e8] text-[#a15f12]">定制·按件</span>
+                          <span className="tag bg-warn-soft text-warn">定制·按件</span>
                         ) : (
-                          <span className="tag bg-[#f2f4f7] text-ink-2">常规·按数量</span>
+                          <span className="tag bg-sunken text-ink-2">常规·按数量</span>
                         )}
                       </div>
                     </td>
@@ -169,7 +169,7 @@ export default async function ReturnDetailPage({ params }: { params: Promise<{ i
                       ) : (
                         <div className="flex flex-wrap gap-1">
                           {item.instanceCodes.map((code) => (
-                            <span key={code} className="tag tnum bg-brand-soft text-brand">
+                            <span key={code} className="tag tnum bg-brand-soft text-brand-ink">
                               {code}
                             </span>
                           ))}
@@ -202,13 +202,13 @@ export default async function ReturnDetailPage({ params }: { params: Promise<{ i
               <Row icon={FileText} label="单号" value={doc.docNo} mono />
               <Row icon={Info} label="退货日期" value={doc.bizDate} mono />
               <div className="flex items-start gap-2.5">
-                <Undo2 size={14} strokeWidth={1.7} className="mt-0.5 shrink-0 text-[#b9bfc9]" />
+                <Undo2 size={14} strokeWidth={1.7} className="mt-0.5 shrink-0 text-muted" />
                 <dt className="w-[62px] shrink-0 text-muted">原出库单</dt>
                 <dd className="min-w-0 flex-1">
                   {doc.originDocumentId && doc.originDocNo ? (
                     <Link
                       href={`/outbound/${doc.originDocumentId}`}
-                      className="tnum text-brand hover:underline"
+                      className="tnum text-brand-ink hover:underline"
                       title="查看原出库单"
                     >
                       {doc.originDocNo}
@@ -234,14 +234,14 @@ export default async function ReturnDetailPage({ params }: { params: Promise<{ i
             </dl>
 
             {doc.remark ? (
-              <div className="mt-3 rounded-lg bg-[#fbfcfd] px-3 py-2.5 text-[12px] leading-5 text-ink-2">
+              <div className="mt-3 rounded-lg bg-sunken px-3 py-2.5 text-[12px] leading-5 text-ink-2">
                 <div className="mb-0.5 text-[11.5px] text-muted">备注</div>
                 {doc.remark}
               </div>
             ) : null}
           </section>
 
-          <div className="rounded-card border border-line bg-white px-4 py-3 text-[12px] leading-[1.85] text-ink-2">
+          <div className="rounded-card border border-line bg-card px-4 py-3 text-[12px] leading-[1.85] text-ink-2">
             <div className="mb-1 text-[11.5px] text-muted">这件货后续</div>
             次品区的货不计入可售库存，可以线下出售或转报废（后续阶段开放）。
             良品回架的货已经回到主仓，可以正常发货。
@@ -249,7 +249,7 @@ export default async function ReturnDetailPage({ params }: { params: Promise<{ i
 
           <Link
             href="/returns/new"
-            className="flex items-center justify-between rounded-card border border-line bg-white px-4 py-3 text-[13px] text-ink transition-colors hover:border-[#d6dae1]"
+            className="flex items-center justify-between rounded-card border border-line bg-card px-4 py-3 text-[13px] text-ink transition-colors hover:border-line"
           >
             再开一张退货单
             <ArrowRight size={14} className="text-muted" />
@@ -273,7 +273,7 @@ function Row({
 }) {
   return (
     <div className="flex items-start gap-2.5">
-      <Icon size={14} strokeWidth={1.7} className="mt-0.5 shrink-0 text-[#b9bfc9]" />
+      <Icon size={14} strokeWidth={1.7} className="mt-0.5 shrink-0 text-muted" />
       <dt className="w-[62px] shrink-0 text-muted">{label}</dt>
       <dd className={`min-w-0 flex-1 text-ink ${mono ? "tnum" : ""}`}>{value}</dd>
     </div>

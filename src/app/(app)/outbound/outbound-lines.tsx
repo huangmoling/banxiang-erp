@@ -147,7 +147,7 @@ export function OutboundLines({ doc, role }: { doc: OutboundDocView; role: strin
             <button
               type="button"
               onClick={toggleAll}
-              className="rounded-md px-2 py-1 text-[12px] text-ink-2 transition-colors hover:bg-[#f4f6f8]"
+              className="rounded-md px-2 py-1 text-[12px] text-ink-2 transition-colors hover:bg-sunken"
             >
               {allPicked ? "取消全选" : "全选未发"}
             </button>
@@ -172,14 +172,14 @@ export function OutboundLines({ doc, role }: { doc: OutboundDocView; role: strin
             <div
               key={item.id}
               className={`flex gap-3 px-4 py-3 transition-colors ${
-                item.shipped ? "bg-[#fbfcfd]" : selected ? "bg-brand-soft/40" : ""
+                item.shipped ? "bg-sunken" : selected ? "bg-brand-soft/40" : ""
               }`}
             >
               {/* 勾选框：发过的行不给勾，避免重复扣库存 */}
               {canShip && editable && !item.shipped ? (
                 <input
                   type="checkbox"
-                  className="mt-[3px] h-4 w-4 shrink-0 accent-[#3b5bdb]"
+                  className="mt-[3px] h-4 w-4 shrink-0 accent-brand"
                   checked={selected}
                   onChange={() => toggle(item.id)}
                   aria-label={`选择第 ${item.lineNo} 行`}
@@ -195,7 +195,7 @@ export function OutboundLines({ doc, role }: { doc: OutboundDocView; role: strin
                   <span className="text-[13px] font-medium text-ink">{item.productName}</span>
                   <span className="text-[12px] text-ink-2">{colorText(item.colorName)}</span>
                   {item.variantType === "custom" ? (
-                    <span className="tag bg-[#fdf4e8] text-[#a15f12]">定制·按件</span>
+                    <span className="tag bg-warn-soft text-warn">定制·按件</span>
                   ) : null}
                   <span className="tnum text-[12.5px] font-semibold text-ink">
                     ×{item.qty} {item.unit}
@@ -207,14 +207,14 @@ export function OutboundLines({ doc, role }: { doc: OutboundDocView; role: strin
                       {item.shippedByName ? ` · ${item.shippedByName}` : ""}
                     </span>
                   ) : (
-                    <span className="tag bg-[#fdf4e8] text-[#8a5a15]">待发</span>
+                    <span className="tag bg-warn-soft text-warn">待发</span>
                   )}
                 </div>
 
                 {/* 收货信息：整段显示，不截断——仓管照着这行字贴单 */}
                 <div className="mt-1 whitespace-pre-line break-words text-[12px] leading-[1.6] text-ink-2">
                   {item.receiverInfo || (
-                    <span className="text-[#c0553f]">还没填收货地址，发不出去</span>
+                    <span className="text-danger">还没填收货地址，发不出去</span>
                   )}
                   {item.receiverInherited ? (
                     <span className="ml-1.5 text-[11px] text-muted">（沿用整单地址）</span>
@@ -237,7 +237,7 @@ export function OutboundLines({ doc, role }: { doc: OutboundDocView; role: strin
                   <button
                     type="button"
                     onClick={() => openEdit(item)}
-                    className="rounded-md p-1.5 text-muted transition-colors hover:bg-[#f4f6f8] hover:text-brand"
+                    className="rounded-md p-1.5 text-muted transition-colors hover:bg-sunken hover:text-brand-ink"
                     title="改这一行的收货信息"
                   >
                     <Pencil size={13} />

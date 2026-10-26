@@ -88,7 +88,7 @@ export default async function DefectivePage() {
                         <span className="text-muted">·</span>
                         <span>{colorText(row.colorName)}</span>
                         {row.variantType === "custom" ? (
-                          <span className="tag bg-[#f0f2fb] text-brand-ink">定制 · 按件</span>
+                          <span className="tag bg-brand-soft text-brand-ink">定制 · 按件</span>
                         ) : null}
                       </div>
                     </td>
@@ -106,19 +106,19 @@ export default async function DefectivePage() {
                       <div className="flex flex-wrap gap-1.5">
                         <Link
                           href={`${base}&disposition=scrap`}
-                          className="rounded-md border border-line px-2 py-1 text-[12px] text-ink-2 transition-colors hover:border-[#d6dae1] hover:text-ink"
+                          className="rounded-md border border-line px-2 py-1 text-[12px] text-ink-2 transition-colors hover:border-line hover:text-ink"
                         >
                           转报废
                         </Link>
                         <Link
                           href={`${base}&disposition=offline_sale`}
-                          className="rounded-md border border-line px-2 py-1 text-[12px] text-ink-2 transition-colors hover:border-[#d6dae1] hover:text-ink"
+                          className="rounded-md border border-line px-2 py-1 text-[12px] text-ink-2 transition-colors hover:border-line hover:text-ink"
                         >
                           线下出售
                         </Link>
                         <Link
                           href={`${base}&disposition=self_dispose`}
-                          className="rounded-md border border-line px-2 py-1 text-[12px] text-ink-2 transition-colors hover:border-[#d6dae1] hover:text-ink"
+                          className="rounded-md border border-line px-2 py-1 text-[12px] text-ink-2 transition-colors hover:border-line hover:text-ink"
                         >
                           自行处理
                         </Link>
@@ -132,7 +132,7 @@ export default async function DefectivePage() {
         )}
       </div>
 
-      <div className="rounded-card border border-line bg-[#fbfcfd] px-4 py-3.5 text-[12.5px] leading-6 text-muted">
+      <div className="rounded-card border border-line bg-sunken px-4 py-3.5 text-[12.5px] leading-6 text-muted">
         <p className="mb-1 font-medium text-ink-2">为什么这里没有「改判回良品架」</p>
         <p>
           定制件退回来之后基本不可能再卖出去，常规件进次品区也意味着有破损。

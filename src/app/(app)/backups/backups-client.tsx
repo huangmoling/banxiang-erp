@@ -315,7 +315,7 @@ export function BackupsClient() {
       </div>
 
       {data?.settings.lastAutoError ? (
-        <div className="flex items-start gap-2 rounded-card border border-[#f3cfc9] bg-danger-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-danger">
+        <div className="flex items-start gap-2 rounded-card border border-danger/30 bg-danger-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-danger">
           <AlertTriangle size={15} className="mt-0.5 shrink-0" />
           <div>
             上一次定时备份失败了：{data.settings.lastAutoError}
@@ -327,7 +327,7 @@ export function BackupsClient() {
       ) : null}
 
       {data?.settings.openlist.enabled && data.settings.lastUploadError ? (
-        <div className="flex items-start gap-2 rounded-card border border-[#f0e0bc] bg-warn-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-[#8a5a15]">
+        <div className="flex items-start gap-2 rounded-card border border-warn/40 bg-warn-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-warn">
           <Cloud size={15} className="mt-0.5 shrink-0" />
           <div>
             最近一次上传网盘失败：{data.settings.lastUploadError}
@@ -363,7 +363,7 @@ export function BackupsClient() {
           <label className="flex cursor-pointer items-center gap-2 text-[12.5px] text-ink-2">
             <input
               type="checkbox"
-              className="h-4 w-4 rounded border-line text-brand focus:ring-brand"
+              className="h-4 w-4 rounded border-line text-brand-ink focus:ring-brand"
               checked={enabled}
               onChange={(e) => setEnabled(e.target.checked)}
             />
@@ -431,8 +431,8 @@ export function BackupsClient() {
               disabled={!enabled}
               className={`rounded-full border px-2.5 py-1 text-[11.5px] transition-colors ${
                 cron.trim() === p.expr
-                  ? "border-brand bg-brand-soft text-brand"
-                  : "border-line text-ink-2 hover:border-brand hover:text-brand"
+                  ? "border-brand bg-brand-soft text-brand-ink"
+                  : "border-line text-ink-2 hover:border-brand hover:text-brand-ink"
               }`}
             >
               {p.label}
@@ -472,7 +472,7 @@ export function BackupsClient() {
         </div>
 
         {!enabled ? (
-          <div className="mt-2.5 flex items-start gap-1.5 rounded-lg bg-warn-soft px-3 py-2 text-[11.5px] leading-5 text-[#8a5a15]">
+          <div className="mt-2.5 flex items-start gap-1.5 rounded-lg bg-warn-soft px-3 py-2 text-[11.5px] leading-5 text-warn">
             <AlertTriangle size={13} className="mt-0.5 shrink-0" />
             定时备份关着，只有手动点「立即备份」才会留一份。数据没了就是真没了，建议开着。
           </div>
@@ -484,7 +484,7 @@ export function BackupsClient() {
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="flex items-center gap-1.5 text-[13.5px] font-semibold text-ink">
-              <Cloud size={14} strokeWidth={1.9} className="text-brand" />
+              <Cloud size={14} strokeWidth={1.9} className="text-brand-ink" />
               云端备份（OpenList）
             </h2>
             <p className="mt-0.5 text-[11.5px] text-muted">
@@ -495,7 +495,7 @@ export function BackupsClient() {
           <label className="flex cursor-pointer items-center gap-2 text-[12.5px] text-ink-2">
             <input
               type="checkbox"
-              className="h-4 w-4 rounded border-line text-brand focus:ring-brand"
+              className="h-4 w-4 rounded border-line text-brand-ink focus:ring-brand"
               checked={olEnabled}
               onChange={(e) => setOlEnabled(e.target.checked)}
             />
@@ -622,7 +622,7 @@ export function BackupsClient() {
         {testResult ? (
           <div
             className={`mt-3 rounded-lg px-3 py-2.5 text-[12px] leading-5 ${
-              testResult.ok ? "bg-ok-soft text-[#1f6b46]" : "bg-warn-soft text-[#8a5a15]"
+              testResult.ok ? "bg-ok-soft text-ok" : "bg-warn-soft text-warn"
             }`}
           >
             <div className="flex items-start gap-1.5">
@@ -667,7 +667,7 @@ export function BackupsClient() {
               </thead>
               <tbody>
                 {data.items.map((f) => (
-                  <tr key={f.name} className="hover:bg-[#fafbfc]">
+                  <tr key={f.name} className="hover:bg-sunken">
                     <td className="td">
                       <div className="tnum truncate font-medium text-ink" title={f.name}>
                         {f.name}
@@ -693,7 +693,7 @@ export function BackupsClient() {
                           type="button"
                           onClick={() => void uploadThis(f.name)}
                           disabled={uploading !== null}
-                          className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11.5px] text-muted transition-colors hover:bg-line-2 hover:text-brand disabled:opacity-60"
+                          className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11.5px] text-muted transition-colors hover:bg-line-2 hover:text-brand-ink disabled:opacity-60"
                           title="传到网盘"
                         >
                           {uploading === f.name ? (
@@ -713,7 +713,7 @@ export function BackupsClient() {
                       <div className="flex items-center justify-end gap-1">
                         <a
                           href={`/api/backups/${f.name}/download`}
-                          className="rounded-md p-1.5 text-muted transition-colors hover:bg-line-2 hover:text-brand"
+                          className="rounded-md p-1.5 text-muted transition-colors hover:bg-line-2 hover:text-brand-ink"
                           title="下载到本机"
                         >
                           <Download size={14} />
@@ -735,22 +735,22 @@ export function BackupsClient() {
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2 py-12 text-center">
-            <Database size={20} strokeWidth={1.6} className="text-[#c2c8d2]" />
+            <Database size={20} strokeWidth={1.6} className="text-muted" />
             <p className="text-[12.5px] text-muted">还没有备份。点右上角「立即备份」先留一份</p>
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line-2 bg-[#fbfcfd] px-4 py-2.5 text-[11.5px] text-muted">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line-2 bg-sunken px-4 py-2.5 text-[11.5px] text-muted">
           <span className="flex items-center gap-1">
             <HardDriveDownload size={12} />
-            存放目录：<code className="tnum rounded bg-white px-1.5 py-0.5 text-ink-2">{data?.dir}</code>
+            存放目录：<code className="tnum rounded bg-card px-1.5 py-0.5 text-ink-2">{data?.dir}</code>
           </span>
           <span>整卷拷走（data 目录）等于把所有备份一起带走</span>
         </div>
       </section>
 
       {/* 恢复 */}
-      <section className="card border-[#f0cdc8] p-4 sm:p-5">
+      <section className="card border-danger/30 p-4 sm:p-5">
         <div className="flex items-start gap-2.5">
           <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-danger-soft text-danger">
             <Upload size={15} strokeWidth={1.8} />
@@ -863,7 +863,7 @@ export function BackupsClient() {
         }
       >
         <div className="space-y-3 pt-1">
-          <div className="rounded-lg bg-[#fdeeec] px-3 py-2.5 text-[12.5px] leading-5 text-[#8f2c1f]">
+          <div className="rounded-lg bg-danger-soft px-3 py-2.5 text-[12.5px] leading-5 text-danger">
             这会把当前所有数据替换成备份里的内容。备份之后录的单据、新建的商品、改过的密码，全部作废。
           </div>
           <div>
@@ -896,7 +896,7 @@ export function BackupsClient() {
       >
         {restoreResult ? (
           <div className="space-y-3 pt-1 text-[12.5px] leading-5">
-            <div className="rounded-lg bg-ok-soft px-3 py-2.5 text-[#1f6b46]">
+            <div className="rounded-lg bg-ok-soft px-3 py-2.5 text-ok">
               已用「{restoreResult.from}」覆盖当前数据。库里现在有：商品{" "}
               <b className="tnum">{restoreResult.counts.products}</b> 款、单据{" "}
               <b className="tnum">{restoreResult.counts.documents}</b> 张、库存流水{" "}
@@ -907,14 +907,14 @@ export function BackupsClient() {
             {restoreResult.safetyBackup ? (
               <p className="text-ink-2">
                 恢复前的数据已经拍成快照：
-                <code className="tnum rounded bg-[#f4f6f8] px-1.5 py-0.5">{restoreResult.safetyBackup}</code>
+                <code className="tnum rounded bg-sunken px-1.5 py-0.5">{restoreResult.safetyBackup}</code>
                 <br />
                 <span className="text-muted">导错了就再用它恢复一次，等于撤销。</span>
               </p>
             ) : null}
 
             {restoreResult.needsRestart ? (
-              <div className="flex items-start gap-1.5 rounded-lg bg-warn-soft px-3 py-2.5 text-[#8a5a15]">
+              <div className="flex items-start gap-1.5 rounded-lg bg-warn-soft px-3 py-2.5 text-warn">
                 <AlertTriangle size={14} className="mt-0.5 shrink-0" />
                 <div>
                   这份备份来自更早的版本，表结构还差 {restoreResult.pendingMigrations.length} 步迁移。

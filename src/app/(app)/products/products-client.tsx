@@ -130,7 +130,7 @@ export function ProductsClient({
                 setPage(1);
               }}
               className={`rounded-md px-2.5 py-1.5 text-[12.5px] transition-colors ${
-                status === value ? "bg-brand-soft font-medium text-brand" : "text-ink-2 hover:bg-[#f4f6f8]"
+                status === value ? "bg-brand-soft font-medium text-brand-ink" : "text-ink-2 hover:bg-sunken"
               }`}
             >
               {label}
@@ -143,7 +143,7 @@ export function ProductsClient({
       </div>
 
       {data.pendingCount > 0 && status !== "pending" ? (
-        <div className="flex items-center gap-2 rounded-card border border-[#f0e2c8] bg-warn-soft px-3.5 py-2.5 text-[12.5px] text-[#8a5a15]">
+        <div className="flex items-center gap-2 rounded-card border border-warn/40 bg-warn-soft px-3.5 py-2.5 text-[12.5px] text-warn">
           有 <b className="tnum">{data.pendingCount}</b> 款产品还没传图，找货时不好认。
           <button
             type="button"
@@ -151,7 +151,7 @@ export function ProductsClient({
               setStatus("pending");
               setPage(1);
             }}
-            className="underline underline-offset-2 hover:text-[#6d4610]"
+            className="underline underline-offset-2 hover:text-warn"
           >
             只看待完善
           </button>
@@ -182,7 +182,7 @@ export function ProductsClient({
               </thead>
               <tbody>
                 {data.items.map((p) => (
-                  <tr key={p.id} className="group hover:bg-[#fafbfc]">
+                  <tr key={p.id} className="group hover:bg-sunken">
                     <td className="td">
                       <div className="flex items-center gap-3">
                         <ProductThumb url={p.imageUrl} name={p.name} size={36} />
@@ -201,8 +201,8 @@ export function ProductsClient({
                             key={c.id}
                             className={`tag ${
                               c.variantType === "custom"
-                                ? "bg-[#fdf4e8] text-[#a15f12]"
-                                : "bg-[#f2f4f7] text-ink-2"
+                                ? "bg-warn-soft text-warn"
+                                : "bg-sunken text-ink-2"
                             }`}
                             title={
                               c.variantType === "custom"
@@ -215,7 +215,7 @@ export function ProductsClient({
                           </span>
                         ))}
                         {p.colors.length > 4 ? (
-                          <span className="tag bg-[#f2f4f7] text-muted">+{p.colors.length - 4}</span>
+                          <span className="tag bg-sunken text-muted">+{p.colors.length - 4}</span>
                         ) : null}
                       </div>
                     </td>
@@ -226,7 +226,7 @@ export function ProductsClient({
                     <td className="td text-ink-2">{p.unit}</td>
                     <td className="td">
                       {p.profileStatus === "pending" ? (
-                        <span className="tag bg-warn-soft text-[#8a5a15]">待完善</span>
+                        <span className="tag bg-warn-soft text-warn">待完善</span>
                       ) : (
                         <span className="tag bg-ok-soft text-ok">已完善</span>
                       )}
@@ -235,7 +235,7 @@ export function ProductsClient({
                       <div className="flex items-center justify-end gap-1">
                         <Link
                           href={`/products/${p.id}/edit`}
-                          className="rounded-md p-1.5 text-muted transition-colors hover:bg-line-2 hover:text-brand"
+                          className="rounded-md p-1.5 text-muted transition-colors hover:bg-line-2 hover:text-brand-ink"
                           title="编辑"
                         >
                           <Pencil size={14} />
@@ -313,7 +313,7 @@ export function ProductsClient({
 function EmptyState({ hasQuery }: { hasQuery: boolean }) {
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center">
-      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#f4f6f8] text-[#c2c8d2]">
+      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-sunken text-muted">
         <Package size={20} strokeWidth={1.6} />
       </div>
       {hasQuery ? (

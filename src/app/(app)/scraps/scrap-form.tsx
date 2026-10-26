@@ -230,7 +230,7 @@ export function ScrapForm({
         </div>
 
         {isDefective ? (
-          <p className="mt-3 rounded-lg bg-[#fbf7ee] px-3 py-2 text-[12.5px] leading-5 text-[#7a5a1a]">
+          <p className="mt-3 rounded-lg bg-warn-soft px-3 py-2 text-[12.5px] leading-5 text-warn">
             次品区的货不计入可售库存。转报废后货会进报废区（还在仓库里），
             线下出售和自行处理则直接从账上离开。
           </p>
@@ -276,14 +276,14 @@ export function ScrapForm({
 
                 return (
                   <Fragment key={row.skuId}>
-                    <tr className={active ? "bg-[#fbfcff]" : undefined}>
+                    <tr className={active ? "bg-brand-soft" : undefined}>
                       <td className="td">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className="font-medium">{row.productName}</span>
                           <span className="text-muted">·</span>
                           <span>{colorText(row.colorName)}</span>
                           {isCustom ? (
-                            <span className="tag bg-[#f0f2fb] text-brand-ink">定制 · 按件</span>
+                            <span className="tag bg-brand-soft text-brand-ink">定制 · 按件</span>
                           ) : null}
                         </div>
                       </td>
@@ -337,7 +337,7 @@ export function ScrapForm({
 
                     {active ? (
                       <tr>
-                        <td className="td bg-[#fafbfd] pt-0" colSpan={5}>
+                        <td className="td bg-sunken pt-0" colSpan={5}>
                           <p className="text-[12px] leading-5 text-muted">
                             {DISPOSITION_HINT[state.disposition]}
                           </p>
@@ -348,7 +348,7 @@ export function ScrapForm({
                     {/* 定制款：必须点到具体件，一物一码不能只说「2 件」 */}
                     {isCustom && active ? (
                       <tr>
-                        <td className="td border-t-0 bg-[#fafbfd]" colSpan={5}>
+                        <td className="td border-t-0 bg-sunken" colSpan={5}>
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-[12.5px] text-muted">勾选要处理的件：</span>
                             {row.instances.map((inst) => {
@@ -369,8 +369,8 @@ export function ScrapForm({
                                     on
                                       ? "border-brand bg-brand-soft text-brand-ink"
                                       : blocked
-                                        ? "cursor-not-allowed border-line-2 text-[#c2c7d0]"
-                                        : "border-line text-ink-2 hover:border-[#d6dae1]"
+                                        ? "cursor-not-allowed border-line-2 text-muted"
+                                        : "border-line text-ink-2 hover:border-line"
                                   }`}
                                 >
                                   {inst.code}
@@ -394,7 +394,7 @@ export function ScrapForm({
         )}
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-line bg-white/95 px-6 py-3 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 border-t border-line bg-card/95 px-6 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-[1180px] flex-wrap items-center gap-3">
           <div className="text-[13px] text-ink-2">
             共 <span className="tnum font-semibold text-ink">{entries.length}</span> 行、

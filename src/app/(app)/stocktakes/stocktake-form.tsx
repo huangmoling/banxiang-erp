@@ -334,8 +334,8 @@ export function StocktakeForm({ meta }: { meta: StocktakeMeta }) {
                   onClick={() => setLocationId(loc.id)}
                   className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[12.5px] transition-colors ${
                     locationId === loc.id
-                      ? "border-brand bg-brand-soft font-medium text-brand"
-                      : "border-line bg-white text-ink-2 hover:border-[#d6dae1]"
+                      ? "border-brand bg-brand-soft font-medium text-brand-ink"
+                      : "border-line bg-card text-ink-2 hover:border-line"
                   }`}
                 >
                   <Warehouse size={13} strokeWidth={1.7} />
@@ -395,7 +395,7 @@ export function StocktakeForm({ meta }: { meta: StocktakeMeta }) {
           />
         </div>
 
-        <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-[#d9e2f7] bg-brand-soft/60 px-3 py-2.5 text-[12px] leading-5 text-[#2f49af]">
+        <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-brand/30 bg-brand-soft/60 px-3 py-2.5 text-[12px] leading-5 text-brand-ink">
           <Sparkles size={14} className="mt-0.5 shrink-0" />
           <div>
             <b>不用停业：</b>盘点期间照常发货、照常入库。截止后发生的出入库单独显示在「截止后」一列，
@@ -415,7 +415,7 @@ export function StocktakeForm({ meta }: { meta: StocktakeMeta }) {
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="tag tnum bg-[#f2f4f7] text-ink-2">
+            <span className="tag tnum bg-sunken text-ink-2">
               已填 {stats.filled}/{stats.required} 行必盘
             </span>
             {stats.gain > 0 ? (
@@ -425,7 +425,7 @@ export function StocktakeForm({ meta }: { meta: StocktakeMeta }) {
               <span className="tag tnum bg-danger-soft text-danger">盘亏 -{stats.loss}</span>
             ) : null}
             {stats.diffLines > 0 ? (
-              <span className="tag tnum bg-[#fdf4e8] text-[#a15f12]">{stats.diffLines} 行有差异</span>
+              <span className="tag tnum bg-warn-soft text-warn">{stats.diffLines} 行有差异</span>
             ) : null}
           </div>
         </div>
@@ -459,7 +459,7 @@ export function StocktakeForm({ meta }: { meta: StocktakeMeta }) {
               补一个款
             </button>
             {addOpen ? (
-              <div className="absolute right-0 z-30 mt-1 w-[320px] rounded-card border border-line bg-white p-2 shadow-sm">
+              <div className="absolute right-0 z-30 mt-1 w-[320px] rounded-card border border-line bg-card p-2 shadow-sm">
                 <input
                   autoFocus
                   className="input mb-1.5"
@@ -477,7 +477,7 @@ export function StocktakeForm({ meta }: { meta: StocktakeMeta }) {
                     <div className="px-2 py-3 text-[12.5px] text-muted">没找到，换个词试试</div>
                   ) : (
                     addResults.map((p) => (
-                      <div key={p.id} className="rounded-lg px-2 py-1.5 hover:bg-[#f7f8fa]">
+                      <div key={p.id} className="rounded-lg px-2 py-1.5 hover:bg-sunken">
                         <div className="text-[12.5px] font-medium text-ink">{p.name}</div>
                         <div className="mt-1 flex flex-wrap gap-1">
                           {p.colors.length === 0 ? (
@@ -488,7 +488,7 @@ export function StocktakeForm({ meta }: { meta: StocktakeMeta }) {
                                 key={c.id}
                                 type="button"
                                 onClick={() => addSku(c)}
-                                className="tag bg-[#f2f4f7] text-ink-2 transition-colors hover:bg-brand-soft hover:text-brand"
+                                className="tag bg-sunken text-ink-2 transition-colors hover:bg-brand-soft hover:text-brand-ink"
                               >
                                 {colorText(c.colorName)}
                                 {c.variantType === "custom" ? " · 定制" : ""}
@@ -517,7 +517,7 @@ export function StocktakeForm({ meta }: { meta: StocktakeMeta }) {
           </div>
         ) : rows.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-16 text-center">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#f4f6f8] text-[#c2c8d2]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-sunken text-muted">
               <ClipboardCheck size={20} strokeWidth={1.6} />
             </div>
             <p className="text-[13.5px] text-ink-2">这个仓位账面上一件货都没有</p>
@@ -549,13 +549,13 @@ export function StocktakeForm({ meta }: { meta: StocktakeMeta }) {
 
                   return (
                     <Fragment key={row.sku.skuId}>
-                      <tr className={diff !== null && diff !== 0 ? "bg-[#fdfbf7]" : undefined}>
+                      <tr className={diff !== null && diff !== 0 ? "bg-warn-soft" : undefined}>
                         <td className="td tnum text-muted">{rowNo}</td>
                         <td className="td">
                           <div className="font-medium text-ink">
                             {row.sku.productName}
                             {row.added ? (
-                              <span className="tag ml-1.5 bg-[#fdf4e8] text-[#a15f12]">补录</span>
+                              <span className="tag ml-1.5 bg-warn-soft text-warn">补录</span>
                             ) : null}
                           </div>
                           <div className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-muted">
@@ -563,7 +563,7 @@ export function StocktakeForm({ meta }: { meta: StocktakeMeta }) {
                               {colorText(row.sku.colorName)}
                             </span>
                             {isCustom ? (
-                              <span className="tag bg-[#fdf4e8] text-[#a15f12]">定制·按件</span>
+                              <span className="tag bg-warn-soft text-warn">定制·按件</span>
                             ) : null}
                           </div>
                         </td>
@@ -574,7 +574,7 @@ export function StocktakeForm({ meta }: { meta: StocktakeMeta }) {
                         <td className="td text-right">
                           <input
                             className={`input tnum w-[86px] text-right ${
-                              row.sku.bookQty !== 0 && !hasValue ? "border-[#e8c9a0] bg-[#fffdf9]" : ""
+                              row.sku.bookQty !== 0 && !hasValue ? "border-warn/40 bg-warn-soft" : ""
                             }`}
                             inputMode="numeric"
                             placeholder={row.sku.bookQty !== 0 ? "必填" : "—"}
@@ -605,9 +605,9 @@ export function StocktakeForm({ meta }: { meta: StocktakeMeta }) {
                       {isCustom && need > 0 ? (
                         <tr>
                           <td className="td" />
-                          <td className="td bg-[#fdfbf7]" colSpan={5}>
+                          <td className="td bg-warn-soft" colSpan={5}>
                             <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="text-[11.5px] text-[#a15f12]">
+                              <span className="text-[11.5px] text-warn">
                                 少了 {need} 件，勾出来：
                               </span>
                               {row.sku.instances.length === 0 ? (
@@ -634,8 +634,8 @@ export function StocktakeForm({ meta }: { meta: StocktakeMeta }) {
                                         on
                                           ? "bg-danger-soft text-danger"
                                           : disabled
-                                            ? "bg-[#f4f6f8] text-[#c2c8d2]"
-                                            : "bg-[#f2f4f7] text-ink-2 hover:bg-[#e9edf2]"
+                                            ? "bg-sunken text-muted"
+                                            : "bg-sunken text-ink-2 hover:bg-sunken"
                                       }`}
                                     >
                                       {on ? "✓ " : ""}
@@ -661,7 +661,7 @@ export function StocktakeForm({ meta }: { meta: StocktakeMeta }) {
       </section>
 
       {error ? (
-        <div className="flex items-start gap-2.5 rounded-card border border-[#f0cdc8] bg-danger-soft px-3.5 py-3 text-[12.5px] leading-5 text-danger">
+        <div className="flex items-start gap-2.5 rounded-card border border-danger/30 bg-danger-soft px-3.5 py-3 text-[12.5px] leading-5 text-danger">
           <AlertCircle size={15} className="mt-0.5 shrink-0" />
           {error}
         </div>

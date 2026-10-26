@@ -100,7 +100,7 @@ export function UsersClient({ currentUserId }: { currentUserId: string }) {
       </div>
 
       {error ? (
-        <div className="card border-[#f0cdc8] bg-danger-soft px-4 py-3 text-[13px] text-danger">{error}</div>
+        <div className="card border-danger/30 bg-danger-soft px-4 py-3 text-[13px] text-danger">{error}</div>
       ) : null}
 
       <div className="card overflow-hidden">
@@ -127,15 +127,15 @@ export function UsersClient({ currentUserId }: { currentUserId: string }) {
                 data.items.map((u) => {
                   const isSelf = u.id === currentUserId;
                   return (
-                    <tr key={u.id} className="hover:bg-[#fbfbfc]">
+                    <tr key={u.id} className="hover:bg-sunken">
                       <td className="td">
                         <span className="flex items-center gap-2">
-                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-soft text-[11px] font-semibold text-brand">
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-soft text-[11px] font-semibold text-brand-ink">
                             {u.displayName.slice(0, 1)}
                           </span>
                           <span className="font-medium">{u.displayName}</span>
                           {isSelf ? (
-                            <span className="tag bg-[#f2f4f7] text-muted">是本人</span>
+                            <span className="tag bg-sunken text-muted">是本人</span>
                           ) : null}
                         </span>
                       </td>
@@ -144,7 +144,7 @@ export function UsersClient({ currentUserId }: { currentUserId: string }) {
                         <div className="flex items-center gap-2">
                           <span className={`tag ${USER_ROLE_TONE[u.role]}`}>{USER_ROLE_LABEL[u.role]}</span>
                           <select
-                            className="rounded-md border border-line bg-white px-1.5 py-1 text-[12px] text-ink-2 outline-none focus:border-brand"
+                            className="rounded-md border border-line bg-card px-1.5 py-1 text-[12px] text-ink-2 outline-none focus:border-brand"
                             value={u.role}
                             disabled={isSelf}
                             title={isSelf ? "不能改自己的角色" : USER_ROLE_HINT[u.role]}
@@ -164,7 +164,7 @@ export function UsersClient({ currentUserId }: { currentUserId: string }) {
                         {u.isActive ? (
                           <span className="tag bg-ok-soft text-ok">启用</span>
                         ) : (
-                          <span className="tag bg-[#f2f4f7] text-muted">已停用</span>
+                          <span className="tag bg-sunken text-muted">已停用</span>
                         )}
                       </td>
                       <td className="td text-[12.5px] text-muted">{u.lastLoginAt ?? "从未登录"}</td>
@@ -211,9 +211,9 @@ export function UsersClient({ currentUserId }: { currentUserId: string }) {
         </div>
       </div>
 
-      <div className="card bg-[#fbfbfc] p-4">
+      <div className="card bg-sunken p-4">
         <h2 className="flex items-center gap-1.5 text-[13px] font-medium text-ink">
-          <ShieldCheck size={14} strokeWidth={1.8} className="text-brand" />
+          <ShieldCheck size={14} strokeWidth={1.8} className="text-brand-ink" />
           四个角色各自能做什么
         </h2>
         <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">

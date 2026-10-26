@@ -18,9 +18,9 @@ export const DISPOSITION_LABEL: Record<Disposition, string> = {
 };
 
 export const DISPOSITION_TONE: Record<Disposition, string> = {
-  scrap: "bg-[#fdf1f1] text-[#b4433a]",
-  offline_sale: "bg-[#eef4ee] text-[#3f7a4a]",
-  self_dispose: "bg-[#f2f4f7] text-muted",
+  scrap: "bg-danger-soft text-danger",
+  offline_sale: "bg-ok-soft text-ok",
+  self_dispose: "bg-sunken text-muted",
 };
 
 /** 选的时候就得说清后果，别让人点完才后悔 */

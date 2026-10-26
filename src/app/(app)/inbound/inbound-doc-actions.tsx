@@ -107,7 +107,7 @@ export function InboundDocActions({
     >
       {status === "draft" ? null : (
         <div className="space-y-2 pt-1 text-[12.5px] leading-5">
-          <div className="rounded-lg bg-[#fdeeec] px-3 py-2.5 text-[#8f2c1f]">
+          <div className="rounded-lg bg-danger-soft px-3 py-2.5 text-danger">
             库存会退回入库前：批次余量扣回、定制件编号一并删掉、「本月入库」也不再算这一笔。
             如果货已经发出去或转走了，系统会拦住不让删——先去处理下游单据。
           </div>

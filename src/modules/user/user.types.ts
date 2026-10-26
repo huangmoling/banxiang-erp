@@ -22,11 +22,11 @@ export const USER_ROLE_HINT: Record<UserRole, string> = {
 };
 
 export const USER_ROLE_TONE: Record<UserRole, string> = {
-  admin: "bg-brand-soft text-brand",
-  manager: "bg-[#eef4ee] text-[#3f7a4a]",
-  keeper: "bg-[#fdf4e8] text-[#a15f12]",
-  clerk: "bg-[#eaf2fa] text-[#2f6a9e]",
-  viewer: "bg-[#f2f4f7] text-muted",
+  admin: "bg-brand-soft text-brand-ink",
+  manager: "bg-ok-soft text-ok",
+  keeper: "bg-warn-soft text-warn",
+  clerk: "bg-brand-soft text-brand-ink",
+  viewer: "bg-sunken text-muted",
 };
 
 export function toUserRole(value: string | null | undefined): UserRole {

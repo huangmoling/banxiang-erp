@@ -144,7 +144,7 @@ export function ScrapsClient({
             </thead>
             <tbody>
               {data.items.map((doc) => (
-                <tr key={doc.id} className="transition-colors hover:bg-[#fafbfc]">
+                <tr key={doc.id} className="transition-colors hover:bg-sunken">
                   <td className="td">
                     <Link href={`/scraps/${doc.id}`} className="font-medium text-brand-ink hover:underline">
                       {doc.docNo}

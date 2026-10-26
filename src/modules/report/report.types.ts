@@ -107,8 +107,8 @@ export { DOC_TYPE_LABEL, docTypeLabel } from "@/modules/document/document.types"
 /** 批次账龄分档：越靠前越可能变成死库存 */
 export const BATCH_AGE_LEVEL_TONE: Record<ReportBatchAge["level"], string> = {
   ok: "bg-ok-soft text-ok",
-  watch: "bg-brand-soft text-brand",
-  warn: "bg-warn-soft text-[#8a5a15]",
-  danger: "bg-[#fdf1f1] text-[#b4433a]",
-  unknown: "bg-[#f2f4f7] text-muted",
+  watch: "bg-brand-soft text-brand-ink",
+  warn: "bg-warn-soft text-warn",
+  danger: "bg-danger-soft text-danger",
+  unknown: "bg-sunken text-muted",
 };

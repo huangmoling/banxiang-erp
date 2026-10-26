@@ -14,9 +14,9 @@ export const LOCATION_TYPE_LABEL: Record<LocationType, string> = {
 };
 
 export const LOCATION_TYPE_TONE: Record<LocationType, string> = {
-  normal: "bg-brand-soft text-brand",
-  defective: "bg-[#fdf4e8] text-[#a15f12]",
-  scrap: "bg-[#f2f4f7] text-ink-2",
+  normal: "bg-brand-soft text-brand-ink",
+  defective: "bg-warn-soft text-warn",
+  scrap: "bg-sunken text-ink-2",
 };
 
 export function toLocationType(value: string | null | undefined): LocationType {

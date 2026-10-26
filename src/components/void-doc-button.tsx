@@ -90,7 +90,7 @@ export function VoidDocButton({
         }
       >
         <div className="space-y-3 pt-1">
-          <div className="rounded-lg bg-[#fbf7ee] px-3 py-2.5 text-[12.5px] leading-5 text-[#7a5a1a]">
+          <div className="rounded-lg bg-warn-soft px-3 py-2.5 text-[12.5px] leading-5 text-warn">
             {consequence}
           </div>
           <div>

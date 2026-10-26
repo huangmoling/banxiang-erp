@@ -138,7 +138,7 @@ export function ProductThumb({
               }
             : undefined
         }
-        className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line-2 bg-[#f7f8fa] ${box} ${className}`}
+        className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line-2 bg-sunken ${box} ${className}`}
         style={{ width: size, height: size }}
         title={url ? `${name ? `${name} · ` : ""}悬停看大图` : name ? `${name}（未传图）` : undefined}
       >
@@ -147,19 +147,19 @@ export function ProductThumb({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={url} alt={name ?? ""} className="h-full w-full object-cover" draggable={false} />
         ) : (
-          <ImageOff size={Math.max(13, Math.round(size * 0.42))} strokeWidth={1.6} className="text-[#c8ccd4]" />
+          <ImageOff size={Math.max(13, Math.round(size * 0.42))} strokeWidth={1.6} className="text-muted" />
         )}
       </span>
 
       {mounted && pos && url
         ? createPortal(
             <div
-              className="pointer-events-none fixed z-[70] overflow-hidden rounded-card border border-line bg-white"
+              className="pointer-events-none fixed z-[70] overflow-hidden rounded-card border border-line bg-card"
               style={{ left: pos.left, top: pos.top, width: CARD_WIDTH }}
               role="dialog"
               aria-label={name ? `${name} 大图预览` : "商品图片预览"}
             >
-              <div className="flex items-center justify-center bg-[#f7f8fa]" style={{ height: IMAGE_HEIGHT }}>
+              <div className="flex items-center justify-center bg-sunken" style={{ height: IMAGE_HEIGHT }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={url}

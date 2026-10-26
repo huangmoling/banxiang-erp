@@ -203,7 +203,7 @@ export function ProductForm({
       )}
 
       {error ? (
-        <div className="flex items-start gap-2 rounded-card border border-[#f3cfc9] bg-danger-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-danger">
+        <div className="flex items-start gap-2 rounded-card border border-danger/30 bg-danger-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-danger">
           <AlertCircle size={15} className="mt-0.5 shrink-0" />
           {error}
         </div>
@@ -269,8 +269,8 @@ export function ProductForm({
                         onClick={() => setUnit(u)}
                         className={`flex-1 rounded-lg border px-2 py-2 text-[13px] transition-colors ${
                           unit === u
-                            ? "border-brand bg-brand-soft font-medium text-brand"
-                            : "border-line bg-white text-ink-2 hover:border-[#d6dae1]"
+                            ? "border-brand bg-brand-soft font-medium text-brand-ink"
+                            : "border-line bg-card text-ink-2 hover:border-line"
                         }`}
                       >
                         {u}
@@ -313,7 +313,7 @@ export function ProductForm({
                   <div
                     key={r.key}
                     className={`grid grid-cols-1 items-start gap-2 rounded-lg border p-2.5 sm:grid-cols-[1fr_150px_86px_32px] ${
-                      err ? "border-danger bg-danger-soft/30" : "border-line-2 bg-[#fcfcfd]"
+                      err ? "border-danger bg-danger-soft/30" : "border-line-2 bg-sunken"
                     }`}
                   >
                     <div>
@@ -328,7 +328,7 @@ export function ProductForm({
                       {err ? <p className="mt-1 text-[11px] text-danger">{err}</p> : null}
                     </div>
 
-                    <div className="flex rounded-lg border border-line bg-white p-0.5">
+                    <div className="flex rounded-lg border border-line bg-card p-0.5">
                       {(
                         [
                           ["normal", "常规"],
@@ -342,9 +342,9 @@ export function ProductForm({
                           className={`flex-1 rounded-md px-1 py-1 text-[12px] transition-colors ${
                             r.variantType === value
                               ? value === "custom"
-                                ? "bg-[#fdf4e8] font-medium text-[#a15f12]"
-                                : "bg-brand-soft font-medium text-brand"
-                              : "text-ink-2 hover:bg-[#f4f6f8]"
+                                ? "bg-warn-soft font-medium text-warn"
+                                : "bg-brand-soft font-medium text-brand-ink"
+                              : "text-ink-2 hover:bg-sunken"
                           }`}
                         >
                           {label}
@@ -409,7 +409,7 @@ export function ProductForm({
                 <button
                   type="button"
                   onClick={() => setImageUrl(null)}
-                  className="absolute right-2 top-2 rounded-md bg-white/90 p-1 text-ink-2 transition-colors hover:text-danger"
+                  className="absolute right-2 top-2 rounded-md bg-card/90 p-1 text-ink-2 transition-colors hover:text-danger"
                   title="移除图片"
                 >
                   <X size={14} />
@@ -420,11 +420,11 @@ export function ProductForm({
                 type="button"
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading}
-                className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[#d6dae1] bg-[#fcfcfd] text-muted transition-colors hover:border-brand hover:text-brand"
+                className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-line bg-sunken text-muted transition-colors hover:border-brand hover:text-brand-ink"
               >
                 {uploading ? <Loader2 size={20} className="animate-spin" /> : <ImagePlus size={20} strokeWidth={1.6} />}
                 <span className="text-[12.5px]">{uploading ? "上传中…" : "上传图片"}</span>
-                <span className="text-[11px] text-[#b9bfc9]">JPG / PNG / WebP，≤ 5MB</span>
+                <span className="text-[11px] text-muted">JPG / PNG / WebP，≤ 5MB</span>
               </button>
             )}
 
@@ -453,7 +453,7 @@ export function ProductForm({
             </p>
           </section>
 
-          <section className="card bg-[#fbfcfd] p-4 text-[12px] leading-[1.85] text-ink-2 sm:p-5">
+          <section className="card bg-sunken p-4 text-[12px] leading-[1.85] text-ink-2 sm:p-5">
             <h2 className="mb-2 text-[13px] font-semibold text-ink">保存后系统会做三件事</h2>
             <ol className="list-decimal space-y-1.5 pl-4">
               <li>按名称生成全拼与首字母索引（只读，改名自动重算）</li>
@@ -517,7 +517,7 @@ export function ProductForm({
         }
       >
         {conflict?.existing ? (
-          <div className="rounded-lg border border-line-2 bg-[#fcfcfd] p-3">
+          <div className="rounded-lg border border-line-2 bg-sunken p-3">
             <div className="text-[13px] font-medium text-ink">{conflict.existing.name}</div>
             {conflict.existing.colors && conflict.existing.colors.length > 0 ? (
               <div className="mt-1.5 flex flex-wrap gap-1">
@@ -525,7 +525,7 @@ export function ProductForm({
                   <span
                     key={i}
                     className={`tag ${
-                      c.variantType === "custom" ? "bg-[#fdf4e8] text-[#a15f12]" : "bg-[#f2f4f7] text-ink-2"
+                      c.variantType === "custom" ? "bg-warn-soft text-warn" : "bg-sunken text-ink-2"
                     }`}
                   >
                     {c.colorName ?? "无颜色"}

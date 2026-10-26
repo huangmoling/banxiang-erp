@@ -17,9 +17,9 @@ export function VoidedNotice({
   if (!voidedAt) return null;
 
   return (
-    <div className="card flex items-start gap-3 border-[#e8dcc4] bg-[#fdfbf4] px-4 py-3">
-      <Undo2 size={16} className="mt-0.5 shrink-0 text-[#9a7b34]" />
-      <div className="text-[13px] leading-6 text-[#7a5a1a]">
+    <div className="card flex items-start gap-3 border-warn/40 bg-warn-soft px-4 py-3">
+      <Undo2 size={16} className="mt-0.5 shrink-0 text-warn" />
+      <div className="text-[13px] leading-6 text-warn">
         <p className="font-medium">
           这张单已红冲（{formatDateTime(voidedAt)}）
           {voidedByName ? ` · ${voidedByName}` : ""}

@@ -2,14 +2,162 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* ============================================================================
+   主题令牌
+   ----------------------------------------------------------------------------
+   三套主题，靠 <html data-theme="..."> 切换，只换变量不换代码：
+     graphite  石墨仪表台（默认）—— 深色侧栏 + 近白工作区，明暗对比最强
+     lumen     冷白精密        —— 全浅色，侧栏也浅，适合白天强光环境
+     obsidian  深空            —— 全深色，夜班/暗房里盯报表用
+
+   变量值统一写成 "R G B" 三元组（不是 hex）。Tailwind 侧用
+   rgb(var(--c-x) / <alpha-value>) 接，好处是 bg-canvas/95 这类透明度修饰符
+   照旧能用，而 hex 变量配不出来。
+
+   改色只改这里。页面里不许再出现裸的 #rrggbb —— 那是过去界面"显脏"的根源
+   （同一个警示橙曾同时存在 #a15f12 / #8a5a15 / #6d4610 / #7a5a1a 四个值）。
+   ========================================================================= */
+
+:root,
+[data-theme="graphite"] {
   color-scheme: light;
+
+  /* 三层表面：画布 / 卡片 / 内嵌块。层次靠色阶拉，不靠一堆浮起来的阴影 */
+  --c-canvas: 247 248 250;
+  --c-card: 255 255 255;
+  --c-sunken: 241 242 245;
+
+  --c-line: 227 231 237;
+  --c-line-2: 238 240 244;
+
+  --c-ink: 22 24 29;
+  --c-ink-2: 74 82 97;
+  --c-muted: 102 109 122;
+
+  --c-brand: 47 107 255;
+  --c-brand-solid: 42 99 240;
+  --c-brand-soft: 238 243 255;
+  --c-brand-ink: 26 79 214;
+
+  --c-custom: 123 94 167;
+  --c-custom-soft: 243 239 249;
+
+  --c-warn: 154 92 0;
+  --c-warn-soft: 253 243 227;
+  --c-danger: 209 59 46;
+  --c-danger-soft: 253 236 234;
+  --c-ok: 16 121 79;
+  --c-ok-soft: 232 246 239;
+
+  --c-sidebar: 28 31 39;
+  --c-sidebar-fg: 182 188 200;
+  --c-sidebar-muted: 131 139 153;
+  --c-sidebar-line: 40 45 56;
+  --c-sidebar-hover: 34 38 48;
+  --c-sidebar-active: 42 47 58;
+  --c-sidebar-active-fg: 255 255 255;
+
+  --c-scroll-thumb: 216 221 229;
+  --c-scroll-track: 247 248 250;
+
+  --shadow-card: 0 1px 2px rgb(16 20 28 / 0.05), 0 1px 3px rgb(16 20 28 / 0.04);
+  --shadow-pop: 0 8px 28px rgb(16 20 28 / 0.1), 0 2px 6px rgb(16 20 28 / 0.06);
+}
+
+[data-theme="lumen"] {
+  color-scheme: light;
+
+  --c-canvas: 244 246 249;
+  --c-card: 255 255 255;
+  --c-sunken: 238 241 246;
+
+  --c-line: 223 228 236;
+  --c-line-2: 236 240 245;
+
+  --c-ink: 16 20 28;
+  --c-ink-2: 70 80 95;
+  --c-muted: 102 109 122;
+
+  --c-brand: 47 107 255;
+  --c-brand-solid: 42 99 240;
+  --c-brand-soft: 238 243 255;
+  --c-brand-ink: 26 79 214;
+
+  --c-custom: 123 94 167;
+  --c-custom-soft: 243 239 249;
+
+  --c-warn: 154 92 0;
+  --c-warn-soft: 253 243 227;
+  --c-danger: 198 45 34;
+  --c-danger-soft: 253 235 233;
+  --c-ok: 13 116 76;
+  --c-ok-soft: 230 245 238;
+
+  --c-sidebar: 255 255 255;
+  --c-sidebar-fg: 70 80 95;
+  --c-sidebar-muted: 107 116 132;
+  --c-sidebar-line: 232 236 242;
+  --c-sidebar-hover: 246 248 251;
+  --c-sidebar-active: 238 243 255;
+  --c-sidebar-active-fg: 26 79 214;
+
+  --c-scroll-thumb: 209 216 226;
+  --c-scroll-track: 244 246 249;
+
+  --shadow-card: 0 1px 2px rgb(16 20 28 / 0.05), 0 1px 3px rgb(16 20 28 / 0.04);
+  --shadow-pop: 0 8px 28px rgb(16 20 28 / 0.1), 0 2px 6px rgb(16 20 28 / 0.06);
+}
+
+[data-theme="obsidian"] {
+  color-scheme: dark;
+
+  --c-canvas: 14 17 22;
+  --c-card: 21 26 34;
+  --c-sunken: 27 33 43;
+
+  --c-line: 38 45 56;
+  --c-line-2: 31 36 45;
+
+  --c-ink: 232 236 242;
+  --c-ink-2: 163 173 187;
+  --c-muted: 131 141 157;
+
+  /* 深底上品牌色要提亮才醒目；实心按钮仍用较深的 brand-solid 兜住白字对比 */
+  --c-brand: 63 118 255;
+  --c-brand-solid: 42 99 240;
+  --c-brand-soft: 22 32 58;
+  --c-brand-ink: 123 166 255;
+
+  --c-custom: 160 132 208;
+  --c-custom-soft: 34 28 48;
+
+  --c-warn: 224 160 58;
+  --c-warn-soft: 42 33 20;
+  --c-danger: 224 90 77;
+  --c-danger-soft: 44 22 20;
+  --c-ok: 70 180 124;
+  --c-ok-soft: 18 36 26;
+
+  --c-sidebar: 10 13 18;
+  --c-sidebar-fg: 154 165 180;
+  --c-sidebar-muted: 118 127 141;
+  --c-sidebar-line: 27 32 41;
+  --c-sidebar-hover: 18 23 30;
+  --c-sidebar-active: 26 33 48;
+  --c-sidebar-active-fg: 255 255 255;
+
+  --c-scroll-thumb: 43 51 63;
+  --c-scroll-track: 14 17 22;
+
+  /* 深色下阴影是脏的，层次只靠边框和色阶 */
+  --shadow-card: none;
+  --shadow-pop: 0 12px 32px rgb(0 0 0 / 0.55);
 }
 
 html,
 body {
-  background: #f6f7f9;
-  color: #1f2430;
+  background: rgb(var(--c-canvas));
+  color: rgb(var(--c-ink));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -18,15 +166,36 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+::selection {
+  background: rgb(var(--c-brand) / 0.22);
+}
+
+/* 切主题时给底色一个短过渡，避免生硬闪断。
+   只过渡颜色，不过渡布局属性。 */
+body,
+.theme-surface {
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
 /* 数字等宽对齐，报表和卡片里的数量不会跳来跳去 */
 .tnum {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
 
+/* 极细网格 + 径向淡出，用于登录页与空状态做"精密"的底纹 */
+.grid-fade {
+  background-image: linear-gradient(to right, rgb(var(--c-line) / 0.7) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--c-line) / 0.7) 1px, transparent 1px);
+  background-size: 32px 32px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 20%, transparent 100%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 20%, transparent 100%);
+}
+
 @layer components {
   .card {
     @apply rounded-card border border-line bg-card;
+    box-shadow: var(--shadow-card);
   }
 
   .btn {
@@ -35,15 +204,15 @@ body {
   }
 
   .btn-primary {
-    @apply btn bg-brand text-white hover:bg-brand-ink;
+    @apply btn bg-brand-solid text-white hover:bg-brand-ink;
   }
 
   .btn-ghost {
-    @apply btn border border-line bg-white text-ink-2 hover:border-[#d6dae1] hover:text-ink;
+    @apply btn border border-line bg-card text-ink-2 hover:border-muted/60 hover:text-ink;
   }
 
   .btn-danger {
-    @apply btn border border-[#f0cdc8] bg-white text-danger hover:bg-danger-soft;
+    @apply btn border border-danger/40 bg-card text-danger hover:bg-danger-soft;
   }
 
   .btn-sm {
@@ -51,8 +220,8 @@ body {
   }
 
   .input {
-    @apply w-full rounded-lg border border-line bg-white px-3 py-2 text-[14px] text-ink outline-none
-      transition-colors placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand-soft;
+    @apply w-full rounded-lg border border-line bg-card px-3 py-2 text-[14px] text-ink outline-none
+      transition-colors placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/20;
   }
 
   .label {
@@ -70,17 +239,58 @@ body {
   .td {
     @apply border-b border-line-2 px-4 py-3 text-[13.5px] text-ink align-middle;
   }
+
+  /* 侧栏导航项：默认 / 悬停 / 当前页。
+     当前页左侧那条 2px 电光蓝是唯一的"你在哪"信号，其余全靠底色差异。 */
+  .nav-item {
+    @apply relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] transition-colors;
+    color: rgb(var(--c-sidebar-fg));
+  }
+
+  .nav-item:hover {
+    background: rgb(var(--c-sidebar-hover));
+    color: rgb(var(--c-ink));
+  }
+
+  [data-theme="graphite"] .nav-item:hover,
+  [data-theme="obsidian"] .nav-item:hover {
+    color: rgb(var(--c-sidebar-active-fg));
+  }
+
+  .nav-item-active,
+  .nav-item-active:hover {
+    background: rgb(var(--c-sidebar-active));
+    color: rgb(var(--c-sidebar-active-fg));
+    font-weight: 500;
+  }
+
+  .nav-item-active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    height: 14px;
+    width: 2px;
+    transform: translateY(-50%);
+    border-radius: 2px;
+    background: rgb(var(--c-brand));
+  }
 }
 
-/* 滚动条：细一点，别抢视觉 */
+/* lumen 侧栏是白的、内容区是浅灰，只靠色差很难一眼分出边界，补一条线 */
+[data-theme="lumen"] .app-sidebar {
+  border-right: 1px solid rgb(var(--c-sidebar-line));
+}
+
+/* 滚动条：细一点，别抢视觉；跟随主题 */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d9dde3;
+  background: rgb(var(--c-scroll-thumb));
   border-radius: 999px;
-  border: 3px solid #f6f7f9;
+  border: 3px solid rgb(var(--c-scroll-track));
 }
 ::-webkit-scrollbar-track {
   background: transparent;

@@ -267,7 +267,7 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
       </div>
 
       {error ? (
-        <div className="flex items-start gap-2 rounded-card border border-[#f3cfc9] bg-danger-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-danger">
+        <div className="flex items-start gap-2 rounded-card border border-danger/30 bg-danger-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-danger">
           <AlertCircle size={15} className="mt-0.5 shrink-0" />
           {error}
         </div>
@@ -315,7 +315,7 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
             />
 
             {open ? (
-              <div className="absolute left-0 right-0 top-full z-30 mt-1.5 overflow-hidden rounded-card border border-line bg-white">
+              <div className="absolute left-0 right-0 top-full z-30 mt-1.5 overflow-hidden rounded-card border border-line bg-card">
                 {searching || loadingOrigin ? (
                   <div className="flex items-center justify-center gap-2 py-6 text-[12.5px] text-muted">
                     <Loader2 size={14} className="animate-spin" />
@@ -336,7 +336,7 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
                             onMouseEnter={() => setActiveIdx(i)}
                             onClick={() => void loadOrigin(c.id)}
                             className={`flex w-full items-start gap-3 px-3 py-2 text-left transition-colors ${
-                              i === activeIdx ? "bg-brand-soft" : "hover:bg-[#f7f8fa]"
+                              i === activeIdx ? "bg-brand-soft" : "hover:bg-sunken"
                             }`}
                           >
                             <span className="min-w-0 flex-1">
@@ -358,7 +358,7 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
                             </span>
                             <span
                               className={`tnum shrink-0 text-[11.5px] ${
-                                allReturned ? "text-[#b9bfc9]" : "text-muted"
+                                allReturned ? "text-muted" : "text-muted"
                               }`}
                             >
                               {allReturned ? "已退完" : `可退 ${c.returnableQty}`}
@@ -370,7 +370,7 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
                   </ul>
                 )}
 
-                <div className="flex items-center justify-between border-t border-line-2 bg-[#fbfcfd] px-3 py-2 text-[11.5px] text-muted">
+                <div className="flex items-center justify-between border-t border-line-2 bg-sunken px-3 py-2 text-[11.5px] text-muted">
                   <span>↑↓ 选择 · 回车确认</span>
                   <span>只显示已审核的出库单</span>
                 </div>
@@ -378,8 +378,8 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
             ) : null}
           </div>
 
-          <div className="mt-4 flex flex-col items-center gap-2 rounded-lg border border-dashed border-[#d6dae1] bg-[#fcfcfd] py-10 text-center">
-            <Undo2 size={20} strokeWidth={1.6} className="text-[#c2c8d2]" />
+          <div className="mt-4 flex flex-col items-center gap-2 rounded-lg border border-dashed border-line bg-sunken py-10 text-center">
+            <Undo2 size={20} strokeWidth={1.6} className="text-muted" />
             <p className="text-[12.5px] text-muted">还没有选原单。搜到那张发货单，才能开始退</p>
           </div>
         </section>
@@ -390,10 +390,10 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="tag bg-brand-soft text-brand">原出库单</span>
+                  <span className="tag bg-brand-soft text-brand-ink">原出库单</span>
                   <Link
                     href={`/outbound/${origin.id}`}
-                    className="tnum text-[14px] font-semibold text-ink hover:text-brand"
+                    className="tnum text-[14px] font-semibold text-ink hover:text-brand-ink"
                   >
                     {origin.docNo}
                   </Link>
@@ -404,7 +404,7 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
                   {origin.receiverName ? `收件人 ${origin.receiverName} · ` : ""}
                   已发 <b className="tnum text-ink-2">{origin.totalQty}</b> · 已退{" "}
                   <b className="tnum text-ink-2">{origin.returnedQty}</b> · 还能退{" "}
-                  <b className="tnum text-brand">{origin.returnableQty}</b>
+                  <b className="tnum text-brand-ink">{origin.returnableQty}</b>
                 </p>
               </div>
               <button type="button" className="btn-ghost btn-sm" onClick={resetOrigin}>
@@ -448,7 +448,7 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
 
                     return (
                       <Fragment key={item.id}>
-                        <tr className={active ? "bg-[#fbfcff]" : undefined}>
+                        <tr className={active ? "bg-brand-soft" : undefined}>
                           <td className="td tnum text-muted">{item.lineNo}</td>
                           <td className="td">
                             <div className="font-medium text-ink">{item.productName}</div>
@@ -457,9 +457,9 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
                                 {colorText(item.colorName)}
                               </span>
                               {isCustom ? (
-                                <span className="tag bg-[#fdf4e8] text-[#a15f12]">定制·按件</span>
+                                <span className="tag bg-warn-soft text-warn">定制·按件</span>
                               ) : (
-                                <span className="tag bg-[#f2f4f7] text-ink-2">常规·按数量</span>
+                                <span className="tag bg-sunken text-ink-2">常规·按数量</span>
                               )}
                               {item.batchNo ? (
                                 <span className="tnum text-[10.5px]">{item.batchNo}</span>
@@ -479,7 +479,7 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
                           <td className="td tnum text-right text-muted">{item.returnedQty}</td>
                           <td className="td tnum text-right font-medium">
                             {done ? (
-                              <span className="tag bg-[#f2f4f7] text-muted">已退完</span>
+                              <span className="tag bg-sunken text-muted">已退完</span>
                             ) : (
                               item.returnableQty
                             )}
@@ -502,8 +502,8 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
                                 inputMode="numeric"
                                 disabled={done}
                                 className={`input px-1.5 py-1.5 text-center text-[13px] tnum ${
-                                  over ? "border-[#e0a99e] text-danger" : ""
-                                } ${done ? "cursor-not-allowed bg-[#f7f8fa] text-muted" : ""}`}
+                                  over ? "border-danger/30 text-danger" : ""
+                                } ${done ? "cursor-not-allowed bg-sunken text-muted" : ""}`}
                                 value={Number.isFinite(row.qty) && row.qty !== 0 ? row.qty : ""}
                                 onChange={(e) => updateRow(item.id, { qty: Number(e.target.value) })}
                                 onFocus={(e) => e.currentTarget.select()}
@@ -558,10 +558,10 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
                                 onClick={() => updateRow(item.id, { picking: !row.picking })}
                                 className={`flex w-full items-center justify-between gap-1 rounded-md border px-2 py-1.5 text-[12px] transition-colors ${
                                   done
-                                    ? "cursor-not-allowed border-line-2 bg-[#f7f8fa] text-[#b9bfc9]"
+                                    ? "cursor-not-allowed border-line-2 bg-sunken text-muted"
                                     : row.instanceIds.length > 0
-                                      ? "border-[#c9d3f5] bg-brand-soft text-brand"
-                                      : "border-line bg-white text-ink-2 hover:border-[#d6dae1]"
+                                      ? "border-brand/30 bg-brand-soft text-brand-ink"
+                                      : "border-line bg-card text-ink-2 hover:border-line"
                                 }`}
                               >
                                 <span className="truncate">
@@ -582,11 +582,11 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
                             <td className="td" />
                             <td className="td px-2.5 pb-2.5" colSpan={7}>
                               {item.instances.length === 0 ? (
-                                <p className="py-1 text-[12px] text-[#c0553f]">
+                                <p className="py-1 text-[12px] text-danger">
                                   这一行没有发出去的单件记录，退不了。
                                 </p>
                               ) : (
-                                <div className="space-y-1.5 rounded-lg border border-line-2 bg-[#fcfcfd] p-2.5">
+                                <div className="space-y-1.5 rounded-lg border border-line-2 bg-sunken p-2.5">
                                   <div className="flex items-center justify-between text-[11.5px] text-muted">
                                     <span>勾选退回来的件（勾几件就是几件）</span>
                                     <span className="tnum">共 {item.instances.length} 件</span>
@@ -614,10 +614,10 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
                                           }
                                           className={`flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11.5px] transition-colors ${
                                             blocked
-                                              ? "cursor-not-allowed border-line-2 bg-[#f7f8fa] text-[#b9bfc9]"
+                                              ? "cursor-not-allowed border-line-2 bg-sunken text-muted"
                                               : selected
-                                                ? "border-[#c9d3f5] bg-brand-soft text-brand"
-                                                : "border-line bg-white text-ink-2 hover:border-[#c9d3f5]"
+                                                ? "border-brand/30 bg-brand-soft text-brand-ink"
+                                                : "border-line bg-card text-ink-2 hover:border-brand/30"
                                           }`}
                                         >
                                           {selected ? <Check size={11} /> : null}
@@ -647,15 +647,15 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
           </section>
 
           <div className="grid gap-4 lg:grid-cols-[1.55fr_1fr]">
-            <section className="card bg-[#fbfcfd] p-4 text-[12px] leading-[1.85] text-ink-2 sm:p-5">
+            <section className="card bg-sunken p-4 text-[12px] leading-[1.85] text-ink-2 sm:p-5">
               <div className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-ink">
-                <Warehouse size={14} strokeWidth={1.8} className="text-brand" />
+                <Warehouse size={14} strokeWidth={1.8} className="text-brand-ink" />
                 去向怎么选
               </div>
               <ul className="space-y-1.5">
                 {(Object.keys(DESTINATION_LABEL) as ReturnDestination[]).map((d) => (
                   <li key={d} className="flex gap-1.5">
-                    <span className={`tag mt-0.5 shrink-0 ${d === "good" ? "bg-ok-soft text-ok" : d === "defective" ? "bg-[#fdf4e8] text-[#a15f12]" : "bg-[#f2f4f7] text-ink-2"}`}>
+                    <span className={`tag mt-0.5 shrink-0 ${d === "good" ? "bg-ok-soft text-ok" : d === "defective" ? "bg-warn-soft text-warn" : "bg-sunken text-ink-2"}`}>
                       {DESTINATION_LABEL[d]}
                     </span>
                     <span>{DESTINATION_HINT[d]}</span>
