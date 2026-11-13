@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { isValidCron } from "@/lib/cron";
-import { BACKUP_KEEP_MAX, BACKUP_KEEP_MIN } from "./backup.types";
+import { BACKUP_KEEP_MAX, BACKUP_KEEP_MIN, type RemoteProvider } from "./backup.types";
 
 /**
  * cron 表达式：标准 5 段（分 时 日 月 周）。
@@ -22,7 +22,7 @@ const urlSchema = z
   .trim()
   .max(300, "地址太长了")
   .refine((v) => v === "" || /^https?:\/\/[^\s]+$/i.test(v), {
-    message: "地址要像 http://192.168.1.110:7890 这样",
+    message: "地址要像 https://dav.jianguoyun.com/dav 这样",
   });
 
 const remotePathSchema = z
@@ -30,17 +30,20 @@ const remotePathSchema = z
   .trim()
   .max(300, "目录太长了")
   .refine((v) => v === "" || v.startsWith("/") || v.startsWith("./") || !v.includes(".."), {
-    message: "网盘目录要写成 /r2/suteng 这样",
+    message: "目录要写成 /suteng 这样",
   });
 
-const openlistSchema = z.object({
+const providerSchema = z.enum(["openlist", "jianguoyun"]);
+
+const remoteSchema = z.object({
   enabled: z.boolean().optional(),
+  provider: providerSchema.optional(),
   url: urlSchema.optional(),
   username: z.string().trim().max(120, "账号太长了").optional(),
   remotePath: remotePathSchema.optional(),
   /** 留空表示不改已保存的密码 */
   password: z.string().max(200, "密码太长了").optional(),
-  /** 长期令牌，留空表示不改 */
+  /** 长期令牌（只有 OpenList 用），留空表示不改 */
   token: z.string().trim().max(600, "令牌太长了").optional(),
 });
 
@@ -53,13 +56,16 @@ export const backupSettingsSchema = z.object({
     .min(BACKUP_KEEP_MIN, `至少保留 ${BACKUP_KEEP_MIN} 份`)
     .max(BACKUP_KEEP_MAX, `最多保留 ${BACKUP_KEEP_MAX} 份`)
     .optional(),
-  openlist: openlistSchema.optional(),
+  remote: remoteSchema.optional(),
+  /** 老前端的字段名，等价于 remote；升级期间两边都收 */
+  openlist: remoteSchema.optional(),
 });
 
 export type BackupSettingsInput = z.infer<typeof backupSettingsSchema>;
 
 /** 测试连接：允许直接把界面上没保存的参数丢过来试 */
-export const openlistTestSchema = z.object({
+export const remoteTestSchema = z.object({
+  provider: providerSchema.optional(),
   url: z.string().trim().max(300).optional(),
   username: z.string().trim().max(120).optional(),
   password: z.string().max(200).optional(),
@@ -67,7 +73,12 @@ export const openlistTestSchema = z.object({
   remotePath: z.string().trim().max(300).optional(),
 });
 
-/** 备份文件名：拒绝一切路径字符，只认自己生成的那一种 */
+/** 老名字，保留导出以免旧引用报错 */
+export const openlistTestSchema = remoteTestSchema;
+
+/** 备份文件名：拒绝一切路径字符，只认自己生成的两种（tar 含图片 / db 老格式） */
 export const backupNameSchema = z
   .string()
-  .regex(/^suteng-(auto|manual|pre-restore)-\d{8}-\d{6}\.db$/, "备份文件名不合法");
+  .regex(/^suteng-(auto|manual|pre-restore)-\d{8}-\d{6}\.(tar|db)$/, "备份文件名不合法");
+
+export type RemoteProviderInput = RemoteProvider;

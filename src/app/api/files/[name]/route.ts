@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
-import { env } from "@/lib/env";
+import { uploadDir } from "@/lib/upload-dir";
 import { getSession } from "@/lib/session";
 
 const MIME: Record<string, string> = {
@@ -9,12 +9,6 @@ const MIME: Record<string, string> = {
   ".png": "image/png",
   ".webp": "image/webp",
 };
-
-function uploadRoot(): string {
-  return path.isAbsolute(env.UPLOAD_DIR)
-    ? env.UPLOAD_DIR
-    : path.join(process.cwd(), env.UPLOAD_DIR);
-}
 
 /**
  * 读取上传的图片。
@@ -35,7 +29,7 @@ export async function GET(
 
   const ext = path.extname(name).toLowerCase();
   try {
-    const buf = await readFile(path.join(uploadRoot(), name));
+    const buf = await readFile(path.join(uploadDir(), name));
     return new NextResponse(new Uint8Array(buf), {
       headers: {
         "content-type": MIME[ext] ?? "application/octet-stream",

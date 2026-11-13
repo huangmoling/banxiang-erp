@@ -11,6 +11,7 @@ import {
   Database,
   Download,
   HardDriveDownload,
+  History,
   Loader2,
   Lock,
   Plug,
@@ -31,13 +32,16 @@ import {
   BACKUP_KEEP_MIN,
   BACKUP_KIND_LABEL,
   BACKUP_KIND_TONE,
+  REMOTE_PROVIDER_LABEL,
+  REMOTE_PROVIDER_META,
   formatBytes,
   type BackupCreateResult,
   type BackupFile,
   type BackupListResult,
   type BackupRestoreResult,
   type BackupUploadResult,
-  type OpenlistTestResult,
+  type RemoteProvider,
+  type RemoteTestResult,
 } from "@/modules/backup/backup.types";
 
 /**
@@ -60,16 +64,17 @@ export function BackupsClient() {
   const [cron, setCron] = useState("0 3 * * *");
   const [keepCount, setKeepCount] = useState(7);
 
-  // 网盘（OpenList）
-  const [olEnabled, setOlEnabled] = useState(false);
-  const [olUrl, setOlUrl] = useState("");
-  const [olUser, setOlUser] = useState("");
+  // 云端备份（OpenList / 坚果云）
+  const [provider, setProvider] = useState<RemoteProvider>("openlist");
+  const [remoteEnabled, setRemoteEnabled] = useState(false);
+  const [remoteUrl, setRemoteUrl] = useState("");
+  const [remoteUser, setRemoteUser] = useState("");
   /** 留空 = 不改已保存的密码（服务端从不回传明文） */
-  const [olPass, setOlPass] = useState("");
-  const [olToken, setOlToken] = useState("");
-  const [olRemote, setOlRemote] = useState("");
+  const [remotePass, setRemotePass] = useState("");
+  const [remoteToken, setRemoteToken] = useState("");
+  const [remotePath, setRemotePath] = useState("");
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<OpenlistTestResult | null>(null);
+  const [testResult, setTestResult] = useState<RemoteTestResult | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
 
   const [toDelete, setToDelete] = useState<BackupFile | null>(null);
@@ -79,6 +84,8 @@ export function BackupsClient() {
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [restoreWord, setRestoreWord] = useState("");
   const [restoreResult, setRestoreResult] = useState<BackupRestoreResult | null>(null);
+  /** 从服务器上已有的备份直接恢复；有值时弹的是「恢复这一份」确认框 */
+  const [restoreLocal, setRestoreLocal] = useState<BackupFile | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // 「下次运行」要在客户端算：服务端渲染一遍、客户端再算一遍会差几秒，直接算会 hydration 不一致
@@ -92,12 +99,13 @@ export function BackupsClient() {
       setEnabled(res.settings.enabled);
       setCron(res.settings.cron);
       setKeepCount(res.settings.keepCount);
-      setOlEnabled(res.settings.openlist.enabled);
-      setOlUrl(res.settings.openlist.url);
-      setOlUser(res.settings.openlist.username);
-      setOlRemote(res.settings.openlist.remotePath);
-      setOlPass("");
-      setOlToken("");
+      setProvider(res.settings.remote.provider);
+      setRemoteEnabled(res.settings.remote.enabled);
+      setRemoteUrl(res.settings.remote.url);
+      setRemoteUser(res.settings.remote.username);
+      setRemotePath(res.settings.remote.remotePath);
+      setRemotePass("");
+      setRemoteToken("");
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "加载失败，请重试");
     } finally {
@@ -124,12 +132,13 @@ export function BackupsClient() {
     (data.settings.enabled !== enabled ||
       data.settings.cron !== cron ||
       data.settings.keepCount !== keepCount ||
-      data.settings.openlist.enabled !== olEnabled ||
-      data.settings.openlist.url !== olUrl.trim().replace(/\/+$/, "") ||
-      data.settings.openlist.username !== olUser.trim() ||
-      data.settings.openlist.remotePath !== olRemote.trim() ||
-      olPass.length > 0 ||
-      olToken.length > 0);
+      data.settings.remote.enabled !== remoteEnabled ||
+      data.settings.remote.provider !== provider ||
+      data.settings.remote.url !== remoteUrl.trim().replace(/\/+$/, "") ||
+      data.settings.remote.username !== remoteUser.trim() ||
+      data.settings.remote.remotePath !== remotePath.trim() ||
+      remotePass.length > 0 ||
+      remoteToken.length > 0);
 
   async function saveSettings() {
     if (busy) return;
@@ -145,13 +154,14 @@ export function BackupsClient() {
           enabled,
           cron: cron.trim(),
           keepCount,
-          openlist: {
-            enabled: olEnabled,
-            url: olUrl.trim(),
-            username: olUser.trim(),
-            remotePath: olRemote.trim(),
-            ...(olPass ? { password: olPass } : {}),
-            ...(olToken ? { token: olToken } : {}),
+          remote: {
+            enabled: remoteEnabled,
+            provider,
+            url: remoteUrl.trim(),
+            username: remoteUser.trim(),
+            remotePath: remotePath.trim(),
+            ...(remotePass ? { password: remotePass } : {}),
+            ...(remoteToken ? { token: remoteToken } : {}),
           },
         },
       });
@@ -169,23 +179,33 @@ export function BackupsClient() {
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await api<OpenlistTestResult>("/api/backups/openlist/test", {
+      const res = await api<RemoteTestResult>("/api/backups/remote/test", {
         method: "POST",
         json: {
-          url: olUrl.trim(),
-          username: olUser.trim(),
-          remotePath: olRemote.trim(),
-          ...(olPass ? { password: olPass } : {}),
-          ...(olToken ? { token: olToken } : {}),
+          provider,
+          url: remoteUrl.trim(),
+          username: remoteUser.trim(),
+          remotePath: remotePath.trim(),
+          ...(remotePass ? { password: remotePass } : {}),
+          ...(remoteToken ? { token: remoteToken } : {}),
         },
       });
       setTestResult(res);
-      if (res.ok) toast.success("网盘连接正常");
+      if (res.ok) toast.success("云端连接正常");
       else toast.error(res.message || "连接失败");
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "测试失败");
     } finally {
       setTesting(false);
+    }
+  }
+
+  /** 切换云端类型：地址是固定的就直接填好，省得用户去查 */
+  function changeProvider(next: RemoteProvider) {
+    setProvider(next);
+    setTestResult(null);
+    if (next === "jianguoyun" && !remoteUrl.trim()) {
+      setRemoteUrl("https://dav.jianguoyun.com/dav");
     }
   }
 
@@ -196,9 +216,9 @@ export function BackupsClient() {
       const res = await api<BackupCreateResult>("/api/backups", { method: "POST" });
       toast.success(`已备份：${res.file.name}（${formatBytes(res.file.sizeBytes)}）`);
       if (res.upload && !res.upload.ok) {
-        toast.error(`本地已备份，但传到网盘失败：${res.upload.error ?? "未知原因"}`);
+        toast.error(`本地已备份，但传到云端失败：${res.upload.error ?? "未知原因"}`);
       } else if (res.upload?.ok) {
-        toast.success("已同步上传到网盘");
+        toast.success("已同步上传到云端");
       }
       await load();
     } catch (err) {
@@ -213,7 +233,7 @@ export function BackupsClient() {
     setUploading(name);
     try {
       const res = await api<BackupUploadResult>(`/api/backups/${name}/upload`, { method: "POST" });
-      toast.success(`已上传到 ${res.remotePath ?? "网盘"}`);
+      toast.success(`已上传到 ${res.remotePath ?? "云端"}`);
       await load();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "上传失败");
@@ -239,8 +259,9 @@ export function BackupsClient() {
 
   function pickFile(f: File | null) {
     if (!f) return;
-    if (!f.name.toLowerCase().endsWith(".db")) {
-      toast.error("只支持本系统备份出来的 .db 文件");
+    const lower = f.name.toLowerCase();
+    if (!lower.endsWith(".tar") && !lower.endsWith(".db")) {
+      toast.error("只支持本系统备份出来的 .tar（含图片）或老的 .db 文件");
       return;
     }
     setRestoreFile(f);
@@ -257,16 +278,43 @@ export function BackupsClient() {
 
     setBusy("restore");
     try {
-      const form = new FormData();
-      form.append("file", restoreFile);
+      // 原始流上传：带图片的包可能上百 MB，走 FormData 会整个读进内存
       const res = await api<BackupRestoreResult>("/api/backups/restore", {
         method: "POST",
-        body: form,
+        headers: {
+          "content-type": "application/octet-stream",
+          "x-backup-name": encodeURIComponent(restoreFile.name),
+        },
+        body: restoreFile,
       });
       setRestoreOpen(false);
       setRestoreResult(res);
       setRestoreFile(null);
       if (fileRef.current) fileRef.current.value = "";
+      toast.success("数据已恢复");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "恢复失败");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** 直接拿服务器上这份备份覆盖回来（不用下载再上传） */
+  async function doRestoreLocal() {
+    if (!restoreLocal || busy) return;
+    if (restoreWord.trim() !== "恢复") {
+      toast.error("请照着输入「恢复」两个字");
+      return;
+    }
+
+    setBusy("restore");
+    try {
+      const res = await api<BackupRestoreResult>(`/api/backups/${restoreLocal.name}/restore`, {
+        method: "POST",
+      });
+      setRestoreLocal(null);
+      setRestoreResult(res);
       toast.success("数据已恢复");
       await load();
     } catch (err) {
@@ -291,7 +339,7 @@ export function BackupsClient() {
     <div className="space-y-4">
       <PageHeader
         title="数据备份"
-        description="备份就是把整个库拷一份完整的快照。服务器坏了、升级出问题、数据被误删，都能用这里的一份文件把账原样装回去。开启网盘上传后，还会再往云端存一份——NAS 整台报废也还有救。"
+        description="备份把整个库和全部商品图片打进一个包。服务器坏了、升级出问题、数据被误删，都能用这里的一份文件把账和图片原样装回去。开启云端上传后，还会再往网盘存一份——NAS 整台报废也还有救。"
         actions={
           <div className="flex gap-2">
           <button type="button" className="btn-ghost btn-sm" onClick={() => void load()} disabled={loading}>
@@ -323,11 +371,11 @@ export function BackupsClient() {
         </div>
       ) : null}
 
-      {data?.settings.openlist.enabled && data.settings.lastUploadError ? (
+      {data?.settings.remote.enabled && data.settings.lastUploadError ? (
         <div className="flex items-start gap-2 rounded-card border border-warn/40 bg-warn-soft px-3.5 py-2.5 text-[12.5px] leading-5 text-warn">
           <Cloud size={15} className="mt-0.5 shrink-0" />
           <div>
-            最近一次上传网盘失败：{data.settings.lastUploadError}
+            最近一次上传云端失败：{data.settings.lastUploadError}
             <div className="mt-0.5 text-[11.5px]">
               本地备份是好的，只是云上那份没更新。网络恢复后在列表里点云朵图标重传即可。
             </div>
@@ -343,8 +391,8 @@ export function BackupsClient() {
         <Stat
           icon={CloudCheck}
           label="已上传云盘"
-          value={data?.settings.openlist.enabled ? String(uploadedCount) : "—"}
-          unit={data?.settings.openlist.enabled ? "份" : undefined}
+          value={data?.settings.remote.enabled ? String(uploadedCount) : "—"}
+          unit={data?.settings.remote.enabled ? "份" : undefined}
         />
       </div>
 
@@ -476,118 +524,147 @@ export function BackupsClient() {
         ) : null}
       </section>
 
-      {/* 网盘 */}
+      {/* 云端 */}
       <section className="card p-4 sm:p-5">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="flex items-center gap-1.5 text-[13.5px] font-semibold text-ink">
               <Cloud size={14} strokeWidth={1.9} className="text-brand-ink" />
-              云端备份（OpenList）
+              云端备份
             </h2>
             <p className="mt-0.5 text-[11.5px] text-muted">
-              每次备份完成后，自动把 .db 传到 OpenList 上挂的 Cloudflare R2 桶里。
-              服务器整台坏掉时，云端这份就是最后的家底。
+              每次备份完成后，自动把整个包（库 + 商品图片）传到云端。服务器整台坏掉时，云端这份就是最后的家底。
             </p>
           </div>
           <label className="flex cursor-pointer items-center gap-2 text-[12.5px] text-ink-2">
             <input
               type="checkbox"
               className="h-4 w-4 rounded border-line text-brand-ink focus:ring-brand"
-              checked={olEnabled}
-              onChange={(e) => setOlEnabled(e.target.checked)}
+              checked={remoteEnabled}
+              onChange={(e) => setRemoteEnabled(e.target.checked)}
             />
-            {olEnabled ? "已开启" : "已关闭"}
+            {remoteEnabled ? "已开启" : "已关闭"}
           </label>
+        </div>
+
+        <div className="mb-3">
+          <span className="label">存到哪儿</span>
+          <div className="flex flex-wrap gap-2">
+            {(["openlist", "jianguoyun"] as RemoteProvider[]).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => changeProvider(p)}
+                disabled={!remoteEnabled}
+                className={`rounded-field border px-3 py-1.5 text-[12.5px] transition-colors disabled:opacity-60 ${
+                  provider === p
+                    ? "border-brand bg-brand-soft font-medium text-brand-ink"
+                    : "border-line text-ink-2 hover:border-brand hover:text-brand-ink"
+                }`}
+              >
+                {REMOTE_PROVIDER_LABEL[p]}
+              </button>
+            ))}
+          </div>
+          <div className="mt-1 text-[11px] leading-4 text-muted">
+            {provider === "jianguoyun"
+              ? "坚果云：网页版「设置 → 安全选项 → 添加应用密码」，密码填那一串；账号填注册邮箱。"
+              : "OpenList：家里自建的那台，底下挂 R2 / 本地盘都行。"}
+          </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="label" htmlFor="olUrl">
-              OpenList 地址
+            <label className="label" htmlFor="remoteUrl">
+              {provider === "jianguoyun" ? "WebDAV 地址" : "OpenList 地址"}
             </label>
             <input
-              id="olUrl"
+              id="remoteUrl"
               className="input tnum"
-              value={olUrl}
-              onChange={(e) => setOlUrl(e.target.value)}
-              placeholder="http://192.168.1.110:7890"
+              value={remoteUrl}
+              onChange={(e) => setRemoteUrl(e.target.value)}
+              placeholder={REMOTE_PROVIDER_META[provider].urlPlaceholder}
               spellCheck={false}
-              disabled={!olEnabled}
+              disabled={!remoteEnabled}
             />
-            <div className="mt-1 text-[11px] text-muted">只填到端口就行，不用带网盘里的目录</div>
+            <div className="mt-1 text-[11px] text-muted">{REMOTE_PROVIDER_META[provider].urlHint}</div>
           </div>
 
           <div>
-            <label className="label" htmlFor="olRemote">
+            <label className="label" htmlFor="remotePath">
               备份目录
             </label>
             <input
-              id="olRemote"
+              id="remotePath"
               className="input tnum"
-              value={olRemote}
-              onChange={(e) => setOlRemote(e.target.value)}
-              placeholder="/r2/suteng"
+              value={remotePath}
+              onChange={(e) => setRemotePath(e.target.value)}
+              placeholder={provider === "jianguoyun" ? "/suteng" : "/r2/suteng"}
               spellCheck={false}
-              disabled={!olEnabled}
+              disabled={!remoteEnabled}
             />
-            <div className="mt-1 text-[11px] text-muted">OpenList 里的路径；不存在会自动创建</div>
+            <div className="mt-1 text-[11px] text-muted">{REMOTE_PROVIDER_META[provider].pathHint}</div>
           </div>
 
           <div>
-            <label className="label" htmlFor="olUser">
-              账号
+            <label className="label" htmlFor="remoteUser">
+              {provider === "jianguoyun" ? "坚果云账号（邮箱）" : "账号"}
             </label>
             <input
-              id="olUser"
+              id="remoteUser"
               className="input"
-              value={olUser}
-              onChange={(e) => setOlUser(e.target.value)}
-              placeholder="admin"
+              value={remoteUser}
+              onChange={(e) => setRemoteUser(e.target.value)}
+              placeholder={REMOTE_PROVIDER_META[provider].userPlaceholder}
               autoComplete="off"
-              disabled={!olEnabled}
+              disabled={!remoteEnabled}
             />
           </div>
 
           <div>
-            <label className="label" htmlFor="olPass">
-              密码
+            <label className="label" htmlFor="remotePass">
+              {provider === "jianguoyun" ? "应用密码" : "密码"}
             </label>
             <input
-              id="olPass"
+              id="remotePass"
               type="password"
               className="input"
-              value={olPass}
-              onChange={(e) => setOlPass(e.target.value)}
+              value={remotePass}
+              onChange={(e) => setRemotePass(e.target.value)}
               placeholder={
-                data?.settings.openlist.passwordSet ? "已保存，留空表示不改" : "填 OpenList 的登录密码"
+                data?.settings.remote.passwordSet
+                  ? "已保存，留空表示不改"
+                  : REMOTE_PROVIDER_META[provider].passHint
               }
               autoComplete="new-password"
-              disabled={!olEnabled}
+              disabled={!remoteEnabled}
             />
           </div>
 
-          <div className="sm:col-span-2">
-            <label className="label" htmlFor="olToken">
-              长期令牌（选填）
-            </label>
-            <input
-              id="olToken"
-              className="input tnum"
-              value={olToken}
-              onChange={(e) => setOlToken(e.target.value)}
-              placeholder={
-                data?.settings.openlist.tokenSet
-                  ? "已保存，留空表示不改"
-                  : "填了账号密码就不用填这个；只想用令牌时才填"
-              }
-              spellCheck={false}
-              autoComplete="off"
-              disabled={!olEnabled}
-            />
-            <div className="mt-1 text-[11px] leading-4 text-muted">
-              系统优先用账号密码每次换新令牌（最稳）；只有没填密码时才用长期令牌。
+          {provider === "openlist" ? (
+            <div className="sm:col-span-2">
+              <label className="label" htmlFor="remoteToken">
+                长期令牌（选填）
+              </label>
+              <input
+                id="remoteToken"
+                className="input tnum"
+                value={remoteToken}
+                onChange={(e) => setRemoteToken(e.target.value)}
+                placeholder={
+                  data?.settings.remote.tokenSet
+                    ? "已保存，留空表示不改"
+                    : "填了账号密码就不用填这个；只想用令牌时才填"
+                }
+                spellCheck={false}
+                autoComplete="off"
+                disabled={!remoteEnabled}
+              />
+              <div className="mt-1 text-[11px] leading-4 text-muted">
+                系统优先用账号密码每次换新令牌（最稳）；只有没填密码时才用长期令牌。
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -595,7 +672,7 @@ export function BackupsClient() {
             type="button"
             className="btn-ghost btn-sm"
             onClick={() => void testConnection()}
-            disabled={testing || !olEnabled}
+            disabled={testing || !remoteEnabled}
           >
             {testing ? <Loader2 size={14} className="animate-spin" /> : <Plug size={14} />}
             测试连接
@@ -609,7 +686,7 @@ export function BackupsClient() {
             {busy === "settings" ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
             保存设置
           </button>
-          {data?.settings.openlist.enabled && data.settings.lastUploadAt ? (
+          {data?.settings.remote.enabled && data.settings.lastUploadAt ? (
             <span className="text-[11.5px] text-muted">
               最近上传：<b className="tnum font-medium text-ink-2">{fmt(data.settings.lastUploadAt)}</b>
             </span>
@@ -656,10 +733,11 @@ export function BackupsClient() {
                 <tr>
                   <th className="th">文件</th>
                   <th className="th w-[104px]">类型</th>
-                  <th className="th w-[140px]">云盘</th>
+                  <th className="th w-[132px]">内容</th>
+                  <th className="th w-[136px]">云端</th>
                   <th className="th w-[92px] text-right">大小</th>
                   <th className="th w-[150px]">时间</th>
-                  <th className="th w-[104px] text-right">操作</th>
+                  <th className="th w-[132px] text-right">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -676,6 +754,21 @@ export function BackupsClient() {
                     <td className="td">
                       <span className={`tag ${BACKUP_KIND_TONE[f.kind]}`}>{BACKUP_KIND_LABEL[f.kind]}</span>
                     </td>
+                    <td className="td text-[11.5px] leading-4">
+                      {f.format === "tar" ? (
+                        <>
+                          <div className="text-ink-2">库 + 图片</div>
+                          <div className="tnum text-muted">
+                            {f.imageCount === null ? "图片数未知" : `${f.imageCount} 张图`}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-warn">只有库</div>
+                          <div className="text-muted">老备份，不含图片</div>
+                        </>
+                      )}
+                    </td>
                     <td className="td">
                       {f.uploadedAt ? (
                         <span
@@ -685,13 +778,13 @@ export function BackupsClient() {
                           <CloudCheck size={13} />
                           已上传
                         </span>
-                      ) : data.settings.openlist.enabled ? (
+                      ) : data.settings.remote.enabled ? (
                         <button
                           type="button"
                           onClick={() => void uploadThis(f.name)}
                           disabled={uploading !== null}
                           className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11.5px] text-muted transition-colors hover:bg-line-2 hover:text-brand-ink disabled:opacity-60"
-                          title="传到网盘"
+                          title="传到云端"
                         >
                           {uploading === f.name ? (
                             <Loader2 size={13} className="animate-spin" />
@@ -708,6 +801,18 @@ export function BackupsClient() {
                     <td className="td tnum text-[12.5px] text-ink-2">{fmt(f.createdAt)}</td>
                     <td className="td">
                       <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRestoreWord("");
+                            setRestoreLocal(f);
+                          }}
+                          disabled={busy !== null}
+                          className="rounded-md p-1.5 text-muted transition-colors hover:bg-warn-soft hover:text-warn disabled:opacity-60"
+                          title="用这一份恢复数据"
+                        >
+                          <History size={14} />
+                        </button>
                         <a
                           href={`/api/backups/${f.name}/download`}
                           className="rounded-md p-1.5 text-muted transition-colors hover:bg-line-2 hover:text-brand-ink"
@@ -755,7 +860,8 @@ export function BackupsClient() {
           <div className="min-w-0 flex-1">
             <h2 className="text-[13.5px] font-semibold text-ink">用备份恢复数据</h2>
             <p className="mt-0.5 text-[11.5px] leading-5 text-muted">
-              上传一份 .db 备份，整库覆盖成备份里的样子。适合「新版本升级后账不对」「误删了单据舍不得」这类情况。
+              两种用法：列表里点某一行的「恢复」图标直接退回去（最快）；或者把从云端下载的包上传回来——
+              换机器、整卷丢了，都是这条路上救的。
             </p>
 
             <ul className="mt-2 space-y-1 text-[11.5px] leading-5 text-ink-2">
@@ -765,7 +871,11 @@ export function BackupsClient() {
               </li>
               <li className="flex gap-1.5">
                 <span className="text-ok">·</span>
-                覆盖前系统会自动给当前数据拍一张 <code>pre-restore</code> 快照，导错了还能拿它退回来。
+                覆盖前系统会自动给当前数据（<b>含商品图片</b>）拍一张 <code>pre-restore</code> 快照，导错了还能拿它退回来。
+              </li>
+              <li className="flex gap-1.5">
+                <span className="text-brand-ink">·</span>
+                备份包里的图片会补齐到图片目录，<b>只补不删</b>——现有图片一张都不会被删掉。
               </li>
               <li className="flex gap-1.5">
                 <span className="text-warn">·</span>
@@ -777,7 +887,7 @@ export function BackupsClient() {
               <input
                 ref={fileRef}
                 type="file"
-                accept=".db,application/octet-stream"
+                accept=".tar,.db,application/octet-stream"
                 className="hidden"
                 onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
               />
@@ -788,10 +898,16 @@ export function BackupsClient() {
                 disabled={busy !== null}
               >
                 <Upload size={14} />
-                选择备份文件
+                上传备份包
               </button>
-              <span className="text-[11.5px] text-muted">只接受本系统备份出来的 .db，最大 100 MB</span>
+              <span className="text-[11.5px] text-muted">接受 .tar（库+图片）与老的 .db，最大 512 MB</span>
             </div>
+
+            {data?.settings.imageDir ? (
+              <p className="mt-2 text-[11px] leading-4 text-muted">
+                图片目录：<code className="tnum rounded bg-sunken px-1.5 py-0.5">{data.settings.imageDir}</code>
+              </p>
+            ) : null}
           </div>
         </div>
       </section>
@@ -803,7 +919,7 @@ export function BackupsClient() {
         description={
           toDelete
             ? `「${toDelete.name}」删掉就找不回来了${
-                toDelete.uploadedAt ? "（注意：网盘上那一份不会被一起删掉）" : ""
+                toDelete.uploadedAt ? "（注意：云端上那一份不会被一起删掉）" : ""
               }。如果这是唯一一份手动备份，建议先下载到本机再删。`
             : undefined
         }
@@ -879,6 +995,64 @@ export function BackupsClient() {
         </div>
       </Modal>
 
+      {/* 用服务器上这一份恢复：确认框 */}
+      <Modal
+        open={!!restoreLocal}
+        title="确认用这份备份覆盖当前数据？"
+        description={
+          restoreLocal
+            ? `将用「${restoreLocal.name}」（${formatBytes(restoreLocal.sizeBytes)}）覆盖当前数据。`
+            : undefined
+        }
+        onClose={() => (busy === "restore" ? undefined : setRestoreLocal(null))}
+        width="max-w-[480px]"
+        footer={
+          <>
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={() => setRestoreLocal(null)}
+              disabled={busy === "restore"}
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              className="btn-danger"
+              onClick={() => void doRestoreLocal()}
+              disabled={busy === "restore" || restoreWord.trim() !== "恢复"}
+            >
+              {busy === "restore" ? <Loader2 size={14} className="animate-spin" /> : <History size={14} />}
+              覆盖并恢复
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3 pt-1">
+          <div className="rounded-lg bg-danger-soft px-3 py-2.5 text-[12.5px] leading-5 text-danger">
+            这会把当前所有数据替换成备份里的内容。备份之后录的单据、新建的商品、改过的密码，全部作废。
+          </div>
+          <div className="rounded-lg bg-sunken px-3 py-2 text-[12px] leading-5 text-ink-2">
+            {restoreLocal?.format === "tar"
+              ? `这份包里带 ${restoreLocal.imageCount ?? 0} 张商品图，恢复时一起补进图片目录（只补不删）。`
+              : "这是老格式备份，只有数据库，不含图片。恢复后图片目录保持现状。"}
+          </div>
+          <div>
+            <label className="label" htmlFor="restore-local-word">
+              照着输入「恢复」两个字 <span className="text-danger">*</span>
+            </label>
+            <input
+              id="restore-local-word"
+              className="input"
+              value={restoreWord}
+              onChange={(e) => setRestoreWord(e.target.value)}
+              placeholder="恢复"
+              autoFocus
+            />
+          </div>
+        </div>
+      </Modal>
+
       {/* 恢复结果 */}
       <Modal
         open={!!restoreResult}
@@ -900,6 +1074,31 @@ export function BackupsClient() {
               <b className="tnum">{restoreResult.counts.movements}</b> 条、账号{" "}
               <b className="tnum">{restoreResult.counts.users}</b> 个。
             </div>
+
+            {restoreResult.format === "tar" ? (
+              <div
+                className={`rounded-lg px-3 py-2.5 ${
+                  restoreResult.imagesMissing > 0 ? "bg-warn-soft text-warn" : "bg-ok-soft text-ok"
+                }`}
+              >
+                图片：包里带 <b className="tnum">{restoreResult.imagesInBackup}</b> 张，这次补进{" "}
+                <b className="tnum">{restoreResult.imagesRestored}</b> 张（已存在的同名图跳过）。
+                {restoreResult.imagesMissing > 0 ? (
+                  <>
+                    <br />
+                    仍有 <b className="tnum">{restoreResult.imagesMissing}</b> 个商品找不到图片文件——
+                    这份备份可能是「不含图片」时期拍的。到商品页重新传一下图即可。
+                  </>
+                ) : (
+                  <>全部商品图片都对上了。</>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-lg bg-warn-soft px-3 py-2.5 text-warn">
+                这是老格式备份，<b>不含商品图片</b>，图片目录保持原样。若这次没解决破图问题，
+                请换一份 .tar 备份再恢复。
+              </div>
+            )}
 
             {restoreResult.safetyBackup ? (
               <p className="text-ink-2">

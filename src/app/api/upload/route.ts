@@ -3,6 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { defineRoute } from "@/lib/api-handler";
 import { env } from "@/lib/env";
+import { uploadDir } from "@/lib/upload-dir";
 import { AppError, ValidationError } from "@/lib/errors";
 
 const ALLOWED = new Map<string, string>([
@@ -10,12 +11,6 @@ const ALLOWED = new Map<string, string>([
   ["image/png", ".png"],
   ["image/webp", ".webp"],
 ]);
-
-function uploadRoot(): string {
-  return path.isAbsolute(env.UPLOAD_DIR)
-    ? env.UPLOAD_DIR
-    : path.join(process.cwd(), env.UPLOAD_DIR);
-}
 
 /** 商品图片上传：只接受 jpg/png/webp，按内容类型定扩展名（不信任文件名） */
 export const POST = defineRoute(async ({ req, log }) => {
@@ -45,7 +40,7 @@ export const POST = defineRoute(async ({ req, log }) => {
   }
 
   const name = `${randomUUID()}${ext}`;
-  const dir = uploadRoot();
+  const dir = uploadDir();
   await mkdir(dir, { recursive: true });
   await writeFile(path.join(dir, name), Buffer.from(await file.arrayBuffer()));
 
