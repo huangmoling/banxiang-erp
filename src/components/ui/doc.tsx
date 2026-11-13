@@ -14,13 +14,26 @@ import { Badge, type BadgeTone } from "./badge";
 /* ── 页头 ─────────────────────────────────────────────────────────── */
 
 /** 返回箭头。列表 ↔ 单据之间唯一的回路，必须一直在同一个位置 */
-export function BackLink({ href, title }: { href: string; title: string }) {
+export function BackLink({
+  href,
+  title,
+  onDark = false,
+}: {
+  href: string;
+  title: string;
+  /** 深色单据头上的返回箭头要用浅色，否则在深底上几乎看不见 */
+  onDark?: boolean;
+}) {
   return (
     <Link
       href={href}
       title={title}
       aria-label={title}
-      className="-ml-1 mt-0.5 shrink-0 rounded-[8px] p-1.5 text-muted transition-colors hover:bg-ink/[0.06] hover:text-ink"
+      className={`-ml-1 mt-0.5 shrink-0 rounded-[5px] p-1.5 transition-colors ${
+        onDark
+          ? "text-white/55 hover:bg-white/10 hover:text-white"
+          : "text-muted hover:bg-ink/[0.06] hover:text-ink"
+      }`}
     >
       <ArrowLeft size={16} strokeWidth={2} />
     </Link>
@@ -47,21 +60,32 @@ export function DocTitle({
   meta?: ReactNode;
   actions?: ReactNode;
 }) {
+  /*
+   * 单据头是一条深色带。
+   *
+   * 打开一张单，第一眼要落在单号和状态上；往下读明细时才回到白纸。
+   * 这一条深色把"这张单是什么"和"这张单里有什么"在视觉上分开了，
+   * 也让列表（浅）→ 详情（深头）形成固定的节奏。
+   */
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div className="flex min-w-0 items-start gap-2">
-        <BackLink href={backHref} title={backTitle} />
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="tnum text-[21px] leading-tight font-semibold tracking-[-0.02em] text-ink">
-              {title}
-            </h1>
-            {statusBadge}
+    <div className="on-deep rounded-card bg-deep px-3.5 py-3 sm:px-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-2">
+          <BackLink href={backHref} title={backTitle} onDark />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="tnum text-[19px] leading-tight font-semibold tracking-[-0.015em] text-deep-fg">
+                {title}
+              </h1>
+              {statusBadge}
+            </div>
+            {meta ? <p className="mt-1.5 text-[11.5px] text-deep-fg2">{meta}</p> : null}
           </div>
-          {meta ? <p className="mt-1.5 text-[12px] text-muted">{meta}</p> : null}
         </div>
+        {actions ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+        ) : null}
       </div>
-      {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
   );
 }
@@ -127,7 +151,7 @@ export function SectionCard({
       {title ? (
         <div
           className={`flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 ${
-            flush ? "" : "border-b border-line/70"
+            flush ? "" : "border-b border-line"
           }`}
         >
           <div className="flex flex-wrap items-baseline gap-x-2">
@@ -260,7 +284,7 @@ export function FormActionBar({
   children: ReactNode;
 }) {
   return (
-    <div className="glass-head sticky bottom-0 z-10 -mx-4 border-t border-line/60 px-4 py-2.5 sm:-mx-6 sm:px-6">
+    <div className="glass-head sticky bottom-0 z-10 -mx-4 mt-auto border-t border-line px-4 py-2.5 sm:-mx-6 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="tnum text-[12px] text-muted">{summary}</span>
         <div className="flex flex-wrap gap-2">{children}</div>

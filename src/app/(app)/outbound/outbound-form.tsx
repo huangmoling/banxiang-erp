@@ -67,7 +67,15 @@ type SkuOption = Pick<
 let lineSeq = 0;
 const newKey = () => `o${++lineSeq}`;
 
-export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string }) {
+export function OutboundForm({
+  meta,
+  role,
+  embedded = false,
+}: {
+  meta: OutboundMeta;
+  role: string;
+  embedded?: boolean;
+}) {
   const router = useRouter();
   const toast = useToast();
   const today = meta.today || todayDateOnly();
@@ -365,17 +373,19 @@ export function OutboundForm({ meta, role }: { meta: OutboundMeta; role: string 
   }
 
   return (
-    <div className="space-y-4">
-      <FormTitle
-        backHref="/outbound"
-        backTitle="返回出库列表"
-        title={isClerk ? "整理发货工单" : "新建出库单"}
-        description={
-          isClerk
-            ? "搜款 → 每个商品填这个买家的收货信息 → 提交给仓管。提交后库存不动，仓管确认才扣。"
-            : "搜款 → 每个商品填这个买家的收货信息 → 保存。一行就是一个包裹，打印时按地址拆开。"
-        }
-      />
+    <div className={embedded ? "flex min-h-full flex-col gap-4" : "space-y-4"}>
+      {embedded ? null : (
+        <FormTitle
+          backHref="/outbound"
+          backTitle="返回出库列表"
+          title={isClerk ? "整理发货工单" : "新建出库单"}
+          description={
+            isClerk
+              ? "搜款 → 每个商品填这个买家的收货信息 → 提交给仓管。提交后库存不动，仓管确认才扣。"
+              : "搜款 → 每个商品填这个买家的收货信息 → 保存。一行就是一个包裹，打印时按地址拆开。"
+          }
+        />
+      )}
 
       {error ? <InlineError>{error}</InlineError> : null}
 

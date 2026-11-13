@@ -39,7 +39,7 @@ export function StatTile({
         <span className="truncate pt-0.5 text-[12px] font-medium text-ink-2">{label}</span>
         {icon ? (
           <span
-            className={`-mr-0.5 -mt-0.5 flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-[8px] ${TONE_ICON[tone]}`}
+            className={`-mr-0.5 -mt-0.5 flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-[5px] ${TONE_ICON[tone]}`}
           >
             {icon}
           </span>
@@ -64,7 +64,7 @@ export function StatTile({
     </>
   );
 
-  const base = `card theme-surface block px-4 py-3.5 transition-all duration-200 ${
+  const base = `card theme-surface block px-3.5 py-3 transition-all duration-200 ${
     href ? "hover:brightness-[1.03] active:scale-[0.995]" : ""
   }`;
 

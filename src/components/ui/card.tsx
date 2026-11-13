@@ -20,7 +20,7 @@ export function Card({
   padded?: boolean;
 }) {
   return (
-    <section className={`card ${padded ? "p-5" : ""} ${className}`}>{children}</section>
+    <section className={`card ${padded ? "p-3.5 sm:p-4" : ""} ${className}`}>{children}</section>
   );
 }
 
@@ -38,10 +38,10 @@ export function CardHeader({
 }) {
   return (
     <div
-      className={`flex flex-wrap items-center gap-3 border-b border-line/70 px-4 py-3 ${className}`}
+      className={`flex flex-wrap items-center gap-3 border-b border-line px-3.5 py-2.5 ${className}`}
     >
       <div className="min-w-0 flex-1">
-        <h2 className="text-[13.5px] font-semibold tracking-[-0.01em] text-ink">{title}</h2>
+        <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-ink">{title}</h2>
         {description ? (
           <p className="mt-0.5 text-[11.5px] leading-relaxed text-muted">{description}</p>
         ) : null}
@@ -59,5 +59,5 @@ export function CardWell({
   children: ReactNode;
   className?: string;
 }) {
-  return <div className={`well rounded-[12px] px-4 py-3 ${className}`}>{children}</div>;
+  return <div className={`well px-3.5 py-2.5 ${className}`}>{children}</div>;
 }

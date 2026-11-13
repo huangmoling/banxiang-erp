@@ -40,7 +40,7 @@ type Row = {
   picking: boolean;
 };
 
-export function ReturnForm({ meta }: { meta: ReturnMeta }) {
+export function ReturnForm({ meta, embedded = false }: { meta: ReturnMeta; embedded?: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const today = meta.today || todayDateOnly();
@@ -250,13 +250,15 @@ export function ReturnForm({ meta }: { meta: ReturnMeta }) {
   }
 
   return (
-    <div className="space-y-4">
-      <FormTitle
-        backHref="/returns"
-        backTitle="返回退货列表"
-        title="新建退货单"
-        description="先找到原出库单 → 在要退的行上填数量、选去向 → 保存。审核后库存才会动。"
-      />
+    <div className={embedded ? "flex min-h-full flex-col gap-4" : "space-y-4"}>
+      {embedded ? null : (
+        <FormTitle
+          backHref="/returns"
+          backTitle="返回退货列表"
+          title="新建退货单"
+          description="先找到原出库单 → 在要退的行上填数量、选去向 → 保存。审核后库存才会动。"
+        />
+      )}
 
       {error ? (
         <InlineError>{error}</InlineError>

@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, ClipboardCheck, Plus } from "lucide-react";
+import { ChevronRight, ClipboardCheck } from "lucide-react";
 import { ApiError, api } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/ui/page-header";
+import { NewDocButton } from "@/components/new-doc";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DataTable } from "@/components/ui/data-table";
@@ -84,10 +85,7 @@ export function StocktakesClient({
           </>
         }
         actions={
-          <Link href="/stocktakes/new" className="btn-primary btn-sm">
-            <Plus size={14} />
-            新建盘点单
-          </Link>
+          <NewDocButton kind="stocktakes" label="新建盘点单" />
         }
       />
 
@@ -154,10 +152,7 @@ export function StocktakesClient({
                 title="还没有盘点记录"
                 description="建议每月盘一次；先把主仓盘清，再盘次品区"
                 action={
-                  <Link href="/stocktakes/new" className="btn-primary btn-sm">
-                    <Plus size={14} />
-                    开一张盘点单
-                  </Link>
+                  <NewDocButton kind="stocktakes" label="开一张盘点单" />
                 }
               />
             )

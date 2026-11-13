@@ -14,33 +14,33 @@
 
 export const THEMES = [
   {
-    id: "graphite",
-    label: "晨雾",
-    /** 一句话说清它适合什么时候用，别让人靠猜 */
-    hint: "深色玻璃侧栏 · 浅色通透",
-    /** 色板预览的三个点：侧栏 / 画布 / 主色 */
-    swatch: ["#1e222d", "#eceff6", "#007aff"],
-    themeColor: "#eef1f7",
-  },
-  {
-    id: "lumen",
+    id: "paper",
     label: "素白",
-    hint: "全浅色 · 白天强光",
-    swatch: ["#ffffff", "#f8f9fc", "#007aff"],
-    themeColor: "#f5f7fa",
+    /** 一句话说清它适合什么时候用，别让人靠猜 */
+    hint: "暖米白纸 · 白天与打印",
+    /** 色板预览的三个点：导轨 / 画布 / 主色 */
+    swatch: ["#141A20", "#F2F1EE", "#12A594"],
+    themeColor: "#F2F1EE",
   },
   {
-    id: "obsidian",
+    id: "mist",
+    label: "晨雾",
+    hint: "冷调青灰 · 久看不累",
+    swatch: ["#0F1E26", "#E9EFF2", "#12A594"],
+    themeColor: "#E9EFF2",
+  },
+  {
+    id: "ink",
     label: "午夜",
-    hint: "全深色玻璃 · 夜班盯屏",
-    swatch: ["#0f1117", "#090b10", "#0a84ff"],
-    themeColor: "#090b10",
+    hint: "全局深色 · 夜里盘库",
+    swatch: ["#0B0F13", "#161D24", "#2BB3A3"],
+    themeColor: "#0B0F13",
   },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]["id"];
 
-export const DEFAULT_THEME: ThemeId = "graphite";
+export const DEFAULT_THEME: ThemeId = "paper";
 
 export const THEME_COOKIE = "suteng:theme";
 
@@ -63,21 +63,22 @@ export function themeMeta(id: ThemeId) {
  * 放在 React 的 useEffect 里已经晚了。
  *
  * 顺序：cookie（服务端也会读，保持一致）→ localStorage → 默认。
+ * 老版三套（graphite/lumen/obsidian）映射到新的三套，改版不掉用户的习惯。
  */
 export const THEME_INIT_SCRIPT = [
   "(function(){try{",
-  // cookie 名里带冒号，用字符串切分读，不构造 RegExp——
-  // 正则里那堆转义塞进模板字符串极易写错，且没必要。
-  'var C="' + THEME_COOKIE + '",D="' + DEFAULT_THEME + '",IDS=["graphite","lumen","obsidian"];',
+  'var C="' + THEME_COOKIE + '",D="' + DEFAULT_THEME + '",IDS=["paper","mist","ink"];',
+  'var MAP={graphite:"mist",lumen:"paper",obsidian:"ink"};',
   "function readCookie(n){var ps=document.cookie?document.cookie.split('; '):[];",
   "for(var i=0;i<ps.length;i++){if(ps[i].indexOf(n+'=')===0)return decodeURIComponent(ps[i].slice(n.length+1));}",
   "return null;}",
   "var t=readCookie(C);",
   "if(!t){try{t=localStorage.getItem(C);}catch(e){}}",
+  "if(MAP[t])t=MAP[t];",
   "if(IDS.indexOf(t)<0)t=D;",
   "var d=document.documentElement;d.setAttribute('data-theme',t);",
-  "var c=t==='obsidian'?'#090b10':(t==='lumen'?'#f5f7fa':'#eef1f7');",
-  "var mt=document.querySelector('meta[name=\"theme-color\"]');if(mt)mt.setAttribute('content',c);",
+  "var c=t==='ink'?'#0B0F13':(t==='mist'?'#E9EFF2':'#F2F1EE');",
+  'var mt=document.querySelector(\'meta[name="theme-color"]\');if(mt)mt.setAttribute("content",c);',
   "}catch(e){}})();",
 ].join("");
 

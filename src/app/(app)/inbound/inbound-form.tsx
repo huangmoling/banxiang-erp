@@ -45,7 +45,14 @@ type SkuOption = Omit<Line, "key" | "qty" | "productionDate">;
 let lineSeq = 0;
 const newKey = () => `l${++lineSeq}`;
 
-export function InboundForm({ meta }: { meta: InboundMeta }) {
+export function InboundForm({
+  meta,
+  embedded = false,
+}: {
+  meta: InboundMeta;
+  /** 在抽屉里渲染：不再重复画一遍页面抬头（抽屉头已经有标题） */
+  embedded?: boolean;
+}) {
   const router = useRouter();
   const toast = useToast();
   const today = meta.today || todayDateOnly();
@@ -266,13 +273,15 @@ export function InboundForm({ meta }: { meta: InboundMeta }) {
   }
 
   return (
-    <div className="space-y-4">
-      <FormTitle
-        backHref="/inbound"
-        backTitle="返回入库列表"
-        title="新建入库单"
-        description="搜名称或拼音首字母选款 → 填数量 → 保存。审核后库存立即增加。"
-      />
+    <div className={embedded ? "flex min-h-full flex-col gap-4" : "space-y-4"}>
+      {embedded ? null : (
+        <FormTitle
+          backHref="/inbound"
+          backTitle="返回入库列表"
+          title="新建入库单"
+          description="搜名称或拼音首字母选款 → 填数量 → 保存。审核后库存立即增加。"
+        />
+      )}
 
       {error ? <InlineError>{error}</InlineError> : null}
 

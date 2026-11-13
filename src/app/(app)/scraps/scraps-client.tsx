@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Plus, Search } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { NewDocButton } from "@/components/new-doc";
 import { ApiError, api } from "@/lib/api-client";
 import { DOC_STATUS_LABEL, DOC_STATUS_TONE, type ScrapListResult } from "@/modules/scrap/scrap.types";
 
@@ -68,10 +69,7 @@ export function ScrapsClient({
         title="报废与处置"
         description="次品区的货从这里走出去：转报废、线下出售、自行处理。系统不记价格，只记数量与去向。"
         actions={
-          <Link href="/scraps/new" className="btn-primary btn-sm">
-            <Plus size={14} />
-            新建处置单
-          </Link>
+          <NewDocButton kind="scraps" label="新建处置单" />
         }
       />
 

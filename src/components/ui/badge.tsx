@@ -6,50 +6,32 @@ import type { ReactNode } from "react";
  *   ok   = 已生效 / 已完成    warn  = 要注意（待发、待检）
  *   danger = 有问题（缺货、报废）  custom = 定制款（按件追踪）
  *
- * 定制紫是这套系统独有的语义：定制件一物一码、退回不可二次销售，
- * 它不该和普通款挤在同一个灰标签里。
+ * 形态是「圆点 + 文字」，不是彩色胶囊：一屏表格里几十个胶囊会显得软塌塌，
+ * 而颜色一多就没人再看颜色。圆点小到不抢视线，但足够在长表格里定位。
  *
- * 形状上不用全圆胶囊——表格里几十个胶囊会显得软塌塌。
- * 6px 小圆角 + 半档字号，密度更接近 macOS 的标签。
+ * 定制紫例外——它是"属性"不是"状态"，保留一块极淡的底，成组时更容易认出来。
+ *
+ * 颜色写在 globals.css 的 .badge-* 里（用 CSS 变量），因为单据详情头是深色的，
+ * 同一枚徽章在深底上要换一套亮色（.on-deep 覆盖），用 Tailwind 类做不到。
  */
 export type BadgeTone = "neutral" | "brand" | "ok" | "warn" | "danger" | "custom";
 
-const TONE: Record<BadgeTone, string> = {
-  neutral: "bg-ink/[0.07] text-ink-2",
-  brand: "bg-brand/12 text-brand-ink",
-  ok: "bg-ok/12 text-ok",
-  warn: "bg-warn/14 text-warn",
-  danger: "bg-danger/12 text-danger",
-  custom: "bg-custom/12 text-custom",
-};
-
-const DOT: Record<BadgeTone, string> = {
-  neutral: "bg-muted",
-  brand: "bg-brand",
-  ok: "bg-ok",
-  warn: "bg-warn",
-  danger: "bg-danger",
-  custom: "bg-custom",
-};
-
 export function Badge({
   tone = "neutral",
-  dot = false,
+  dot = true,
   children,
   title,
 }: {
   tone?: BadgeTone;
-  /** 极小状态下加个圆点，比纯文字更容易在长表格里扫到 */
+  /** 默认带圆点；纯文字标签传 false */
   dot?: boolean;
   children: ReactNode;
   title?: string;
 }) {
+  const chip = tone === "custom";
   return (
-    <span
-      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-[6px] px-1.5 text-[11px] font-medium leading-[19px] ${TONE[tone]}`}
-      title={title}
-    >
-      {dot ? <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT[tone]}`} /> : null}
+    <span className={`badge badge-${tone} ${chip ? "badge-chip" : ""}`} title={title}>
+      {dot ? <span className="badge-dot" /> : null}
       {children}
     </span>
   );

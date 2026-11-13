@@ -1,73 +1,53 @@
 import Link from "next/link";
-import {
-  ArrowDownToLine,
-  ArrowRight,
-  ArrowUpFromLine,
-  BellRing,
-  Boxes,
-  CircleAlert,
-  Package,
-  Palette,
-  Tags,
-  Undo2,
-} from "lucide-react";
+import { ArrowRight, BellRing, Package, Trash2, TriangleAlert, Warehouse } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { formatDateTime } from "@/lib/date";
 import { dashboardService } from "@/modules/dashboard/dashboard.service";
 import { outboundService } from "@/modules/outbound/outbound.service";
-import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardHeader } from "@/components/ui/card";
-import { StatTile } from "@/components/ui/stat-tile";
-import { Badge } from "@/components/ui/badge";
-import { EmptyState } from "@/components/ui/empty-state";
+import { WorkbenchTiles } from "./workbench-tiles";
 
 export const dynamic = "force-dynamic";
 
 /**
- * 商品概况里的小格。
+ * 工作台 —— 三态里最深的一态。
  *
- * 在玻璃卡片里再放四块小玻璃会糊成一片，所以这里用"井"（.well）：
- * 比卡片沉一层、更透、不模糊。mac 的偏好面板就是这么分层的。
+ * 整块深色画布 + 八个纯色磁贴。为什么深：这是"开始干活"的地方，
+ * 和翻单据的浅色页面拉开距离，人一眼就知道自己在哪。
+ *
+ * 磁贴只做两件事：说清"这是干嘛的"，给一个"现在有多少"。
+ * 不放图标底板、不放渐变、不放阴影——色块本身就是信息（类别），
+ * 状态（青/赭/红/灰圆点）永远不进磁贴，两套色板不混用。
  */
-function MiniStat({
+
+/** 深色面上的数字格：标签在上、数字在下，靠 1px 竖线分格，不画卡片 */
+function Cell({
   label,
   value,
   unit,
-  icon: Icon,
   href,
-  tone = "neutral",
 }: {
   label: string;
   value: number;
   unit: string;
-  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
   href?: string;
-  tone?: "neutral" | "warn";
 }) {
-  const inner = (
-    <div className="well flex items-center gap-2.5 rounded-[11px] px-3 py-2.5 transition-colors hover:border-line">
-      <div
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] ${
-          tone === "warn" ? "bg-warn/14 text-warn" : "bg-ink/[0.06] text-ink-2"
-        }`}
-      >
-        <Icon size={14} strokeWidth={1.8} />
-      </div>
-      <div className="min-w-0">
-        <div className="truncate text-[11px] leading-tight text-muted">{label}</div>
-        <div className="tnum mt-0.5 text-[15px] font-semibold leading-tight tracking-[-0.02em] text-ink">
+  const body = (
+    <>
+      <div className="text-[11px] leading-tight text-deep-muted">{label}</div>
+      <div className="mt-1.5 flex items-baseline gap-1">
+        <span className="tnum text-[21px] font-semibold leading-none tracking-[-0.02em] text-deep-fg">
           {value}
-          <span className="ml-0.5 text-[10.5px] font-normal text-muted">{unit}</span>
-        </div>
+        </span>
+        <span className="text-[10.5px] text-deep-muted">{unit}</span>
       </div>
-    </div>
+    </>
   );
   return href ? (
-    <Link href={href} className="block">
-      {inner}
+    <Link href={href} className="block px-3 py-2.5 transition-colors hover:bg-white/[0.03]">
+      {body}
     </Link>
   ) : (
-    inner
+    <div className="px-3 py-2.5">{body}</div>
   );
 }
 
@@ -89,207 +69,151 @@ export default async function DashboardPage() {
     hour < 6 ? "夜深了" : hour < 11 ? "早上好" : hour < 14 ? "中午好" : hour < 18 ? "下午好" : "晚上好";
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title={`${greet}，${user?.displayName ?? "你好"}`}
-        meta={today}
-        actions={
-          <>
-            <Link href="/inbound/new" className="btn-ghost">
-              <ArrowDownToLine size={14} strokeWidth={2} />
-              登记入库
-            </Link>
-            <Link href="/outbound/new" className="btn-primary">
-              登记出库
-              <ArrowRight size={14} strokeWidth={2.2} />
-            </Link>
-          </>
-        }
-      />
+    <div className="px-3 py-4 sm:px-5 sm:py-5">
+      {/* 抬头：只留问候 + 日期，深色画布上再多一行字都是噪音 */}
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h1 className="text-[21px] font-semibold leading-tight tracking-[-0.015em] text-deep-fg">
+            {greet}，{user?.displayName ?? "你好"}
+          </h1>
+          <p className="mt-1 text-[11.5px] text-deep-muted">
+            {today}
+            {pending.packages > 0 ? ` · ${pending.packages} 个包裹等着发` : " · 暂时没有待发的包裹"}
+          </p>
+        </div>
+        <Link
+          href="/reports"
+          className="flex items-center gap-1 text-[11.5px] text-deep-fg2 transition-colors hover:text-deep-fg"
+        >
+          看报表
+          <ArrowRight size={12} strokeWidth={2.2} />
+        </Link>
+      </div>
 
-      {/*
-        待发货：整个首页最该被看见的一件事。
-        做成一块"染了红的玻璃"——不是alert条、不是红色卡片阵列，
-        是整页唯一带情绪的表面。数字 30px 当主角，其余全是注脚。
-        用包裹数而不是张数：一单可能装几十个买家地址，张数会严重低估工作量。
-      */}
+      {/* 数据带：四个数字一行，竖线分格。数字是"盘子有多大"，磁贴是"能干什么" */}
+      <div className="mb-2 grid grid-cols-2 divide-x divide-white/[0.07] overflow-hidden rounded-[6px] border border-white/[0.07] bg-deep-card sm:grid-cols-4 sm:divide-x">
+        <Cell label="当前在库" value={data.stock.onHand} unit="件" href="/inventory" />
+        <Cell label="本月入库" value={data.stock.inboundThisMonth} unit="件" />
+        <Cell label="本月出库" value={data.stock.outboundThisMonth} unit="件" />
+        <Cell label="本月退货" value={data.stock.returnedThisMonth} unit="件" />
+      </div>
+
+      {/* 待发货：整个工作台唯一带情绪的一条，只在真有活时出现 */}
       {pending.packages > 0 ? (
-        <Link href="/outbound?status=pending" className="group block">
-          <div className="card relative overflow-hidden border-danger/25 bg-danger/[0.07] px-4 py-3.5 transition-all duration-200 hover:bg-danger/[0.1]">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-danger/14 text-danger">
-                <BellRing size={17} strokeWidth={1.9} />
-              </div>
-
-              <div className="flex shrink-0 items-baseline gap-1.5">
-                <span className="tnum text-[30px] font-semibold leading-none tracking-[-0.03em] text-danger">
-                  {pending.packages}
-                </span>
-                <span className="text-[12px] font-medium text-danger/90">个包裹待发</span>
-              </div>
-
-              <div className="h-8 w-px shrink-0 bg-danger/20" />
-
-              <div className="min-w-[160px] flex-1 text-[11.5px] leading-relaxed text-ink-2">
-                共 {pending.total} 张单 · 今天提交 {pending.today} 个
-                {pending.overdue > 0 ? (
-                  <span className="ml-1 font-medium text-danger">
-                    隔天没发 {pending.overdue} 个
-                  </span>
-                ) : null}
-                {pending.oldestAt ? ` · 最早一张 ${formatDateTime(pending.oldestAt)}` : ""}
-              </div>
-
-              <span className="flex shrink-0 items-center gap-1 text-[12px] font-medium text-danger">
-                去处理
-                <ArrowRight
-                  size={13}
-                  strokeWidth={2.4}
-                  className="transition-transform duration-200 group-hover:translate-x-0.5"
-                />
-              </span>
-            </div>
-          </div>
+        <Link
+          href="/outbound?status=pending"
+          className="group mb-2 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[6px] border border-danger/35 bg-danger/[0.16] px-3 py-2.5 transition-colors hover:bg-danger/[0.22]"
+        >
+          <BellRing size={14} strokeWidth={2} className="shrink-0 text-[#E8907F]" />
+          <span className="tnum text-[17px] font-semibold leading-none text-[#F0B4A8]">
+            {pending.packages}
+          </span>
+          <span className="text-[11.5px] text-[#E3AFA4]">个包裹待发</span>
+          <span className="text-[11px] text-white/45">
+            {pending.total} 张单
+            {pending.today > 0 ? ` · 今天提交 ${pending.today} 个` : ""}
+            {pending.overdue > 0 ? ` · 隔天没发 ${pending.overdue} 个` : ""}
+            {pending.oldestAt ? ` · 最早 ${formatDateTime(pending.oldestAt)}` : ""}
+          </span>
+          <span className="ml-auto flex items-center gap-1 text-[11.5px] text-[#F0B4A8]">
+            去处理
+            <ArrowRight size={12} strokeWidth={2.4} className="transition-transform group-hover:translate-x-0.5" />
+          </span>
         </Link>
       ) : null}
 
-      {/* 四个核心数字 */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile
-          label="当前在库"
-          value={data.stock.onHand}
-          unit="件"
-          icon={<Boxes size={14} strokeWidth={1.9} />}
-          hint={
-            data.stock.defective > 0
-              ? `不含次品区（次品区 ${data.stock.defective} 件）`
-              : "不含次品区"
-          }
-          href="/inventory"
-        />
-        <StatTile
-          label="本月入库"
-          value={data.stock.inboundThisMonth}
-          unit="件"
-          icon={<ArrowDownToLine size={14} strokeWidth={1.9} />}
-          hint="按业务日期统计到本月"
-        />
-        <StatTile
-          label="本月出库"
-          value={data.stock.outboundThisMonth}
-          unit="件"
-          icon={<ArrowUpFromLine size={14} strokeWidth={1.9} />}
-          hint="已审核的出库单"
-        />
-        <StatTile
-          label="本月退货"
-          value={data.stock.returnedThisMonth}
-          unit="件"
-          icon={<Undo2 size={14} strokeWidth={1.9} />}
-          hint="含次品区与报废"
-        />
-      </div>
+      {/* 八个磁贴（客户端组件：上排四个直接开抽屉，下排四个跳列表） */}
+      <WorkbenchTiles
+        pendingPackages={pending.packages}
+        productsTotal={data.products.total}
+        onHand={data.stock.onHand}
+        defective={data.stock.defective}
+      />
 
-      {!data.flowReady ? (
-        <div className="card flex items-start gap-2.5 border-warn/30 bg-warn/[0.08] px-3.5 py-3 text-[12px] leading-5 text-warn">
-          <CircleAlert size={15} strokeWidth={2} className="mt-0.5 shrink-0" />
-          <div>
-            上面四个数字目前都是 0 —— 出入库流水还没接入，这是第一阶段的正常状态。
-            入库功能上线后，这里会自动开始统计。
+      {/* 下半区：最近操作 + 待打理的事 */}
+      <div className="mt-2 grid gap-2 lg:grid-cols-[1.55fr_1fr]">
+        <section className="overflow-hidden rounded-[6px] border border-white/[0.07] bg-deep-card">
+          <div className="flex items-center justify-between border-b border-white/[0.06] px-3 py-2">
+            <h2 className="text-[12px] font-medium text-deep-fg">最近操作</h2>
+            <span className="text-[10.5px] text-deep-muted">{data.recent.length} 条</span>
           </div>
-        </div>
-      ) : null}
-
-      <div className="grid items-start gap-3.5 lg:grid-cols-[1.34fr_1fr]">
-        <Card>
-          <CardHeader
-            title="商品概况"
-            description="一个产品下按颜色分行，一色一个 SKU"
-            actions={
-              <Link
-                href="/products"
-                className="flex items-center gap-1 text-[12px] font-medium text-brand-ink hover:underline"
-              >
-                查看全部 <ArrowRight size={12} strokeWidth={2.2} />
-              </Link>
-            }
-          />
-          <div className="p-3.5">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
-              <MiniStat
-                label="产品数"
-                value={data.products.total}
-                unit="款"
-                icon={Package}
-                href="/products"
-              />
-              <MiniStat
-                label="颜色行（SKU）"
-                value={data.products.skuTotal}
-                unit="个"
-                icon={Palette}
-              />
-              <MiniStat label="分类" value={data.products.categories} unit="个" icon={Tags} />
-              <MiniStat
-                label="待完善"
-                value={data.products.pending}
-                unit="款"
-                icon={CircleAlert}
-                href="/products?status=pending"
-                tone={data.products.pending > 0 ? "warn" : "neutral"}
-              />
-            </div>
-
-            {data.products.pending > 0 ? (
-              <div className="mt-2.5 rounded-[11px] bg-warn/[0.1] px-3 py-2.5 text-[11.5px] leading-5 text-ink-2">
-                有 <b className="tnum text-warn">{data.products.pending}</b> 款产品还没传图片。
-                图片只影响找货时的识别速度，不影响入库，有空再补即可。
-              </div>
-            ) : (
-              <div className="mt-2.5 rounded-[11px] bg-ok/[0.1] px-3 py-2.5 text-[11.5px] leading-5 text-ink-2">
-                产品档案都齐了。接下来可以开始登记入库。
-              </div>
-            )}
-          </div>
-        </Card>
-
-        <Card>
-          <CardHeader
-            title="最近操作"
-            actions={<Badge tone="neutral">{data.recent.length} 条</Badge>}
-          />
           {data.recent.length === 0 ? (
-            <EmptyState
-              compact
-              icon={<Boxes size={18} strokeWidth={1.7} />}
-              title="还没有操作记录"
-              description="建一个产品、登一张入库单，这里就会开始记录。"
-              action={
-                <Link href="/products/new" className="btn-ghost btn-sm">
-                  新建产品
-                </Link>
-              }
-            />
+            <div className="px-3 py-10 text-center text-[11.5px] text-deep-muted">
+              还没有操作记录。建一个产品、登一张入库单，这里就会开始记。
+            </div>
           ) : (
-            <ul className="px-3.5 py-2.5">
-              {data.recent.map((r, i) => (
-                <li key={r.id} className="relative flex gap-2.5 pb-2.5 last:pb-0">
-                  {/* 时间轴：竖线 + 点，比一列孤立的圆点更像"发生过什么" */}
-                  {i < data.recent.length - 1 ? (
-                    <span className="absolute left-[2.5px] top-3 h-full w-px bg-line" />
-                  ) : null}
-                  <span className="relative mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full bg-muted/50 ring-2 ring-card/0" />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[12px] leading-snug text-ink">{r.summary}</div>
-                    <div className="mt-0.5 text-[10.5px] text-muted">
-                      {r.actor} · {formatRelative(r.at)}
-                    </div>
-                  </div>
+            <ul>
+              {data.recent.map((r) => (
+                <li
+                  key={r.id}
+                  className="flex items-center gap-2.5 border-b border-white/[0.05] px-3 py-2 last:border-b-0"
+                >
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white/25" />
+                  <span className="min-w-0 flex-1 truncate text-[12px] text-deep-fg2">
+                    {r.summary}
+                  </span>
+                  <span className="shrink-0 text-[10.5px] text-deep-muted">
+                    {r.actor} · {formatRelative(r.at)}
+                  </span>
                 </li>
               ))}
             </ul>
           )}
-        </Card>
+        </section>
+
+        <section className="overflow-hidden rounded-[6px] border border-white/[0.07] bg-deep-card">
+          <div className="border-b border-white/[0.06] px-3 py-2">
+            <h2 className="text-[12px] font-medium text-deep-fg">待打理</h2>
+          </div>
+          <div className="divide-y divide-white/[0.05]">
+            <Link
+              href="/products?status=pending"
+              className="flex items-center gap-2 px-3 py-2.5 transition-colors hover:bg-white/[0.03]"
+            >
+              <Package size={13} strokeWidth={1.9} className="shrink-0 text-deep-muted" />
+              <span className="min-w-0 flex-1 text-[11.5px] text-deep-fg2">档案待完善</span>
+              <span className="tnum text-[12px] font-medium text-deep-fg">
+                {data.products.pending}
+              </span>
+              <span className="text-[10.5px] text-deep-muted">款</span>
+            </Link>
+            <Link
+              href="/defective"
+              className="flex items-center gap-2 px-3 py-2.5 transition-colors hover:bg-white/[0.03]"
+            >
+              <TriangleAlert size={13} strokeWidth={1.9} className="shrink-0 text-deep-muted" />
+              <span className="min-w-0 flex-1 text-[11.5px] text-deep-fg2">次品待处置</span>
+              <span className="tnum text-[12px] font-medium text-deep-fg">
+                {data.stock.defective}
+              </span>
+              <span className="text-[10.5px] text-deep-muted">件</span>
+            </Link>
+            <Link
+              href="/scraps"
+              className="flex items-center gap-2 px-3 py-2.5 transition-colors hover:bg-white/[0.03]"
+            >
+              <Trash2 size={13} strokeWidth={1.9} className="shrink-0 text-deep-muted" />
+              <span className="min-w-0 flex-1 text-[11.5px] text-deep-fg2">报废处置</span>
+              <ArrowRight size={12} className="text-deep-muted" />
+            </Link>
+            <Link
+              href="/products"
+              className="flex items-center gap-2 px-3 py-2.5 transition-colors hover:bg-white/[0.03]"
+            >
+              <Warehouse size={13} strokeWidth={1.9} className="shrink-0 text-deep-muted" />
+              <span className="min-w-0 flex-1 text-[11.5px] text-deep-fg2">颜色行（SKU）</span>
+              <span className="tnum text-[12px] font-medium text-deep-fg">
+                {data.products.skuTotal}
+              </span>
+              <span className="text-[10.5px] text-deep-muted">个</span>
+            </Link>
+          </div>
+          {!data.flowReady ? (
+            <div className="border-t border-white/[0.06] px-3 py-2 text-[10.5px] leading-relaxed text-deep-muted">
+              出入库流水还没接入时，上面这些数字都会是 0，属正常。
+            </div>
+          ) : null}
+        </section>
       </div>
     </div>
   );

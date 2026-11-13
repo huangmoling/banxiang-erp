@@ -20,7 +20,7 @@ export function ListToolbar({
   filters?: ReactNode;
 }) {
   return (
-    <div className="card flex flex-wrap items-center gap-2 p-1.5">
+    <div className="card flex flex-wrap items-center gap-2 p-2">
       <div className="min-w-[220px] flex-1">{search}</div>
       {extra}
       {filters}
@@ -46,7 +46,7 @@ export function SearchBox({
         className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted"
       />
       <input
-        className="input h-[34px] py-0 pl-8 text-[12.5px]"
+        className="input h-[32px] py-0 pl-8 text-[12.5px]"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -86,7 +86,7 @@ export function SegmentedFilter<T extends string>({
 }) {
   return (
     <div
-      className="flex items-center gap-[2px] rounded-[9px] bg-ink/[0.06] p-[3px]"
+      className="flex items-center gap-[2px] rounded-[6px] bg-sunken p-[2px]"
       role="group"
     >
       {options.map((o) => {
@@ -100,9 +100,9 @@ export function SegmentedFilter<T extends string>({
             type="button"
             aria-pressed={active}
             onClick={() => onChange(o.value)}
-            className={`inline-flex items-center rounded-[7px] px-2.5 py-[3px] text-[12px] whitespace-nowrap transition-all duration-150 ${
+            className={`inline-flex items-center rounded-[4px] px-2.5 py-[4px] text-[12px] whitespace-nowrap transition-all duration-150 ${
               active
-                ? "bg-card font-medium text-ink shadow-[0_1px_2px_rgba(16,22,40,0.14),0_0_0_0.5px_rgba(16,22,40,0.04)]"
+                ? "bg-card font-medium text-ink shadow-[0_1px_2px_rgba(30,28,20,0.1)]"
                 : "text-ink-2 hover:text-ink"
             }`}
           >
@@ -145,7 +145,7 @@ export function NoticeBar({
 
   return (
     <div
-      className={`flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-[12px] px-3.5 py-2.5 text-[12px] ${cls}`}
+      className={`flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-[6px] px-3 py-2 text-[12px] ${cls}`}
     >
       <AlertTriangle size={13} strokeWidth={2.2} className="shrink-0" />
       <div className="min-w-0 flex-1">{children}</div>
@@ -192,7 +192,7 @@ export function Pagination({
   const nums = pageWindow(page, totalPages);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line/70 px-3 py-2 text-[12px] text-muted">
+    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-3 py-2 text-[12px] text-muted">
       <span className="tnum">
         共 <span className="font-medium text-ink-2">{total}</span> {unit}
       </span>

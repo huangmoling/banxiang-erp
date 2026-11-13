@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, Palette } from "lucide-react";
-import { DEFAULT_THEME, THEMES, applyTheme, type ThemeId } from "@/lib/theme";
+import { DEFAULT_THEME, THEMES, applyTheme, isThemeId, type ThemeId } from "@/lib/theme";
 
 /**
  * 主题切换器。
@@ -13,7 +13,7 @@ import { DEFAULT_THEME, THEMES, applyTheme, type ThemeId } from "@/lib/theme";
  * 默认值先取 DEFAULT_THEME 再在 useEffect 里同步真实值：
  * 服务端不知道用户选了哪套，直接读 document 会导致 hydration mismatch。
  */
-export function ThemeSwitcher() {
+export function ThemeSwitcher({ tone = "dark" }: { tone?: "dark" | "light" }) {
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState<ThemeId>(DEFAULT_THEME);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -21,7 +21,7 @@ export function ThemeSwitcher() {
   // 同步首帧脚本已经设好的值
   useEffect(() => {
     const cur = document.documentElement.getAttribute("data-theme");
-    if (cur === "graphite" || cur === "lumen" || cur === "obsidian") setCurrent(cur);
+    if (isThemeId(cur)) setCurrent(cur);
   }, []);
 
   // 点外面 / 按 Esc 关掉
@@ -56,10 +56,14 @@ export function ThemeSwitcher() {
         aria-expanded={open}
         aria-label="切换主题"
         title="切换主题"
-        className={`flex h-7 w-7 items-center justify-center rounded-[8px] transition-colors ${
-          open
-            ? "bg-brand/14 text-brand-ink"
-            : "text-muted hover:bg-ink/[0.06] hover:text-ink"
+        className={`flex h-7 w-7 items-center justify-center rounded-[5px] transition-colors ${
+          tone === "dark"
+            ? open
+              ? "bg-white/10 text-deep-fg"
+              : "text-deep-fg2 hover:bg-white/10 hover:text-deep-fg"
+            : open
+              ? "bg-ink/[0.07] text-ink"
+              : "text-muted hover:bg-ink/[0.06] hover:text-ink"
         }`}
       >
         <Palette size={15} strokeWidth={1.9} />
@@ -69,7 +73,7 @@ export function ThemeSwitcher() {
         <div
           role="listbox"
           aria-label="主题"
-          className="sheet-in glass absolute right-0 top-9 z-50 w-[236px] overflow-hidden rounded-[14px] p-1.5"
+          className="sheet-in absolute right-0 top-9 z-50 w-[236px] overflow-hidden rounded-card border border-line bg-card p-1.5 shadow-pop"
         >
           <div className="px-2 pb-1.5 pt-1 text-[10px] font-semibold tracking-[0.08em] text-muted">
             界面主题
@@ -83,11 +87,11 @@ export function ThemeSwitcher() {
                 role="option"
                 aria-selected={active}
                 onClick={() => pick(t.id)}
-                className={`flex w-full items-center gap-2.5 rounded-[9px] px-2 py-[7px] text-left transition-colors ${
-                  active ? "bg-brand/12" : "hover:bg-ink/[0.06]"
+                className={`flex w-full items-center gap-2.5 rounded-[5px] px-2 py-[7px] text-left transition-colors ${
+                  active ? "bg-brand/10" : "hover:bg-sunken"
                 }`}
               >
-                <span className="flex shrink-0 overflow-hidden rounded-[5px] shadow-[0_0_0_1px_rgba(0,0,0,0.08)]">
+                <span className="flex shrink-0 overflow-hidden rounded-[3px] shadow-[0_0_0_1px_rgba(0,0,0,0.12)]">
                   {t.swatch.map((c) => (
                     <span key={c} className="h-5 w-[7px]" style={{ background: c }} />
                   ))}

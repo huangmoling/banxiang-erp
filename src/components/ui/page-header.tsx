@@ -21,14 +21,14 @@ export function PageHeader({
   meta?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+    <div className="mb-3.5 flex flex-wrap items-end justify-between gap-x-4 gap-y-2.5">
       <div className="min-w-0">
         <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
           <h1 className="text-display font-semibold text-ink">{title}</h1>
           {meta ? <span className="text-[12px] text-muted">{meta}</span> : null}
         </div>
         {description ? (
-          <p className="mt-1.5 max-w-[62ch] text-[12.5px] leading-relaxed text-ink-2">
+          <p className="mt-1 max-w-[64ch] text-[12px] leading-relaxed text-ink-2">
             {description}
           </p>
         ) : null}

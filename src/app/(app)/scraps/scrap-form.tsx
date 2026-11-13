@@ -30,11 +30,13 @@ export function ScrapForm({
   initialLocationId,
   presetSkuId,
   presetDisposition,
+  embedded = false,
 }: {
   meta: ScrapMeta;
   initialLocationId: string | null;
   presetSkuId: string | null;
   presetDisposition: Disposition | null;
+  embedded?: boolean;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -181,18 +183,20 @@ export function ScrapForm({
   const isDefective = stock?.locationType === "defective";
 
   return (
-    <div className="pb-24">
-      <div className="mb-4 flex items-center gap-3">
-        <Link href="/scraps" className="btn-ghost btn-sm" aria-label="返回">
-          <ArrowLeft size={14} />
-        </Link>
-        <div>
-          <h1 className="text-[19px] font-semibold text-ink">新建处置单</h1>
-          <p className="mt-0.5 text-[13px] text-muted">
-            只有填了数量的行才会被处理；没填的行留在原处不动。
-          </p>
+    <div className={embedded ? "flex min-h-full flex-col pb-24" : "pb-24"}>
+      {embedded ? null : (
+        <div className="mb-4 flex items-center gap-3">
+          <Link href="/scraps" className="btn-ghost btn-sm" aria-label="返回">
+            <ArrowLeft size={14} />
+          </Link>
+          <div>
+            <h1 className="text-[19px] font-semibold text-ink">新建处置单</h1>
+            <p className="mt-0.5 text-[13px] text-muted">
+              只有填了数量的行才会被处理；没填的行留在原处不动。
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="card mb-4 p-4">
         <div className="grid gap-4 sm:grid-cols-2">

@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowDownToLine, ChevronRight, Plus } from "lucide-react";
+import { ArrowDownToLine, ChevronRight } from "lucide-react";
 import { ApiError, api } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/ui/page-header";
+import { NewDocButton } from "@/components/new-doc";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DataTable } from "@/components/ui/data-table";
 import { DocStatusBadge } from "@/components/ui/doc-status";
@@ -82,10 +83,7 @@ export function InboundClient({
           </>
         }
         actions={
-          <Link href="/inbound/new" className="btn-primary btn-sm">
-            <Plus size={14} />
-            新建入库单
-          </Link>
+          <NewDocButton kind="inbound" label="新建入库单" />
         }
       />
 
@@ -146,10 +144,7 @@ export function InboundClient({
                 title="还没有入库记录"
                 description="工厂到货时开一张单，库存就有了"
                 action={
-                  <Link href="/inbound/new" className="btn-primary btn-sm">
-                    <Plus size={14} />
-                    登记第一张入库单
-                  </Link>
+                  <NewDocButton kind="inbound" label="登记第一张入库单" />
                 }
               />
             )

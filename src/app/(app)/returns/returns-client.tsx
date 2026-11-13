@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Plus, Undo2 } from "lucide-react";
+import { ChevronRight, Undo2 } from "lucide-react";
 import { ApiError, api } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/ui/page-header";
+import { NewDocButton } from "@/components/new-doc";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DataTable } from "@/components/ui/data-table";
 import { DocStatusBadge } from "@/components/ui/doc-status";
@@ -82,10 +83,7 @@ export function ReturnsClient({
           </>
         }
         actions={
-          <Link href="/returns/new" className="btn-primary btn-sm">
-            <Plus size={14} />
-            新建退货单
-          </Link>
+          <NewDocButton kind="returns" label="新建退货单" />
         }
       />
 
@@ -152,10 +150,7 @@ export function ReturnsClient({
                 title="还没有退货记录"
                 description="客户退回货时开一张单，先选原出库单"
                 action={
-                  <Link href="/returns/new" className="btn-primary btn-sm">
-                    <Plus size={14} />
-                    登记第一张退货单
-                  </Link>
+                  <NewDocButton kind="returns" label="登记第一张退货单" />
                 }
               />
             )

@@ -1,17 +1,17 @@
 import type { Config } from "tailwindcss";
 
 /**
- * 视觉规范 v2（macOS 通透层叠）
+ * 视觉规范 v3（致远范式 · 三态）
  * ----------------------------------------------------------------------------
  * 颜色一律走 CSS 变量，定义在 src/app/globals.css。
- * 三套主题（graphite / lumen / obsidian）只换变量值，这里不写死任何 hex——
+ * 三套主题（paper / mist / ink）只换变量值，这里不写死任何 hex——
  * 一旦这里写了具体颜色，主题切换就会破，页面里也会重新长回硬编码。
  *
  * 变量值是 "R G B" 三元组，包成 rgb(... / <alpha-value>) 之后
- * bg-canvas/95、border-danger/40 这类透明度修饰符仍然可用。
+ * bg-card/95、border-danger/40 这类透明度修饰符仍然可用。
  *
- * 圆角只有两档：card 16px（表面）、field 10px（控件）。
- * 不再出现 rounded-lg/md 混用——那是上一版"模板味"的来源之一。
+ * 圆角只有两档：card 10px（纸面）、field 6px（控件）。
+ * 深色面（导轨/顶栏/工作台）走 deep-*，三套主题里都是深的。
  */
 const v = (name: string) => `rgb(var(${name}) / <alpha-value>)`;
 
@@ -34,7 +34,7 @@ const config: Config = {
 
         brand: {
           DEFAULT: v("--c-brand"),
-          /** 实心按钮底：比 brand 略深，保证白字 ≥4.5:1 */
+          /** 实心按钮底：比 brand 深，保证白字 ≥5:1 */
           solid: v("--c-brand-solid"),
           soft: v("--c-brand-soft"),
           ink: v("--c-brand-ink"),
@@ -55,41 +55,49 @@ const config: Config = {
         },
         ok: { DEFAULT: v("--c-ok"), soft: v("--c-ok-soft") },
 
-        /* 侧栏自成一套：graphite/obsidian 深色玻璃，lumen 浅色玻璃 */
+        /* 深色面：导轨、顶栏、工作台。三套主题里都保持深色 */
+        deep: {
+          DEFAULT: v("--c-deep-bg"),
+          card: v("--c-deep-card"),
+          raised: v("--c-deep-raised"),
+          line: v("--c-deep-line"),
+          fg: v("--c-deep-fg"),
+          fg2: v("--c-deep-fg2"),
+          muted: v("--c-deep-muted"),
+          active: v("--c-deep-active"),
+        },
+
+        /* 兼容旧命名（少量组件仍在用 sidebar-*），语义同 deep-* */
         sidebar: {
-          DEFAULT: v("--c-sidebar"),
-          fg: v("--c-sidebar-fg"),
-          muted: v("--c-sidebar-muted"),
-          line: v("--c-sidebar-line"),
-          hover: v("--c-sidebar-hover"),
-          active: v("--c-sidebar-active"),
-          "active-fg": v("--c-sidebar-active-fg"),
-          /** 侧栏里的主文字（品牌名、用户姓名）：深色主题白、浅色主题近黑 */
-          strong: v("--c-sidebar-strong"),
+          DEFAULT: v("--c-deep-bg"),
+          fg: v("--c-deep-fg2"),
+          muted: v("--c-deep-muted"),
+          line: v("--c-deep-line"),
+          hover: v("--c-deep-hover"),
+          active: v("--c-deep-active"),
+          "active-fg": v("--c-deep-fg"),
+          strong: v("--c-deep-fg"),
         },
       },
       borderRadius: {
-        /** 表面：卡片、表格、面板 */
-        card: "16px",
+        /** 表面：纸卡、表格、面板 */
+        card: "10px",
         /** 控件：按钮、输入框、下拉 */
-        field: "10px",
+        field: "6px",
       },
       boxShadow: {
-        card: "var(--glass-shadow)",
-        pop: "0 18px 48px -12px rgb(16 22 40 / 0.28), 0 4px 12px -4px rgb(16 22 40 / 0.16)",
+        card: "var(--shadow-card)",
+        pop: "var(--shadow-pop)",
       },
       fontSize: {
-        /**
-         * 数字块的主数字。macOS 的大数字是 semibold + 负字距，
-         * 靠字重和字距压出"精致"，不是靠字号大。
-         */
+        /** 数字块的主数字：靠字重和字距压出精密感，不靠字大 */
         num: ["30px", { lineHeight: "1", letterSpacing: "-0.025em" }],
-        /** 页面大标题 */
-        display: ["25px", { lineHeight: "1.15", letterSpacing: "-0.022em" }],
+        /** 页面大标题：21px 就够，再大就成了消费级产品 */
+        display: ["21px", { lineHeight: "1.25", letterSpacing: "-0.015em" }],
       },
       fontFamily: {
         /* 不自托管字体：客户内网部署，拿不到 CDN，中文字体包又太大。
-           继续用系统栈——macOS 上就是 SF Pro，Windows 上落到 Segoe UI。 */
+           继续用系统栈——macOS 上是 SF Pro，Windows 上落到 Segoe UI。 */
         sans: [
           "-apple-system",
           "BlinkMacSystemFont",
@@ -112,7 +120,6 @@ const config: Config = {
         ],
       },
       transitionTimingFunction: {
-        /** macOS 的默认缓动，比 ease 更"贴手" */
         mac: "cubic-bezier(0.32, 0.72, 0, 1)",
       },
     },

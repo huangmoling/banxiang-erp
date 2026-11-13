@@ -38,7 +38,7 @@ type RowState = {
   added?: boolean;
 };
 
-export function StocktakeForm({ meta }: { meta: StocktakeMeta }) {
+export function StocktakeForm({ meta, embedded = false }: { meta: StocktakeMeta; embedded?: boolean }) {
   const router = useRouter();
   const toast = useToast();
 
@@ -303,13 +303,15 @@ export function StocktakeForm({ meta }: { meta: StocktakeMeta }) {
   }
 
   return (
-    <div className="space-y-4">
-      <FormTitle
-        backHref="/stocktakes"
-        backTitle="返回盘点列表"
-        title="新建盘点单"
-        description="选仓位、定截止时点，系统把账面数列出来，你只管填实盘数。盘点期间照常发货。"
-      />
+    <div className={embedded ? "flex min-h-full flex-col gap-4" : "space-y-4"}>
+      {embedded ? null : (
+        <FormTitle
+          backHref="/stocktakes"
+          backTitle="返回盘点列表"
+          title="新建盘点单"
+          description="选仓位、定截止时点，系统把账面数列出来，你只管填实盘数。盘点期间照常发货。"
+        />
+      )}
 
       {/* 盘点范围 */}
       <section className="card p-4 sm:p-5">

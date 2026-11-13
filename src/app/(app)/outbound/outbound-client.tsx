@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowUpFromLine, ChevronRight, Plus } from "lucide-react";
+import { ArrowUpFromLine, ChevronRight } from "lucide-react";
 import { ApiError, api } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/ui/page-header";
+import { NewDocButton } from "@/components/new-doc";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DataTable } from "@/components/ui/data-table";
@@ -82,10 +83,7 @@ export function OutboundClient({
           </>
         }
         actions={
-          <Link href="/outbound/new" className="btn-primary btn-sm">
-            <Plus size={14} />
-            新建出库单
-          </Link>
+          <NewDocButton kind="outbound" label="新建出库单" />
         }
       />
 
@@ -180,10 +178,7 @@ export function OutboundClient({
                 title="还没有出库记录"
                 description="发货时开一张单，库存就减了"
                 action={
-                  <Link href="/outbound/new" className="btn-primary btn-sm">
-                    <Plus size={14} />
-                    登记第一张出库单
-                  </Link>
+                  <NewDocButton kind="outbound" label="登记第一张出库单" />
                 }
               />
             )
