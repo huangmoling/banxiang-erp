@@ -103,12 +103,24 @@ def main() -> int:
     remote_tar = "/home/%s/suteng-erp.tar.gz" % USER
     with r.sftp.file(remote_tar, "wb") as fh:
         fh.write(blob)
+    remote_size = r.sftp.stat(remote_tar).st_size
+    if remote_size != len(blob):
+        print(f"上传不完整：本地 {len(blob)} / 远端 {remote_size}，中止。", file=sys.stderr)
+        return 1
 
-    print("[3/4] 解包并重建镜像（首次或改依赖时会慢，改了代码通常 1~3 分钟）")
+    # tar -x 是覆盖，不会删掉「本地已删除、远端还在」的文件。
+    # 删过路由 / 改过文件名而不清理，远端会残留旧文件，next build 直接类型报错
+    # （典型：删掉 api/backups/openlist/ 后远端还留着，引用已删除的 service 方法）。
+    # 这些目录每次都由 tar 完整覆盖，先删后解是安全的；data 与 .env 不在此列。
+    prune = " ".join(
+        "%s/%s" % (REMOTE_DIR, item) for item in INCLUDE if (ROOT / item).is_dir()
+    )
+
+    print("[3/4] 清空待覆盖目录、解包并重建镜像（首次或改依赖时会慢，改了代码通常 1~3 分钟）")
     code = r.sudo(
-        "mkdir -p %s/data/uploads && tar -xzf %s -C %s && cd %s && "
+        "mkdir -p %s/data/uploads && rm -rf %s && tar -xzf %s -C %s && cd %s && "
         "DOCKER_BUILDKIT=1 COMPOSE_PROGRESS=plain docker compose build"
-        % (REMOTE_DIR, remote_tar, REMOTE_DIR, REMOTE_DIR)
+        % (REMOTE_DIR, prune, remote_tar, REMOTE_DIR, REMOTE_DIR)
     )
     if code != 0:
         print("构建失败，先看上面的报错。容器仍在跑旧版本。", file=sys.stderr)
