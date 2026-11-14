@@ -1,7 +1,6 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -17,7 +16,7 @@ import {
 } from "lucide-react";
 import { ApiError, api } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
-import { FormTitle } from "@/components/ui/doc";
+import { CancelButton, FormTitle } from "@/components/ui/doc";
 import type { ProductView } from "@/modules/product/product.types";
 import {
   LOCATION_TYPE_LABEL,
@@ -38,7 +37,16 @@ type RowState = {
   added?: boolean;
 };
 
-export function StocktakeForm({ meta, embedded = false }: { meta: StocktakeMeta; embedded?: boolean }) {
+export function StocktakeForm({
+  meta,
+  embedded = false,
+  onCancel,
+}: {
+  meta: StocktakeMeta;
+  embedded?: boolean;
+  /** 抽屉里点取消：直接关抽屉，而不是跳回同一个列表页 */
+  onCancel?: () => void;
+}) {
   const router = useRouter();
   const toast = useToast();
 
@@ -664,9 +672,7 @@ export function StocktakeForm({ meta, embedded = false }: { meta: StocktakeMeta;
           保存草稿不动库存；点「保存并生效」才按差异调整账。
         </p>
         <div className="flex gap-2">
-          <Link href="/stocktakes" className="btn-ghost">
-            取消
-          </Link>
+          <CancelButton href="/stocktakes" onCancel={onCancel} />
           <button
             type="button"
             className="btn-ghost"

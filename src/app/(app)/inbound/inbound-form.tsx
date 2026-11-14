@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -18,7 +17,7 @@ import {
 import { ApiError, api } from "@/lib/api-client";
 import { ProductThumb } from "@/components/product-thumb";
 import { Modal } from "@/components/ui/modal";
-import { FormActionBar, FormTitle, InlineError, RuleCard } from "@/components/ui/doc";
+import { CancelButton, FormActionBar, FormTitle, InlineError, RuleCard } from "@/components/ui/doc";
 import { useToast } from "@/components/ui/toast";
 import { todayDateOnly } from "@/lib/date";
 import { ProductForm } from "@/app/(app)/products/product-form";
@@ -48,10 +47,13 @@ const newKey = () => `l${++lineSeq}`;
 export function InboundForm({
   meta,
   embedded = false,
+  onCancel,
 }: {
   meta: InboundMeta;
   /** 在抽屉里渲染：不再重复画一遍页面抬头（抽屉头已经有标题） */
   embedded?: boolean;
+  /** 抽屉里点取消：直接关抽屉，而不是跳回同一个列表页 */
+  onCancel?: () => void;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -563,9 +565,7 @@ export function InboundForm({
           </>
         }
       >
-        <Link href="/inbound" className="btn-ghost">
-          取消
-        </Link>
+        <CancelButton href="/inbound" onCancel={onCancel} />
         <button
           type="button"
           className="btn-ghost"

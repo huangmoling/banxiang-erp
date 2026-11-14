@@ -106,19 +106,28 @@ function DocForm({
   data,
   role,
   embedded,
+  onCancel,
 }: {
   kind: DocKind;
   data: unknown;
   role: string;
   embedded: boolean;
+  onCancel: () => void;
 }) {
   switch (kind) {
     case "inbound":
-      return <InboundForm meta={data as InboundMeta} embedded={embedded} />;
+      return <InboundForm meta={data as InboundMeta} embedded={embedded} onCancel={onCancel} />;
     case "outbound":
-      return <OutboundForm meta={data as OutboundMeta} role={role} embedded={embedded} />;
+      return (
+        <OutboundForm
+          meta={data as OutboundMeta}
+          role={role}
+          embedded={embedded}
+          onCancel={onCancel}
+        />
+      );
     case "returns":
-      return <ReturnForm meta={data as ReturnMeta} embedded={embedded} />;
+      return <ReturnForm meta={data as ReturnMeta} embedded={embedded} onCancel={onCancel} />;
     case "scraps":
       return (
         <ScrapForm
@@ -127,10 +136,11 @@ function DocForm({
           presetSkuId={null}
           presetDisposition={null}
           embedded={embedded}
+          onCancel={onCancel}
         />
       );
     case "stocktakes":
-      return <StocktakeForm meta={data as StocktakeMeta} embedded={embedded} />;
+      return <StocktakeForm meta={data as StocktakeMeta} embedded={embedded} onCancel={onCancel} />;
   }
 }
 
@@ -203,7 +213,7 @@ function NewDocDrawer({ kind, onClose }: { kind: DocKind | null; onClose: () => 
           正在准备表单…
         </div>
       ) : (
-        <DocForm kind={kind} data={data} role={role} embedded />
+        <DocForm kind={kind} data={data} role={role} embedded onCancel={onClose} />
       )}
     </Drawer>
   );

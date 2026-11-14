@@ -260,6 +260,35 @@ export function FormTitle({
   );
 }
 
+/**
+ * 「取消」按钮。
+ *
+ * 整页建单时它是回列表的链接；抽屉里没有可跳的路径（列表就在下面一层），
+ * 必须换成回调——否则点了只是跳回同一页，抽屉纹丝不动。
+ */
+export function CancelButton({
+  href,
+  onCancel,
+  className = "btn-ghost",
+}: {
+  href: string;
+  onCancel?: () => void;
+  className?: string;
+}) {
+  if (onCancel) {
+    return (
+      <button type="button" onClick={onCancel} className={className}>
+        取消
+      </button>
+    );
+  }
+  return (
+    <Link href={href} className={className}>
+      取消
+    </Link>
+  );
+}
+
 /** 表单校验错误。放在页头下面，不弹窗——错误要跟出错的地方同屏 */
 export function InlineError({ children }: { children: ReactNode }) {
   return (

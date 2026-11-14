@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { ApiError, api } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
-import { FormTitle, InlineError } from "@/components/ui/doc";
+import { CancelButton, FormTitle, InlineError } from "@/components/ui/doc";
 import { todayDateOnly } from "@/lib/date";
 import {
   CUSTOM_ALLOWED_DESTINATIONS,
@@ -40,7 +40,16 @@ type Row = {
   picking: boolean;
 };
 
-export function ReturnForm({ meta, embedded = false }: { meta: ReturnMeta; embedded?: boolean }) {
+export function ReturnForm({
+  meta,
+  embedded = false,
+  onCancel,
+}: {
+  meta: ReturnMeta;
+  embedded?: boolean;
+  /** 抽屉里点取消：直接关抽屉，而不是跳回同一个列表页 */
+  onCancel?: () => void;
+}) {
   const router = useRouter();
   const toast = useToast();
   const today = meta.today || todayDateOnly();
@@ -373,6 +382,13 @@ export function ReturnForm({ meta, embedded = false }: { meta: ReturnMeta; embed
             <Undo2 size={20} strokeWidth={1.6} className="text-muted" />
             <p className="text-[12.5px] text-muted">还没有选原单。搜到那张发货单，才能开始退</p>
           </div>
+
+          {/* 抽屉里没有页头的返回箭头，这一步也得留一个出口，不然只能点右上角 X */}
+          {embedded ? (
+            <div className="mt-4 flex justify-end border-t border-line pt-3">
+              <CancelButton href="/returns" onCancel={onCancel} />
+            </div>
+          ) : null}
         </section>
       ) : (
         <>
@@ -750,9 +766,7 @@ export function ReturnForm({ meta, embedded = false }: { meta: ReturnMeta; embed
                   : ""}
               </span>
               <div className="flex gap-2">
-                <Link href="/returns" className="btn-ghost">
-                  取消
-                </Link>
+                <CancelButton href="/returns" onCancel={onCancel} />
                 <button
                   type="button"
                   className="btn-ghost"

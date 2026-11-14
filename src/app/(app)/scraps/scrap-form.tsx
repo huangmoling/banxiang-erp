@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, PackageOpen } from "lucide-react";
 import { ApiError, api } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
+import { CancelButton } from "@/components/ui/doc";
 import {
   DISPOSITION_HINT,
   DISPOSITION_LABEL,
@@ -31,12 +32,15 @@ export function ScrapForm({
   presetSkuId,
   presetDisposition,
   embedded = false,
+  onCancel,
 }: {
   meta: ScrapMeta;
   initialLocationId: string | null;
   presetSkuId: string | null;
   presetDisposition: Disposition | null;
   embedded?: boolean;
+  /** 抽屉里点取消：直接关抽屉，而不是跳回同一个列表页 */
+  onCancel?: () => void;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -412,9 +416,7 @@ export function ScrapForm({
             onChange={(e) => setRemark(e.target.value)}
           />
           <div className="ml-auto flex gap-2">
-            <Link href="/scraps" className="btn-ghost btn-sm">
-              取消
-            </Link>
+            <CancelButton href="/scraps" onCancel={onCancel} className="btn-ghost btn-sm" />
             <button
               type="button"
               className="btn-ghost btn-sm"

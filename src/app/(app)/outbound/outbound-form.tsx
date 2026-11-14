@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -20,7 +19,7 @@ import {
 import { ApiError, api } from "@/lib/api-client";
 import { ProductThumb } from "@/components/product-thumb";
 import { Modal } from "@/components/ui/modal";
-import { FormTitle, InlineError } from "@/components/ui/doc";
+import { CancelButton, FormTitle, InlineError } from "@/components/ui/doc";
 import { useToast } from "@/components/ui/toast";
 import { todayDateOnly } from "@/lib/date";
 import type { ProductView } from "@/modules/product/product.types";
@@ -71,10 +70,13 @@ export function OutboundForm({
   meta,
   role,
   embedded = false,
+  onCancel,
 }: {
   meta: OutboundMeta;
   role: string;
   embedded?: boolean;
+  /** 抽屉里点取消：直接关抽屉，而不是跳回同一个列表页 */
+  onCancel?: () => void;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -901,9 +903,7 @@ export function OutboundForm({
             {customQty > 0 ? ` · 其中 ${customQty} 件按件出库` : ""}
           </span>
           <div className="flex flex-wrap justify-end gap-2">
-            <Link href="/outbound" className="btn-ghost">
-              取消
-            </Link>
+            <CancelButton href="/outbound" onCancel={onCancel} />
             {isClerk ? (
               // 内勤只有一个动作：把单子交给仓管。没有「存草稿」也没有「审核」，
               // 免得他存了一张自己忘了交，仓库那边永远等不到
