@@ -65,7 +65,7 @@ export function Drawer({
           <div className="min-w-0 flex-1">
             <h2 className="text-[15px] font-semibold leading-tight text-ink">{title}</h2>
             {subtitle ? (
-              <p className="mt-1 max-w-[68ch] text-[11.5px] leading-relaxed text-muted">{subtitle}</p>
+              <p className="mt-1 max-w-[88ch] text-[11.5px] leading-relaxed text-muted">{subtitle}</p>
             ) : null}
           </div>
           <button

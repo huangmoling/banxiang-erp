@@ -251,7 +251,7 @@ export function FormTitle({
             {title}
           </h1>
           {description ? (
-            <p className="mt-1.5 max-w-[62ch] text-[12px] leading-relaxed text-muted">{description}</p>
+            <p className="mt-1.5 max-w-[80ch] text-[12px] leading-relaxed text-muted">{description}</p>
           ) : null}
         </div>
       </div>

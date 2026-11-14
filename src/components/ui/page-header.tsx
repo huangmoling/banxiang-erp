@@ -28,7 +28,7 @@ export function PageHeader({
           {meta ? <span className="text-[12px] text-muted">{meta}</span> : null}
         </div>
         {description ? (
-          <p className="mt-1 max-w-[64ch] text-[12px] leading-relaxed text-ink-2">
+          <p className="mt-1 max-w-[84ch] text-[12px] leading-relaxed text-ink-2">
             {description}
           </p>
         ) : null}
