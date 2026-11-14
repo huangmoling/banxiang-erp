@@ -567,10 +567,49 @@ body {
   }
 }
 
-/* 登录页底纹：极细斜纹，比雾斑更"工业"，也更省 */
-.login-weave {
-  background-image: linear-gradient(135deg, rgb(255 255 255 / 0.045) 1px, transparent 1px);
-  background-size: 22px 22px;
+/* ============================================================================
+   登录页左栏：30px 方格 + 青色光晕
+   ----------------------------------------------------------------------------
+   径向渐变全站只有这一处是合法的。左栏是一整块深色面（#0E1216，比工作台
+   的 #141A20 再深一档，光晕才有地方散开），右栏是纸。除此之外任何页面出现
+   渐变都算跑偏——这条写进规范。
+   ========================================================================= */
+.login-grid {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.04) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+/* 椭圆光晕：中心略低于几何中点（52%），和视线落点对齐。
+   尺寸用 px 封顶——纯百分比在 1920 上会摊成一整片灰绿，糊掉网格。 */
+.login-glow {
+  background: radial-gradient(
+    closest-side,
+    rgb(18 165 148 / 0.42) 0%,
+    rgb(18 165 148 / 0.14) 46%,
+    rgb(18 165 148 / 0) 100%
+  );
+  background-size: min(1150px, 88%) min(760px, 76%);
+  background-position: 50% 52%;
+  background-repeat: no-repeat;
+}
+
+/* 登录页主按钮：青底墨字（#04100E on #12A594 = 6.4:1）。
+   全站唯一允许直接用 --c-brand 做实心底的地方——业务页的实心按钮仍然是
+   --c-brand-solid 白字，别学这一个。 */
+.btn-login {
+  @apply btn w-full justify-center text-[14px] font-medium;
+  background: rgb(var(--c-brand));
+  color: #04100e;
+}
+
+.btn-login:hover {
+  filter: brightness(1.06);
+}
+
+.btn-login:disabled {
+  @apply cursor-not-allowed opacity-60;
 }
 
 /* ============================================================================
