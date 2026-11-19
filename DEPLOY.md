@@ -1,4 +1,4 @@
-# 宿藤家居 ERP · Docker 部署教程
+# 半巷设计 ERP · Docker 部署教程
 
 从一台空机器到能登录使用。两条路：**拉现成镜像**（有外网，最快）或**从源码构建**（内网 NAS、要改代码时用）。
 
@@ -74,7 +74,7 @@ services:
       REFRESH_TOKEN_TTL: "6048000"
       UPLOAD_DIR: "/app/data/uploads"
       UPLOAD_MAX_MB: "5"
-      APP_NAME: "宿藤家居 ERP"
+      APP_NAME: "半巷设计 ERP"
       BOOTSTRAP_ADMIN_USERNAME: "${BOOTSTRAP_ADMIN_USERNAME:-admin}"
       BOOTSTRAP_ADMIN_PASSWORD: "${BOOTSTRAP_ADMIN_PASSWORD:-suteng@2026}"
       BOOTSTRAP_ADMIN_NAME: "${BOOTSTRAP_ADMIN_NAME:-管理员}"
@@ -323,7 +323,7 @@ services:
       REFRESH_TOKEN_TTL: "6048000"
       UPLOAD_DIR: "/app/data/uploads"
       UPLOAD_MAX_MB: "5"
-      APP_NAME: "宿藤家居 ERP"
+      APP_NAME: "半巷设计 ERP"
       BOOTSTRAP_ADMIN_USERNAME: "${BOOTSTRAP_ADMIN_USERNAME:-admin}"
       BOOTSTRAP_ADMIN_PASSWORD: "${BOOTSTRAP_ADMIN_PASSWORD:-suteng@2026}"
       BOOTSTRAP_ADMIN_NAME: "${BOOTSTRAP_ADMIN_NAME:-管理员}"

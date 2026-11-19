@@ -18,7 +18,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    document.title = "登录 · 宿藤家居 ERP";
+    document.title = "登录 · 半巷设计 ERP";
   }, []);
 
   async function onSubmit(e: React.FormEvent) {
@@ -61,7 +61,7 @@ function LoginForm() {
               <Boxes size={19} strokeWidth={2.1} />
             </div>
             <span className="text-[15px] font-semibold tracking-[-0.01em] text-white">
-              宿藤家居 ERP
+              半巷设计 ERP
             </span>
           </div>
 
@@ -94,7 +94,7 @@ function LoginForm() {
               <Boxes size={17} strokeWidth={2.1} />
             </div>
             <span className="text-[14px] font-semibold tracking-[-0.01em] text-ink">
-              宿藤家居 ERP
+              半巷设计 ERP
             </span>
           </div>
 

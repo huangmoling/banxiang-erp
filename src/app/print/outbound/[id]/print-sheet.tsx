@@ -128,7 +128,7 @@ export function PrintSheet({
         <div className="p-sheet">
           <header className="p-head">
             <div>
-              <div className="p-brand">宿藤家居 · 出货单</div>
+              <div className="p-brand">半巷设计 · 出货单</div>
               <div className="p-docno">{doc.docNo}</div>
             </div>
             <div className="p-head-meta">
@@ -194,7 +194,7 @@ export function PrintSheet({
         groups.map((g, index) => (
           <div key={g.firstLineNo} className="p-label">
             <div className="p-label-top">
-              <span className="p-label-brand">宿藤家居</span>
+              <span className="p-label-brand">半巷设计</span>
               <span className="p-label-code">
                 {doc.docNo}-{String(index + 1).padStart(2, "0")}
               </span>

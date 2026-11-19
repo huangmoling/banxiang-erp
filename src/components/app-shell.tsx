@@ -104,7 +104,7 @@ function pageCrumb(pathname: string): { group: string; label: string } {
       }
     }
   }
-  return label ? { group, label } : { group: "", label: "宿藤家居 ERP" };
+  return label ? { group, label } : { group: "", label: "半巷设计 ERP" };
 }
 
 export function AppShell({
@@ -210,7 +210,7 @@ export function AppShell({
       </div>
       <div className="min-w-0">
         <div className="truncate text-[13px] font-semibold leading-tight tracking-[-0.01em] text-deep-fg">
-          宿藤家居
+          半巷设计
         </div>
         <div className="text-[10.5px] leading-tight text-deep-muted">库房仓储管理</div>
       </div>

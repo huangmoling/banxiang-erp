@@ -1,8 +1,8 @@
 {
-  "name": "suteng-erp",
+  "name": "banxiang-erp",
   "version": "0.1.0",
   "private": true,
-  "description": "宿藤家居 ERP · 库房仓储管理",
+  "description": "半巷设计 ERP · 库房仓储管理",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "prisma generate && next build",

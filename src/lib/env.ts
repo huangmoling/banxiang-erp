@@ -20,7 +20,7 @@ const envSchema = z.object({
   UPLOAD_DIR: z.string().default("./data/uploads"),
   UPLOAD_MAX_MB: z.coerce.number().positive().default(5),
 
-  APP_NAME: z.string().default("宿藤家居 ERP"),
+  APP_NAME: z.string().default("半巷设计 ERP"),
   BOOTSTRAP_ADMIN_USERNAME: z.string().default("admin"),
   BOOTSTRAP_ADMIN_PASSWORD: z.string().min(6).default("suteng@2026"),
   BOOTSTRAP_ADMIN_NAME: z.string().default("管理员"),

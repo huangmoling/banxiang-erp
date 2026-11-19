@@ -41,7 +41,7 @@ import {
  * 数据备份 / 恢复。
  *
  * 为什么备份是「拷一份 SQLite 文件」而不是导出 JSON：
- * 家具店的账是「流水推出来的」，单据、明细、批次、单件、流水之间有几十条外键。
+ * 包包店的账是「流水推出来的」，单据、明细、批次、单件、流水之间有几十条外键。
  * 导出成 JSON 再导回来，一旦顺序或字段对不上，库存就会默默算错——这种错最难查。
  * 整库快照是唯一能保证「恢复完和备份那一刻一模一样」的做法。
  *
@@ -373,7 +373,7 @@ async function createArchive(kind: BackupKind): Promise<{ file: BackupFile; abs:
     const images = await listImages();
 
     const manifest = {
-      app: "宿藤家居 ERP",
+      app: "半巷设计 ERP",
       format: 2,
       createdAt: now.toISOString(),
       dbBytes,

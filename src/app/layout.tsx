@@ -3,8 +3,8 @@ import { DEFAULT_THEME, THEME_INIT_SCRIPT, themeMeta } from "@/lib/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "宿藤家居 ERP",
-  description: "宿藤家居 ERP · 库房仓储管理",
+  title: "半巷设计 ERP",
+  description: "半巷设计 ERP · 库房仓储管理",
   robots: { index: false, follow: false },
 };
 

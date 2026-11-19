@@ -47,7 +47,7 @@ function lineLabel(item: {
 
 /**
  * 提交工单前的「缺货体检」：只出提醒，绝不拦。
- * 家具到货延迟是常态，货还在路上就把单子先攒起来才对；
+ * 定制件的工期长是常态，货还在做就把单子先攒起来才对；
  * 真正的硬拦截在仓管点确认那一刻（approveInTx 里那段库存校验），不用重复写。
  */
 async function shortageWarningsOf(doc: OutboundDocRecord): Promise<string[]> {
