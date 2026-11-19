@@ -50,7 +50,7 @@ export function ProductForm({
 
   const [name, setName] = useState(initial?.name ?? "");
   const [category, setCategory] = useState(initial?.category ?? "");
-  const [unit, setUnit] = useState(initial?.unit ?? "件");
+  const [unit, setUnit] = useState(initial?.unit ?? "个");
   const [imageUrl, setImageUrl] = useState<string | null>(initial?.imageUrl ?? null);
   const [description, setDescription] = useState(initial?.description ?? "");
 
@@ -84,6 +84,14 @@ export function ProductForm({
   }, []);
 
   const customCount = rows.filter((r) => r.variantType === "custom").length;
+
+  /**
+   * 老档案可能还是家具时期的「把 / 张」。这两个已经不在选项里了，
+   * 但打开编辑时必须让它自己那一格亮着，否则看着像「单位丢了」。
+   */
+  const unitChoices: readonly string[] = (UNIT_OPTIONS as readonly string[]).includes(unit)
+    ? UNIT_OPTIONS
+    : [...UNIT_OPTIONS, unit];
 
   function updateRow(key: string, patch: Partial<ColorRow>) {
     setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
@@ -216,7 +224,7 @@ export function ProductForm({
                   className={`input ${fieldErrors.name ? "border-danger" : ""}`}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="例如 北欧布艺三人沙发"
+                  placeholder="例如 复古牛皮单肩包"
                   maxLength={60}
                   autoFocus
                 />
@@ -239,7 +247,7 @@ export function ProductForm({
                     className="input"
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    placeholder="沙发 / 床 / 餐桌…"
+                    placeholder="单肩包 / 托特包 / 斜挎包…"
                     list="category-list"
                     maxLength={20}
                   />
@@ -252,22 +260,26 @@ export function ProductForm({
 
                 <div>
                   <label className="label">数量单位</label>
-                  <div className="flex gap-1.5">
-                    {UNIT_OPTIONS.map((u) => (
+                  {/* 五个单位用等宽网格，比 flex-1 更稳；老档案的「把 / 张」会临时多出一格 */}
+                  <div className={unitChoices.length > 5 ? "grid grid-cols-6 gap-1" : "grid grid-cols-5 gap-1.5"}>
+                    {unitChoices.map((u) => (
                       <button
                         key={u}
                         type="button"
                         onClick={() => setUnit(u)}
-                        className={`flex-1 rounded-lg border px-2 py-2 text-[13px] transition-colors ${
+                        className={`rounded-lg border px-1 py-2 text-[13px] transition-colors ${
                           unit === u
                             ? "border-brand bg-brand-soft font-medium text-brand-ink"
-                            : "border-line bg-card text-ink-2 hover:border-line"
+                            : "border-line bg-card text-ink-2 hover:border-ink-3/40"
                         }`}
                       >
                         {u}
                       </button>
                     ))}
                   </div>
+                  {(UNIT_OPTIONS as readonly string[]).includes(unit) ? null : (
+                    <p className="mt-1 text-[11.5px] text-muted">当前是历史单位，可改成新的</p>
+                  )}
                 </div>
               </div>
 

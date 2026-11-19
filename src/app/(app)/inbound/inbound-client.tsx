@@ -201,7 +201,7 @@ export function InboundClient({
               <td className="td text-right">
                 <span className="tnum font-medium">{doc.totalQty}</span>
                 <span className="ml-1 text-[11.5px] font-normal text-muted">
-                  {doc.items[0]?.unit ?? "件"}
+                  {doc.items[0]?.unit ?? "个"}
                 </span>
               </td>
 

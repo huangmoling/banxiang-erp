@@ -79,6 +79,7 @@ export const openlistTestSchema = remoteTestSchema;
 /** 备份文件名：拒绝一切路径字符，只认自己生成的两种（tar 含图片 / db 老格式） */
 export const backupNameSchema = z
   .string()
-  .regex(/^suteng-(auto|manual|pre-restore)-\d{8}-\d{6}\.(tar|db)$/, "备份文件名不合法");
+  // 新包 banxiang-，老包 suteng- 仍可恢复（历史备份不能废）
+  .regex(/^(?:suteng|banxiang)-(auto|manual|pre-restore)-\d{8}-\d{6}\.(tar|db)$/, "备份文件名不合法");
 
 export type RemoteProviderInput = RemoteProvider;

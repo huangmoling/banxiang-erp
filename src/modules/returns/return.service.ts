@@ -34,7 +34,7 @@ function instanceStatusLabel(status: string): string {
   return INSTANCE_STATUS_LABEL[status] ?? status;
 }
 
-/** 「第 2 行「云栖沙发 · 米白」」——报错时要让人一眼找到是哪一行 */
+/** 「第 2 行「云栖托特包 · 米白」」——报错时要让人一眼找到是哪一行 */
 function lineLabel(item: {
   lineNo: number;
   sku: { colorName: string | null; product: { name: string } };

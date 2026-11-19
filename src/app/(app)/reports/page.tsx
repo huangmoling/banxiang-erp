@@ -401,7 +401,7 @@ export default async function ReportsPage() {
             </li>
             <li className="flex gap-2">
               <Recycle size={13} className="mt-1 shrink-0 text-muted" />
-              定制款按件追踪，统计里也按件计，与常规款的「把 / 张 / 套」各自用各自的单位。
+              定制款按件追踪，统计里也按件计；常规款各按自己的单位（个 / 只 / 件 / 款 / 套），不强行折算。
             </li>
             <li className="flex gap-2">
               <ArrowDownToLine size={13} className="mt-1 shrink-0 text-muted" />

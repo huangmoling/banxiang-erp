@@ -44,7 +44,7 @@ export type InboundDocView = {
   voidReason: string | null;
   voidedByName: string | null;
   createdAt: string;
-  /** 列表页用的内容摘要，如「北欧布艺单人椅·米白 ×2、… 等 3 项」 */
+  /** 列表页用的内容摘要，如「复古牛皮单肩包·米白 ×2、… 等 3 项」 */
   preview: string;
   items: InboundItemView[];
 };

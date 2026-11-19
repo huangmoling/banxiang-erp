@@ -64,7 +64,15 @@ import {
  * ——和 `suteng.db`、`uploads/` 在同一个挂载卷里，整卷备份/迁移一并带走。
  */
 
-const FILE_RE = /^suteng-(auto|manual|pre-restore)-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})\.(tar|db)$/;
+/**
+ * 备份文件名。新包用 `banxiang-`，老的 `suteng-` 包**继续认**——
+ * 云端和本地目录里已经躺着几十个老包，不认等于把历史备份全废掉。
+ * 前缀是非捕获组，后面的分组下标（m[1] kind、m[8] 格式）保持不变。
+ */
+const FILE_RE = /^(?:suteng|banxiang)-(auto|manual|pre-restore)-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})\.(tar|db)$/;
+
+/** 新备份的命名前缀（品牌更名后）。改这里就等于改所有新包的文件名。 */
+const NAME_PREFIX = "banxiang";
 
 /** 解除 tar 里图片文件的扩展名白名单（与上传接口一致） */
 const MANIFEST_NAME = "manifest.json";
@@ -355,13 +363,13 @@ async function createArchive(kind: BackupKind): Promise<{ file: BackupFile; abs:
   const dir = await ensureDir();
   const now = new Date();
 
-  let finalName = `suteng-${kind}-${stamp(now)}.tar`;
+  let finalName = `${NAME_PREFIX}-${kind}-${stamp(now)}.tar`;
   let finalAbs = path.join(dir, finalName);
   let seq = 0;
   // 同一秒内连点两次会撞名，撞了就往后退一秒，别覆盖已有备份
   while (await exists(finalAbs)) {
     seq += 1;
-    finalName = `suteng-${kind}-${stamp(new Date(now.getTime() + seq * 1000))}.tar`;
+    finalName = `${NAME_PREFIX}-${kind}-${stamp(new Date(now.getTime() + seq * 1000))}.tar`;
     finalAbs = path.join(dir, finalName);
   }
 

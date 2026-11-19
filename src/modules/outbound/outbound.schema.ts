@@ -86,7 +86,7 @@ export const createOutboundSchema = z
     submitAfterSave: z.boolean().optional().default(false),
   });
 // 注意：这里**不做「同 SKU 同批次」去重**。一单多地址以后，三个买家都买
-// 「米白沙发·同批次」就是三行相同 SKU，这是正常情况，去重会把人正常录单挡在门外。
+// 「米白托特包·同批次」就是三行相同 SKU，这是正常情况，去重会把人正常录单挡在门外。
 // 防重复录入靠提交前的确认弹窗把整单摆出来看一眼，比在服务端猜意图管用。
 
 export type CreateOutboundInput = z.infer<typeof createOutboundSchema>;

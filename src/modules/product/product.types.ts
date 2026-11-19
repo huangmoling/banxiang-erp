@@ -33,7 +33,12 @@ export type ProductListResult = {
   pendingCount: number;
 };
 
-export const UNIT_OPTIONS = ["件", "把", "张", "套"] as const;
+/**
+ * 数量单位：按商品自定义，界面只给包包店常用的这五个。
+ * 老档案里可能还躺着家具时期的「把 / 张」，那两个不在选项里但能原样保存，
+ * 见 `product.schema.ts` 的 LEGACY_UNIT_VALUES。
+ */
+export const UNIT_OPTIONS = ["个", "只", "件", "款", "套"] as const;
 
 export function colorLabel(sku: Pick<ProductSkuView, "colorName">): string {
   return sku.colorName?.trim() ? sku.colorName : "无颜色";

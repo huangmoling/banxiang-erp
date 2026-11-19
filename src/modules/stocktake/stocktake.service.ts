@@ -35,7 +35,7 @@ type SkuBrief = {
   product: { name: string; unit: string };
 };
 
-/** 「第 2 行「云栖沙发 · 米白」」——报错时要让人一眼找到是哪一行 */
+/** 「第 2 行「云栖托特包 · 米白」」——报错时要让人一眼找到是哪一行 */
 function rowLabel(lineNo: number, sku: SkuBrief): string {
   const color = sku.colorName?.trim();
   return `第 ${lineNo} 行「${sku.product.name}${color ? ` · ${color}` : ""}」`;

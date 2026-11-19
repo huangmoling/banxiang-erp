@@ -1,9 +1,18 @@
 import { z } from "zod";
 
-export const UNIT_VALUES = ["件", "把", "张", "套"] as const;
+/** 界面提供的五个单位（女包店的常用说法） */
+export const UNIT_VALUES = ["个", "只", "件", "款", "套"] as const;
 export type Unit = (typeof UNIT_VALUES)[number];
 
-export const unitSchema = z.enum(UNIT_VALUES, { message: "单位只能是 件 / 把 / 张 / 套" });
+/**
+ * 历史遗留单位：家具时期的「把 / 张」。
+ * UI 不再提供，但老档案编辑保存时必须能原样通过校验——
+ * 否则改个备注都会被「单位不合法」拦下来，等于把老商品锁死。
+ */
+export const LEGACY_UNIT_VALUES = ["把", "张"] as const;
+const ALL_UNIT_VALUES = ["个", "只", "件", "款", "套", "把", "张"] as const;
+
+export const unitSchema = z.enum(ALL_UNIT_VALUES, { message: "单位只能是 个 / 只 / 件 / 款 / 套" });
 
 /** 颜色行：一色一个 SKU。"定制"这一行同时也是定制款（按件追踪、退货不可回良品） */
 export const colorRowSchema = z.object({
@@ -48,7 +57,7 @@ const baseProductSchema = z.object({
       .optional()
       .nullable()
       .transform((v) => (v && v.length > 0 ? v : null)),
-    unit: unitSchema.default("件"),
+    unit: unitSchema.default("个"),
     imageUrl: z
       .string()
       .trim()
