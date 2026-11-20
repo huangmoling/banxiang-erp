@@ -26,7 +26,9 @@
 from __future__ import annotations
 
 import argparse
+import getpass
 import json
+import os
 import shlex
 import sys
 import time
@@ -148,10 +150,13 @@ def main() -> int:
     ap.add_argument("--host", default="192.168.1.110")
     ap.add_argument("--ssh-port", type=int, default=22033)
     ap.add_argument("--user", default="admin")
-    ap.add_argument("--password", default="REDACTED__")
+    ap.add_argument("--password", default=os.environ.get("NAS_SSH_PASSWORD", ""),
+                    help="NAS SSH 密码（也可用环境变量 NAS_SSH_PASSWORD）")
     ap.add_argument("--no-sudo", action="store_true")
     ap.add_argument("--keep-login", action="store_true")
     args = ap.parse_args()
+    if not args.password:
+        args.password = getpass.getpass("NAS SSH 密码: ")
 
     def log(msg: str) -> None:
         print(f"[push] {msg}", flush=True)

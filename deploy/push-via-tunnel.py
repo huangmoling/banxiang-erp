@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import getpass
 import os
 import socket
 import struct
@@ -255,9 +256,12 @@ def main() -> int:
     ap.add_argument("--host", default="192.168.1.110")
     ap.add_argument("--ssh-port", type=int, default=22033)
     ap.add_argument("--user", default="admin")
-    ap.add_argument("--password", default="REDACTED__")
+    ap.add_argument("--password", default=os.environ.get("NAS_SSH_PASSWORD", ""),
+                    help="NAS SSH 密码（也可用环境变量 NAS_SSH_PASSWORD）")
     ap.add_argument("--dry-run", action="store_true", help="只验证通道，不真正 push")
     args = ap.parse_args()
+    if not args.password:
+        args.password = getpass.getpass("NAS SSH 密码: ")
 
     def log(msg: str) -> None:
         print(f"[push] {msg}", flush=True)
