@@ -8,7 +8,10 @@ export type CsvCell = string | number | null | undefined;
 
 function escapeCell(value: CsvCell): string {
   if (value === null || value === undefined) return "";
-  const text = String(value);
+  let text = String(value);
+  // CSV 注入：Excel / WPS 会把 = + - @ 开头的单元格当公式执行（DDE 弹命令就是这么来的）。
+  // 前面补一个单引号，Excel 当纯文本。纯负数的 - 不动，否则数量列会集体变文本。
+  if (/^[=+@\t\r]/.test(text) || /^-[^\d.]/.test(text)) text = `'${text}`;
   // 逗号、引号、换行都得包起来；引号本身双写
   if (/[",\r\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
   return text;

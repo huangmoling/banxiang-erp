@@ -20,6 +20,30 @@ const nextConfig: NextConfig = {
     // 单进程构建慢十来秒，换一个「每次都一样」的结果，值。
     webpackBuildWorker: false,
   },
+  /**
+   * 安全响应头。
+   *
+   * 只加「不改行为」的那几个：
+   * - 禁止被 iframe 嵌套（点击劫持）
+   * - 禁止 MIME 嗅探（配合上传白名单挡「图片里的脚本」）
+   * - 不把完整 URL 带给外部站点（内网地址、单号别漏出去）
+   * 完整 CSP 没上：页面里有主题初始化用的 inline script，
+   * 上 CSP 就得配 nonce，收益不如改崩风险大。frame-ancestors 单独给一条够用。
+   */
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "same-origin" },
+          { key: "Permissions-Policy", value: "geolocation=(), microphone=(), camera=()" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

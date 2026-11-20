@@ -5,12 +5,25 @@
  */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "node:crypto";
 
 const prisma = new PrismaClient();
 
 const username = process.env.BOOTSTRAP_ADMIN_USERNAME ?? "admin";
-const password = process.env.BOOTSTRAP_ADMIN_PASSWORD ?? "suteng@2026";
 const displayName = process.env.BOOTSTRAP_ADMIN_NAME ?? "管理员";
+
+/**
+ * 初始管理员密码。
+ *
+ * **绝不在代码里留默认口令**：这个系统会部署到公网服务器上，
+ * 一旦忘了在 .env 里覆盖，`admin / suteng@2026` 就等于给全网留了把钥匙。
+ * 没显式配置时随机生成一个，启动日志里打一次，抄下来登录后立刻改。
+ */
+const providedPassword = (process.env.BOOTSTRAP_ADMIN_PASSWORD ?? "").trim();
+const generatedPassword = providedPassword
+  ? null
+  : randomBytes(12).toString("base64url");
+const password = providedPassword || generatedPassword;
 
 async function main() {
   const userCount = await prisma.user.count();
@@ -24,6 +37,13 @@ async function main() {
       },
     });
     console.log(`[seed] 已创建管理员账号：${username}`);
+    if (generatedPassword) {
+      console.log("=".repeat(56));
+      console.log(`[seed] 未配置 BOOTSTRAP_ADMIN_PASSWORD，已随机生成初始密码：`);
+      console.log(`[seed]     ${generatedPassword}`);
+      console.log(`[seed] 请立刻登录并修改，这个密码只在这里打印一次。`);
+      console.log("=".repeat(56));
+    }
   } else {
     console.log(`[seed] 已有 ${userCount} 个用户，跳过管理员创建`);
   }

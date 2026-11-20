@@ -22,7 +22,8 @@ const envSchema = z.object({
 
   APP_NAME: z.string().default("半巷设计 ERP"),
   BOOTSTRAP_ADMIN_USERNAME: z.string().default("admin"),
-  BOOTSTRAP_ADMIN_PASSWORD: z.string().min(6).default("suteng@2026"),
+  /** 不给就由 seed.mjs 随机生成并打印到启动日志——代码里不留默认口令 */
+  BOOTSTRAP_ADMIN_PASSWORD: z.string().optional().default(""),
   BOOTSTRAP_ADMIN_NAME: z.string().default("管理员"),
 
   LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).default("info"),

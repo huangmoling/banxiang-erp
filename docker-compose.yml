@@ -7,6 +7,13 @@ services:
     image: aag111/suteng-erp:latest
     container_name: suteng-erp
     restart: unless-stopped
+    # 禁止容器内进程通过 setuid/setgid 提权。零副作用，防的是「应用被攻破后
+    # 借某个带 suid 位的二进制再往上爬」这条路。勒索病毒最爱这一手。
+    security_opt:
+      - no-new-privileges:true
+    # 想再收紧可加 cap_drop: [ALL]。前提是宿主机 ./data 属主是 root（容器当前也以 root 跑）——
+    # 去掉 CAP_DAC_OVERRIDE 之后 root 不再无敌，目录属主不对会直接写不进库。
+    # 换用户跑（user: "1000:1000"）之前必须先 chown -R 1000:1000 ./data，否则启动即失败。
     ports:
       # HOST_PORT 可在 .env 里改，NAS 上若 3000 被占用就设成别的（如 3080）
       - "${HOST_PORT:-3000}:3000"
@@ -30,9 +37,11 @@ services:
       UPLOAD_MAX_MB: "5"
       APP_NAME: "半巷设计 ERP"
       # 首次启动（库里一个用户都没有）时创建的管理员。已有用户时这几行不生效，
-      # 不会把已经改过的密码覆盖回去。生产部署请在 .env 里改掉默认口令。
+      # 不会把已经改过的密码覆盖回去。
+      # 不填密码就随机生成一个 16 位口令，打印在启动日志里（docker logs suteng-erp）。
+      # **不要再写回固定默认口令**：公网服务器上那就是给全网留的钥匙。
       BOOTSTRAP_ADMIN_USERNAME: "${BOOTSTRAP_ADMIN_USERNAME:-admin}"
-      BOOTSTRAP_ADMIN_PASSWORD: "${BOOTSTRAP_ADMIN_PASSWORD:-suteng@2026}"
+      BOOTSTRAP_ADMIN_PASSWORD: "${BOOTSTRAP_ADMIN_PASSWORD:-}"
       BOOTSTRAP_ADMIN_NAME: "${BOOTSTRAP_ADMIN_NAME:-管理员}"
       LOG_LEVEL: "info"
     volumes:

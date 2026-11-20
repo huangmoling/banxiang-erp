@@ -33,6 +33,9 @@ export async function GET(
     return new NextResponse(new Uint8Array(buf), {
       headers: {
         "content-type": MIME[ext] ?? "application/octet-stream",
+        // 禁止浏览器猜类型：上传时的白名单 + 这里的 nosniff 一起才挡得住「图片里的脚本」
+        "x-content-type-options": "nosniff",
+        "content-security-policy": "default-src 'none'; img-src 'self'; sandbox",
         "cache-control": "private, max-age=86400",
       },
     });
