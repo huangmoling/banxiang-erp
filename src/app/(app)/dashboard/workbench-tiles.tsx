@@ -27,7 +27,7 @@ type TileProps = {
   onOpen?: (k: DocKind) => void;
 };
 
-function Tile({ label, sub, value, accent, icon: Icon, href, kind, onOpen }: TileProps) {
+function Tile({ label, value, accent, icon: Icon, href, kind, onOpen }: TileProps) {
   const inner = (
     <>
       <div className="flex items-start justify-between gap-2">
