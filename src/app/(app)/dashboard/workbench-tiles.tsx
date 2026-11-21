@@ -32,7 +32,7 @@ function Tile({ label, sub, value, accent, icon: Icon, href, kind, onOpen }: Til
     <>
       <div className="flex items-start justify-between gap-2">
         <span
-          className="flex h-9 w-9 items-center justify-center rounded-[4px]"
+          className="flex h-9 w-9 items-center justify-center rounded-xl"
           style={{ background: `rgb(var(--c-a${accent}) / 0.1)`, color: `rgb(var(--c-a${accent}))` }}
         >
           <Icon size={18} strokeWidth={1.9} />
@@ -43,7 +43,7 @@ function Tile({ label, sub, value, accent, icon: Icon, href, kind, onOpen }: Til
       </div>
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-[13.5px] font-semibold leading-tight text-ink">{label}</span>
-        <span className="tile-sub truncate text-[11.5px]">{sub}</span>
+        
       </div>
     </>
   );
