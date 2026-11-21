@@ -154,7 +154,7 @@ export function AppShell({
       </span>
       <span className="min-w-0 leading-tight">
         <span className="block truncate text-[15.5px] font-bold tracking-[-0.01em] text-ink">半巷设计</span>
-        <span className="block text-[11px] text-muted">ERP · 仓储管理</span>
+        <span className="block text-[11px] text-muted">仓储管理</span>
       </span>
     </Link>
   );
@@ -253,7 +253,7 @@ export function AppShell({
           </button>
           <div className="min-w-0 leading-tight">
             <div className="truncate text-[16px] font-bold tracking-[-0.01em] text-ink">
-              Hi {user.displayName}，欢迎回来
+              {crumb.label}
             </div>
             <div className="truncate text-[11.5px] text-muted">
               {crumb.group ? `${crumb.group} / ${crumb.label} · ` : ""}{today}
