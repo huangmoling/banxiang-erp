@@ -133,15 +133,15 @@ export function WeatherBar() {
 
   return (
     <div
-      className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 backdrop-blur-[2px]"
+      className="flex items-center gap-2.5 rounded-full bg-black/25 px-3.5 py-2 backdrop-blur-[2px]"
       title={range}
     >
-      <Icon size={17} strokeWidth={2} className="shrink-0 text-white" />
-      <span className="tnum text-[14px] font-semibold leading-none text-white">{wx.temp}°</span>
-      <span className="text-[12px] leading-none text-white/85">{textOf(wx.code)}</span>
+      <Icon size={19} strokeWidth={2} className="shrink-0 text-white" />
+      <span className="tnum text-[16px] font-semibold leading-none text-white">{wx.temp}°</span>
+      <span className="text-[13px] leading-none text-white/90">{textOf(wx.code)}</span>
       {wx.city ? (
-        <span className="flex items-center gap-0.5 text-[11.5px] leading-none text-white/70">
-          <MapPin size={11} strokeWidth={2.2} className="shrink-0" />
+        <span className="flex items-center gap-0.5 text-[12.5px] leading-none text-white/80">
+          <MapPin size={12} strokeWidth={2.2} className="shrink-0" />
           {wx.city}
         </span>
       ) : null}

@@ -290,7 +290,7 @@ export function NewDocMenu() {
         onClick={() => setMenu((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={menu}
-        className="flex h-9 items-center gap-1 rounded-full bg-[linear-gradient(135deg,rgb(var(--c-brand)),rgb(var(--c-mid))_55%,rgb(var(--c-custom))_125%)] px-3.5 text-[12.5px] font-semibold text-white shadow-[0_6px_16px_rgb(var(--c-brand)/0.32)] transition-all hover:brightness-110"
+        className="flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[linear-gradient(135deg,rgb(var(--c-grad-1)),rgb(var(--c-grad-2))_55%,rgb(var(--c-grad-3))_125%)] px-3.5 text-[12.5px] font-semibold text-white shadow-[0_6px_16px_rgb(var(--c-grad-1)/0.32)] transition-all hover:brightness-110"
       >
         <Plus size={13} strokeWidth={2.4} />
         新建
