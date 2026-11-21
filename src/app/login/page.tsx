@@ -47,17 +47,17 @@ function LoginForm() {
         散开，上面压一层 30px 方格。不放产品截图、不放"高效管理"这种空话，
         只留一句这套系统的底线。
 
-        深面固定 #0E1216，比工作台的 #141A20 再深一档，不跟主题走：
-        换主题时只有右边那张纸会变色，左边永远是这个夜里。
+        深面走 --login-deep：紫版是葡萄紫、蓝版是深海蓝、午夜版是压暗的深紫，
+        换主题时左栏和右边那张纸一起变。
       */}
-      <div className="relative hidden w-[62%] overflow-hidden bg-[#0E1216] lg:block">
+      <div className="relative hidden w-[62%] overflow-hidden bg-[rgb(var(--login-deep))] lg:block">
         <div className="login-grid absolute inset-0" aria-hidden />
         <div className="login-glow absolute inset-0" aria-hidden />
         <div className="absolute inset-y-0 right-0 w-px bg-white/10" aria-hidden />
 
         <div className="relative flex h-full min-h-screen flex-col pl-[7.6%] pr-[6%] pt-[15vh]">
           <div className="flex items-center gap-3">
-            <div className="flex h-[34px] w-[34px] items-center justify-center rounded-[7px] bg-brand text-[#04100E]">
+            <div className="flex h-[34px] w-[34px] items-center justify-center rounded-[7px] bg-white text-brand-ink">
               <Boxes size={19} strokeWidth={2.1} />
             </div>
             <span className="text-[15px] font-semibold tracking-[-0.01em] text-white">
@@ -72,7 +72,7 @@ function LoginForm() {
               一件都不会丢。
             </h2>
             <p className="mt-5 text-[14px] leading-[1.9] text-deep-fg2">
-              入库 · 出库 · 退货 · 盘点 · 次品，全部留痕
+              入库 · 出库 · 退货 · 盘点 · 次品，全部留痕 · 清新 SaaS 工作台
             </p>
           </div>
         </div>
@@ -90,7 +90,7 @@ function LoginForm() {
         <div className="mx-auto w-full max-w-[400px]">
           {/* 手机上没有左栏，品牌放这里 */}
           <div className="mb-9 flex items-center gap-2.5 lg:hidden">
-            <div className="flex h-[30px] w-[30px] items-center justify-center rounded-[7px] bg-brand text-[#04100E]">
+            <div className="flex h-[30px] w-[30px] items-center justify-center rounded-[7px] bg-white text-brand-ink">
               <Boxes size={17} strokeWidth={2.1} />
             </div>
             <span className="text-[14px] font-semibold tracking-[-0.01em] text-ink">

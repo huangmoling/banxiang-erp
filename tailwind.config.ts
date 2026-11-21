@@ -81,9 +81,9 @@ const config: Config = {
       },
       borderRadius: {
         /** 表面：纸卡、表格、面板 */
-        card: "10px",
+        card: "16px",
         /** 控件：按钮、输入框、下拉 */
-        field: "6px",
+        field: "10px",
       },
       boxShadow: {
         card: "var(--shadow-card)",

@@ -13,7 +13,8 @@ export type AppErrorCode =
   | "PAYLOAD_TOO_LARGE"
   | "UNSUPPORTED_MEDIA_TYPE"
   | "TOO_MANY_REQUESTS"
-  | "INTERNAL_ERROR";
+  | "INTERNAL_ERROR"
+  | "SERVICE_UNAVAILABLE";
 
 export class AppError extends Error {
   readonly code: AppErrorCode;

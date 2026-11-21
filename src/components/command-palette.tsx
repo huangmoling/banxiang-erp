@@ -126,11 +126,11 @@ export function CommandPalette({ variant = "bar" }: { variant?: "bar" | "icon" }
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="top-btn w-[188px] justify-start border border-white/12 bg-white/[0.06] pl-2"
+          className="flex h-9 w-[210px] items-center justify-start gap-2 rounded-full border border-line bg-sunken pl-3.5 pr-2 text-muted transition-colors hover:border-brand/40 hover:text-ink"
         >
           <Search size={13} strokeWidth={2} />
           <span className="text-[12px] opacity-80">搜索或开单</span>
-          <span className="ml-auto flex items-center gap-0.5 rounded-[3px] border border-white/15 px-1 text-[10px] opacity-60">
+          <span className="ml-auto flex items-center gap-0.5 rounded-full border border-line bg-card px-1.5 py-0.5 text-[10px] opacity-70">
             <Command size={9} strokeWidth={2.4} />K
           </span>
         </button>

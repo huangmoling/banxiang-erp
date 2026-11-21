@@ -38,7 +38,9 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "same-origin" },
-          { key: "Permissions-Policy", value: "geolocation=(), microphone=(), camera=()" },
+          // geolocation 放开给本站：工作台的天气要按当前定位取（只允许 self，
+          // 别的站点拿不到；浏览器非 HTTPS 会自动降级成 IP 定位）。
+          { key: "Permissions-Policy", value: "geolocation=(self), microphone=(), camera=()" },
           { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
         ],
       },

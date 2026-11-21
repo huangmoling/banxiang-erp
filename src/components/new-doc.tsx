@@ -57,7 +57,7 @@ export const DOC_SPECS: DocSpec[] = [
     subtitle: "工厂到货就开单。保存草稿不动库存，审核后才加数。",
     metaUrl: "/api/inbound/meta",
     icon: ArrowDownToLine,
-    color: "#2563EB",
+    color: "#1677FF",
   },
   {
     kind: "outbound",
@@ -66,7 +66,7 @@ export const DOC_SPECS: DocSpec[] = [
     subtitle: "一行就是一个包裹、一个买家。保存后按地址打印出货单。",
     metaUrl: "/api/outbound/meta",
     icon: ArrowUpFromLine,
-    color: "#0E8577",
+    color: "#00A870",
   },
   {
     kind: "returns",
@@ -75,7 +75,7 @@ export const DOC_SPECS: DocSpec[] = [
     subtitle: "先找到原出库单，再在要退的行上填数量与去向。定制件只能进次品区或报废。",
     metaUrl: "/api/returns/meta",
     icon: Undo2,
-    color: "#7C5CD6",
+    color: "#722ED1",
   },
   {
     kind: "scraps",
@@ -84,7 +84,7 @@ export const DOC_SPECS: DocSpec[] = [
     subtitle: "次品区的三条出路：报废 / 线下出售 / 自行处理。审核后从库里扣掉。",
     metaUrl: "/api/scraps/meta",
     icon: Trash2,
-    color: "#7E3D33",
+    color: "#CF1322",
   },
   {
     kind: "stocktakes",
@@ -93,7 +93,7 @@ export const DOC_SPECS: DocSpec[] = [
     subtitle: "选仓位、定截止时点，账面数列出来，你只管填实盘数。盘点期间照常发货。",
     metaUrl: "/api/stocktakes/meta",
     icon: ClipboardCheck,
-    color: "#A6641F",
+    color: "#FA8C16",
   },
 ];
 
@@ -290,7 +290,7 @@ export function NewDocMenu() {
         onClick={() => setMenu((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={menu}
-        className="flex h-7 items-center gap-1 rounded-[5px] bg-white/10 px-2 text-[12px] font-medium text-white transition-colors hover:bg-white/[0.16]"
+        className="flex h-9 items-center gap-1 rounded-full bg-[linear-gradient(135deg,rgb(var(--c-brand)),rgb(var(--c-mid))_55%,rgb(var(--c-custom))_125%)] px-3.5 text-[12.5px] font-semibold text-white shadow-[0_6px_16px_rgb(var(--c-brand)/0.32)] transition-all hover:brightness-110"
       >
         <Plus size={13} strokeWidth={2.4} />
         新建

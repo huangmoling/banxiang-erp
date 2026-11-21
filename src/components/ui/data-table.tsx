@@ -31,7 +31,7 @@ export function DataTable({
     <div className="card overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse" style={minWidth ? { minWidth } : undefined}>
-          <thead className="bg-ink/[0.035]">{head}</thead>
+          <thead className="bg-brand-soft/70">{head}</thead>
           <tbody>{isEmpty ? null : children}</tbody>
         </table>
       </div>

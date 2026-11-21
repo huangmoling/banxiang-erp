@@ -24,7 +24,7 @@ export function PageHeader({
     <div className="mb-3.5 flex flex-wrap items-end justify-between gap-x-4 gap-y-2.5">
       <div className="min-w-0">
         <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-          <h1 className="text-display font-semibold text-ink">{title}</h1>
+          <h1 className="text-display font-semibold text-ink"><span className="mr-2 inline-block h-[18px] w-[3px] translate-y-[2px] rounded-[2px] bg-[linear-gradient(180deg,rgb(var(--c-brand)),rgb(var(--c-custom)))] align-baseline" />{title}</h1>
           {meta ? <span className="text-[12px] text-muted">{meta}</span> : null}
         </div>
         {description ? (

@@ -5,7 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   ArrowDownToLine,
+  ArrowRight,
   ArrowUpFromLine,
+  Bell,
   Boxes,
   ChartColumnBig,
   ClipboardCheck,
@@ -32,38 +34,29 @@ type NavItem = {
   href: string;
   label: string;
   icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
-  /** 只有管理员能在导轨上看到（账号管理这类） */
   adminOnly?: boolean;
 };
 
-/**
- * 导轨分组。
- *
- * 12 个入口平铺时，新人对"入库"和"库存"、"次品区"和"报废处置"分不清——
- * 它们是不同阶段的事，不是同一层级。分组之后一眼就知道往哪类找。
- *
- * 组的顺序按日常动作走：先看盘子（概览），再开单据，再管货，最后是管理。
- * 颜色只有一种（青色），不再给每个图标上色：导轨是"骨架"，颜色留给工作台磁贴。
- */
+/* 分组与功能与原版一致，只是换成 SaaS 胶囊菜单的呈现 */
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "概览",
     items: [
       { href: "/dashboard", label: "工作台", icon: LayoutDashboard },
-      { href: "/reports", label: "报表", icon: ChartColumnBig },
+      { href: "/reports", label: "报表中心", icon: ChartColumnBig },
     ],
   },
   {
-    label: "单据",
+    label: "单据处理",
     items: [
-      { href: "/inbound", label: "入库", icon: ArrowDownToLine },
-      { href: "/outbound", label: "出库", icon: ArrowUpFromLine },
-      { href: "/returns", label: "退货", icon: Undo2 },
-      { href: "/stocktakes", label: "盘点", icon: ClipboardCheck },
+      { href: "/inbound", label: "入库单", icon: ArrowDownToLine },
+      { href: "/outbound", label: "出库单", icon: ArrowUpFromLine },
+      { href: "/returns", label: "退货单", icon: Undo2 },
+      { href: "/stocktakes", label: "盘点单", icon: ClipboardCheck },
     ],
   },
   {
-    label: "货品",
+    label: "货品与库存",
     items: [
       { href: "/products", label: "商品档案", icon: Package },
       { href: "/inventory", label: "库存明细", icon: Warehouse },
@@ -72,10 +65,10 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     ],
   },
   {
-    label: "管理",
+    label: "系统管理",
     items: [
-      { href: "/users", label: "账号", icon: Users, adminOnly: true },
-      { href: "/backups", label: "备份", icon: DatabaseBackup, adminOnly: true },
+      { href: "/users", label: "账号管理", icon: Users, adminOnly: true },
+      { href: "/backups", label: "数据备份", icon: DatabaseBackup, adminOnly: true },
     ],
   },
 ];
@@ -90,7 +83,6 @@ const ROLE_LABEL: Record<string, string> = {
   viewer: "查看",
 };
 
-/** 顶栏标题：按最长前缀匹配，/outbound/new 这种子页也能落到「出库」 */
 function pageCrumb(pathname: string): { group: string; label: string } {
   let best = "";
   let label = "";
@@ -119,28 +111,16 @@ export function AppShell({
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
-  /**
-   * 待发的**包裹数**：顶栏与导轨「出库」旁边的红点。
-   * 一张单可能装几十个买家地址，用张数会严重低估工作量——仓管要跑几趟看的是这个数。
-   * 拿不到就不显示，不能因为一个角标把页面搞挂。
-   */
   const [pending, setPending] = useState(0);
-
-  /** 工作台是一整块深色画布，其余页面是浅色纸——这是"三态"里最深的那一态 */
-  const deep = pathname === "/dashboard";
-
   useEffect(() => {
     let alive = true;
     async function load() {
       try {
         const row = await api<{ packages: number }>("/api/outbound/pending-count");
         if (alive) setPending(row.packages);
-      } catch {
-        /* 静默失败：角标只是提示，不该弹错误 */
-      }
+      } catch {}
     }
     void load();
-    // 确认发货之后角标要立刻减，别让人等 60 秒
     const onChanged = () => void load();
     window.addEventListener("suteng:pending-changed", onChanged);
     const timer = setInterval(load, 60_000);
@@ -167,12 +147,24 @@ export function AppShell({
     items: g.items.filter((item) => !item.adminOnly || user.role === "admin"),
   })).filter((g) => g.items.length > 0);
 
+  const brand = (
+    <Link href="/dashboard" className="flex items-center gap-3 px-5 pb-1 pt-5">
+      <span className="grad-card flex h-11 w-11 shrink-0 items-center justify-center !rounded-full">
+        <Boxes size={20} strokeWidth={2} />
+      </span>
+      <span className="min-w-0 leading-tight">
+        <span className="block truncate text-[15.5px] font-bold tracking-[-0.01em] text-ink">半巷设计</span>
+        <span className="block text-[11px] text-muted">ERP · 仓储管理</span>
+      </span>
+    </Link>
+  );
+
   const nav = (
-    <nav className="flex-1 overflow-y-auto px-2 pb-2">
+    <nav className="flex-1 overflow-y-auto pb-3 pt-2">
       {groups.map((group) => (
         <div key={group.label}>
           <div className="nav-group">{group.label}</div>
-          <div className="space-y-px">
+          <div className="space-y-1">
             {group.items.map((item) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               const Icon = item.icon;
@@ -183,13 +175,10 @@ export function AppShell({
                   onClick={() => setMenuOpen(false)}
                   className={`nav-item ${active ? "nav-item-active" : ""}`}
                 >
-                  <Icon size={15} strokeWidth={1.7} className="shrink-0" />
+                  <Icon size={17} strokeWidth={1.9} className={`shrink-0 ${active ? "text-white" : "text-muted"}`} />
                   <span className="truncate">{item.label}</span>
                   {item.href === "/outbound" && pending > 0 ? (
-                    <span
-                      className="tnum ml-auto min-w-[17px] rounded-[3px] bg-danger-solid px-1 text-center text-[10px] font-semibold leading-[15px] text-white"
-                      title={`${pending} 个包裹待发出`}
-                    >
+                    <span className="tnum ml-auto min-w-[20px] rounded-full bg-[#FF8A00] px-1.5 text-center text-[10.5px] font-bold leading-[18px] text-white" title={`${pending} 个包裹待发出`}>
                       {pending}
                     </span>
                   ) : null}
@@ -202,146 +191,95 @@ export function AppShell({
     </nav>
   );
 
-  // 品牌区在导轨与移动抽屉里复用
-  const brandHead = (
-    <Link href="/dashboard" className="flex items-center gap-2.5 px-3.5 pb-3 pt-4">
-      <div className="flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-[6px] bg-brand-solid text-white">
-        <Boxes size={15} strokeWidth={2} />
+  const sideBottom = (
+    <div className="space-y-2.5 px-4 pb-4">
+      <div className="grad-card p-3.5">
+        <div className="text-[13px] font-bold leading-snug">仓库动态</div>
+        <p className="mt-0.5 text-[11.5px] leading-snug text-white/85">
+          {pending > 0 ? `有 ${pending} 个包裹等着发出，别让买家等太久。` : "主仓 / 次品区 / 报废区都在正常运转，暂无待发包裹。"}
+        </p>
+        <Link
+          href={pending > 0 ? "/outbound?status=pending" : "/inventory"}
+          className="mt-2 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-brand-ink transition-transform hover:scale-[1.03]"
+        >
+          {pending > 0 ? "去处理" : "看库存"} <ArrowRight size={12} strokeWidth={2.4} />
+        </Link>
       </div>
-      <div className="min-w-0">
-        <div className="truncate text-[13px] font-semibold leading-tight tracking-[-0.01em] text-deep-fg">
-          半巷设计
-        </div>
-        <div className="text-[10.5px] leading-tight text-deep-muted">库房仓储管理</div>
-      </div>
-    </Link>
-  );
-
-  const userBlock = (
-    <div className="nav-divide border-t px-2 py-2.5">
-      <div className="flex items-center gap-2">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand/20 text-[11.5px] font-semibold text-deep-fg ring-1 ring-inset ring-white/10">
+      <div className="flex items-center gap-2.5 px-1">
+        <span className="grad-card flex h-9 w-9 shrink-0 items-center justify-center !rounded-full text-[12.5px] font-bold">
           {user.displayName.slice(0, 1)}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[12px] font-medium leading-tight text-deep-fg">
-            {user.displayName}
-          </div>
-          <div className="text-[10.5px] leading-tight text-deep-muted">
-            {ROLE_LABEL[user.role] ?? user.role}
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => setPasswordOpen(true)}
-          className="nav-btn"
-          title="修改密码"
-        >
-          <KeyRound size={14} strokeWidth={1.9} />
-        </button>
-        <button
-          type="button"
-          onClick={logout}
-          className="nav-btn hover:!text-danger"
-          title="退出登录"
-        >
-          <LogOut size={14} strokeWidth={1.9} />
-        </button>
+        </span>
+        <span className="min-w-0 flex-1 leading-tight">
+          <span className="block truncate text-[13px] font-semibold text-ink">{user.displayName}</span>
+          <span className="block text-[11px] text-muted">{ROLE_LABEL[user.role] ?? user.role} · {user.username}</span>
+        </span>
+        <button type="button" onClick={() => setPasswordOpen(true)} className="nav-btn" title="修改密码"><KeyRound size={15} /></button>
+        <button type="button" onClick={logout} className="nav-btn" title="退出登录"><LogOut size={15} /></button>
       </div>
     </div>
   );
 
   const crumb = pageCrumb(pathname);
+  const today = new Intl.DateTimeFormat("zh-CN", { month: "long", day: "numeric", weekday: "long" }).format(new Date());
 
   return (
-    <div className="relative min-h-screen">
-      {/* 桌面端导轨：全站唯一的深色纵向面 */}
-      <aside className="app-rail fixed inset-y-0 left-0 z-30 hidden w-[232px] flex-col md:flex">
-        {brandHead}
+    <div className="app-bg flex min-h-screen">
+      {/* ===== 左侧白栏：渐变圆 Logo + 胶囊菜单 + 渐变动态卡 + 用户 ===== */}
+      <aside className="app-rail sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col lg:flex">
+        {brand}
         {nav}
-        {userBlock}
+        {sideBottom}
       </aside>
 
-      {/* 移动端抽屉 */}
       {menuOpen ? (
-        <div className="fixed inset-0 z-40 md:hidden">
-          <div
-            className="fade-in absolute inset-0 bg-[rgb(10_14_18/0.5)]"
-            onClick={() => setMenuOpen(false)}
-          />
-          <div className="app-rail drawer-in absolute inset-y-0 left-0 flex w-[264px] flex-col">
-            <div className="flex items-center justify-between px-3 pt-3">
-              <span className="text-[10.5px] tracking-[0.06em] text-deep-muted">导航</span>
-              <button
-                type="button"
-                onClick={() => setMenuOpen(false)}
-                className="nav-btn"
-                aria-label="关闭菜单"
-              >
-                <X size={15} />
-              </button>
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="fade-in absolute inset-0 bg-[rgb(var(--c-deep-bg)/0.45)]" onClick={() => setMenuOpen(false)} />
+          <div className="app-rail drawer-in absolute inset-y-0 left-0 flex w-[272px] flex-col shadow-pop">
+            <div className="flex items-start justify-between pr-3">
+              <div className="flex-1">{brand}</div>
+              <button type="button" onClick={() => setMenuOpen(false)} className="nav-btn mt-6" aria-label="关闭菜单"><X size={16} /></button>
             </div>
-            {brandHead}
             {nav}
-            {userBlock}
+            {sideBottom}
           </div>
         </div>
       ) : null}
 
-      {/* 主区域 */}
-      <div className="relative z-10 md:pl-[232px]">
-        {/*
-          顶栏：48px 深色细带。深色顶栏 + 浅色正文，是这套界面最容易被认出的
-          "这是业务系统"的信号；它也把"看数据"和"干活"切成两种视线。
-        */}
-        <header className="app-topbar sticky top-0 z-20 flex h-12 items-center gap-2 px-3 sm:px-4">
-          <button
-            type="button"
-            onClick={() => setMenuOpen(true)}
-            className="-ml-1 rounded-[5px] p-1.5 text-deep-fg2 transition-colors hover:bg-white/10 hover:text-deep-fg md:hidden"
-            aria-label="打开菜单"
-          >
-            <Menu size={18} />
+      {/* ===== 主区域 ===== */}
+      <div className="min-w-0 flex-1">
+        <header className="app-topbar sticky top-0 z-20 flex h-[68px] items-center gap-3 px-4 sm:px-6">
+          <button type="button" onClick={() => setMenuOpen(true)} className="-ml-1 rounded-full p-2 text-ink-2 transition-colors hover:bg-brand-soft hover:text-brand-ink lg:hidden" aria-label="打开菜单">
+            <Menu size={19} />
           </button>
-
-          <div className="flex min-w-0 items-baseline gap-2">
-            {crumb.group ? (
-              <span className="hidden shrink-0 text-[11.5px] text-deep-muted sm:inline">
-                {crumb.group}
-              </span>
-            ) : null}
-            <h1 className="min-w-0 truncate text-[13.5px] font-medium text-deep-fg">{crumb.label}</h1>
+          <div className="min-w-0 leading-tight">
+            <div className="truncate text-[16px] font-bold tracking-[-0.01em] text-ink">
+              Hi {user.displayName}，欢迎回来
+            </div>
+            <div className="truncate text-[11.5px] text-muted">
+              {crumb.group ? `${crumb.group} / ${crumb.label} · ` : ""}{today}
+            </div>
           </div>
 
-          <div className="ml-auto flex items-center gap-1.5">
-            {pending > 0 ? (
-              <Link
-                href="/outbound?status=pending"
-                className="hidden items-center gap-1.5 rounded-[5px] bg-danger/20 px-2 py-1 text-[11.5px] font-medium text-[#F3B1A8] transition-colors hover:bg-danger/30 sm:flex"
-                title={`${pending} 个包裹待发出`}
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-[#E0796A]" />
-                {pending} 个包裹待发
-              </Link>
-            ) : null}
-
-            <div className="hidden md:block">
-              <CommandPalette variant="bar" />
-            </div>
-            <div className="md:hidden">
-              <CommandPalette variant="icon" />
-            </div>
-
+          <div className="ml-auto flex items-center gap-2">
+            <div className="hidden md:block"><CommandPalette variant="bar" /></div>
+            <div className="md:hidden"><CommandPalette variant="icon" /></div>
+            <Link
+              href="/outbound?status=pending"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full border border-line bg-card text-ink-2 transition-colors hover:border-brand/40 hover:text-brand-ink"
+              title={pending > 0 ? `${pending} 个包裹待发` : "待发包裹"}
+              aria-label="待发包裹"
+            >
+              <Bell size={16} strokeWidth={1.9} />
+              {pending > 0 ? (
+                <span className="tnum absolute -right-1 -top-1 min-w-[18px] rounded-full bg-[#FF8A00] px-1 text-center text-[10px] font-bold leading-[18px] text-white">{pending}</span>
+              ) : null}
+            </Link>
             <NewDocMenu />
-            <ThemeSwitcher />
+            <ThemeSwitcher tone="light" />
           </div>
         </header>
 
-        {deep ? (
-          <main className="deep-canvas min-h-[calc(100vh-48px)]">{children}</main>
-        ) : (
-          <main className="mx-auto max-w-[1360px] px-3 py-4 sm:px-5 sm:py-5">{children}</main>
-        )}
+        <main className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6">{children}</main>
       </div>
 
       <ChangePasswordDialog open={passwordOpen} onClose={() => setPasswordOpen(false)} />
